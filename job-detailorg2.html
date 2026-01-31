@@ -8,11 +8,29 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 
+<!-- Google tag -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RRC3X485KQ"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-RRC3X485KQ');
+</script>
+
 <!-- ================= FIREBASE v10 ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import {
+  getFirestore, serverTimestamp, doc, setDoc, getDoc, deleteDoc,
+  addDoc, collection
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+import {
+  getMessaging,
+  getToken,
+  onMessage
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
@@ -24,139 +42,127 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-window.auth = getAuth(app);
-window.db = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const messaging = getMessaging(app);
+
+window.auth = auth;
+window.db = db;
 window.serverTimestamp = serverTimestamp;
-</script>
 
-<style>
-body { background:#f8fafc; font-family:'Plus Jakarta Sans',sans-serif; }
-.job-card { background:#fff; border-radius:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.05); }
-.gradient-border::after {
-  content:''; position:absolute; top:0; left:0; right:0;
-  height:6px; background:linear-gradient(90deg,#2563eb,#60a5fa);
-  border-radius:24px 24px 0 0;
-}
-.shimmer {
-  background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
-  background-size:200% 100%; animation:shimmer 1.5s infinite;
-}
-@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
-.slide { max-height:0; overflow:hidden; transition:max-height .4s ease; }
-.slide.open { max-height:400px; }
-.custom-modal {
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.5); align-items:center; justify-content:center; z-index:1000;
-}
-</style>
-</head>
+let currentUser = null;
+let currentJobId = null;
 
-<body class="min-h-screen bg-gray-50">
+/* ================= NOTIFICATION PERMISSION ================= */
+async function initNotifications(user) {
+  if (!("Notification" in window)) return;
 
-<!-- ================= NAVBAR ================= -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then(r=>r.text())
-  .then(html=>{
-    document.getElementById("navbar").innerHTML=html;
-    const s=document.createElement("script");
-    s.type="module"; s.src="navbar.js";
-    document.body.appendChild(s);
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return;
+
+  const token = await getToken(messaging, {
+    vapidKey: "PASTE_YOUR_VAPID_KEY_HERE"
   });
-</script>
 
-<!-- ================= HEADER ================= -->
-<header class="bg-white border-b py-10">
-  <div class="max-w-7xl mx-auto px-4 text-center">
-    <h1 class="text-3xl font-black">
-      Booter<span class="text-blue-600">Space</span>
-    </h1>
-    <p class="mt-2 text-sm text-gray-500">
-      Explore your career opportunities and community posts
-    </p>
-  </div>
-</header>
+  if (token) {
+    await setDoc(
+      doc(db, "users", user.uid),
+      { fcmToken: token },
+      { merge: true }
+    );
+  }
+}
 
-<!-- ================= MAIN ================= -->
-<main class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+/* Foreground notifications */
+onMessage(messaging, (payload) => {
+  new Notification(payload.notification.title, {
+    body: payload.notification.body,
+    icon: "/logo.png"
+  });
+});
 
-  <div class="lg:col-span-2">
-    <div id="jobDetailsContent" class="job-card gradient-border p-6 md:p-10 relative">
-      <div class="space-y-6">
-        <div class="h-6 w-1/2 shimmer rounded"></div>
-        <div class="h-4 w-1/3 shimmer rounded"></div>
-        <div class="h-40 shimmer rounded"></div>
-      </div>
-    </div>
-  </div>
+/* ================= AUTH ================= */
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) initNotifications(user);
+});
 
-  <div>
-    <div class="bg-white rounded-2xl shadow-md p-6 sticky top-24">
-      <h3 class="text-lg font-bold mb-3">
-        💙 Our Mission for Job<span class="text-blue-600">Seekers</span>
-      </h3>
-      <p class="text-sm text-gray-600 whitespace-pre-line mb-4">
-🚀 We are building this platform with one clear mission — to help job seekers find the right job, without any cost.
-      </p>
-      <button onclick="toggleFeedback()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">
-        💬 Give Feedback
-      </button>
-      <div id="feedbackBox" class="slide mt-4">
-        <input id="feedbackEmail" class="w-full border rounded-lg p-3 mb-2" placeholder="Your email">
-        <textarea id="feedbackText" rows="3" class="w-full border rounded-lg p-3 mb-3" placeholder="Write your feedback..."></textarea>
-        <button onclick="submitFeedback()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-bold">
-          Submit
-        </button>
-      </div>
-    </div>
-  </div>
-</main>
+/* ================= JOB LOGIC ================= */
+function getJobId() {
+  return new URLSearchParams(window.location.search).get("id");
+}
 
-<!-- ================= LOGIN MODAL ================= -->
-<div id="alertModal" class="custom-modal">
-  <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl text-center">
-    <h3 id="alertTitle" class="text-lg font-bold mb-2"></h3>
-    <p id="alertMsg" class="text-gray-600 mb-6"></p>
-    <div id="authButtons" class="space-y-3 hidden">
-      <a href="login.html" class="block w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Sign In</a>
-      <a href="signup.html" class="block w-full border py-3 rounded-xl font-bold">Sign Up</a>
-    </div>
-    <button onclick="alertModal.style.display='none'" class="mt-4 text-sm text-gray-400">Close</button>
-  </div>
-</div>
+window.addEventListener("DOMContentLoaded", async () => {
+  currentJobId = getJobId();
+  if (!currentJobId) return renderError("Invalid Job ID");
 
-<!-- ================= LOGIC ================= -->
-<script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+  const snap = await getDoc(doc(db, "jobs", currentJobId));
+  if (!snap.exists()) return renderError("Job not found");
 
-const auth = window.auth;
-const db = window.db;
-let currentUser=null;
-let currentJobId=null;
-
-onAuthStateChanged(auth,u=>currentUser=u);
-
-const getJobId=()=>new URLSearchParams(location.search).get("id");
-
-window.addEventListener("DOMContentLoaded",async()=>{
-  currentJobId=getJobId();
-  const snap=await getDoc(doc(db,"jobs",currentJobId));
   renderJob(snap.data());
 });
 
-function renderJob(job){
-  document.getElementById("jobDetailsContent").innerHTML=`<h1 class="text-3xl font-black">${job.title}</h1>`;
+function renderJob(job) {
+  document.getElementById("jobDetailsContent").innerHTML = `
+    <h1 class="text-3xl font-black mb-1">${job.title}</h1>
+    <p class="text-blue-600 font-bold mb-6">${job.company}</p>
+
+    <div class="prose max-w-none mb-8">${job.about || ""}</div>
+
+    <div class="flex gap-3">
+      <button onclick="applyJob('${job.applyLink || ""}')"
+        class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">
+        Apply Now
+      </button>
+
+      <button onclick="toggleSaveJob()"
+        class="border px-6 py-3 rounded-xl font-bold">
+        Save
+      </button>
+    </div>
+  `;
+}
+
+window.applyJob = (link) => {
+  if (!currentUser) return showLoginPopup();
+  window.open(link, "_blank");
+};
+
+window.toggleSaveJob = async () => {
+  if (!currentUser) return showLoginPopup();
+
+  const ref = doc(db, "users", currentUser.uid, "savedJobs", currentJobId);
+  const snap = await getDoc(ref);
+
+  if (snap.exists()) {
+    await deleteDoc(ref);
+    showAlert("Removed", "Job removed");
+  } else {
+    await setDoc(ref, { savedAt: serverTimestamp() });
+    showAlert("Saved ❤️", "Job saved");
+  }
+};
+
+function showLoginPopup() {
+  alert("Please login first");
+}
+
+function showAlert(t, m) {
+  alert(t + " - " + m);
+}
+
+function renderError(msg) {
+  document.getElementById("jobDetailsContent").innerHTML =
+    `<p class="text-red-600 text-center">${msg}</p>`;
 }
 </script>
 
-<!-- ================= 🔥 AUTO TAG SCRIPT (AD) ================= -->
-<script type="text/javascript">
-  aclib.runAutoTag({
-    zoneId: 'kug1vi6oce',
-  });
-</script>
+<style>
+body { background:#f8fafc; }
+</style>
+</head>
 
+<body>
+<div id="jobDetailsContent" class="max-w-4xl mx-auto p-6 bg-white mt-10 rounded-2xl shadow"></div>
 </body>
 </html>
