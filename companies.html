@@ -1,60 +1,99 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/companies.html b/companies.html
-index 40cdb092900586eb709e9ebbb09a111df0e9078b..b9487f6d69bde84ed9caf1c79d6fcb62f2437e46 100644
---- a/companies.html
-+++ b/companies.html
-@@ -21,50 +21,51 @@ const firebaseConfig = {
-   appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
- };
- 
- const app = initializeApp(firebaseConfig);
- window.auth = getAuth(app);
- window.db = getFirestore(app);
- 
- // Auth listener
- onAuthStateChanged(window.auth, (user) => {
-   if(!user) console.log("User not logged in");
- });
- </script>
- 
- </head>
- <body class="bg-gray-100">
- 
- <!-- Navbar -->
- <div id="navbar-placeholder"></div>
- <script>
-   // Inject navbar dynamically
-   fetch("navbar.html")
-     .then(res => res.text())
-     .then(html => {
-       document.getElementById("navbar-placeholder").innerHTML = html;
-       const s = document.createElement("script");
-+      s.type = "module";
-       s.src = "navbar.js";
-       document.body.appendChild(s);
-     });
- </script>
- 
- <!-- Header -->
- <header class="bg-white border-b border-gray-200 py-10">
-   <div class="max-w-7xl mx-auto px-4 text-center">
-     <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-       Booter<span class="text-blue-600">Space</span>
-     </h1>
-     <p class="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-       Drop Truth Bombs, Stay Anonymous 💣 — Share your honest thoughts about company culture safely and freely
-     </p>
-   </div>
- </header>
- 
- <!-- Main Content -->
- <main class="max-w-5xl mx-auto mt-6 px-4">
- 
-   <!-- Post a Review -->
-   <div class="bg-white p-4 rounded-xl shadow mb-6">
-     <textarea id="reviewText" class="w-full border rounded p-3" rows="3"
-       placeholder="Write your anonymous review about the company..."></textarea>
-     <button onclick="postReview()"
- 
-EOF
-)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BooterSpace - Company Culture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+
+// Auth listener
+onAuthStateChanged(window.auth, (user) => {
+  if(!user) console.log("User not logged in");
+});
+</script>
+
+</head>
+<body class="bg-gray-100">
+
+<!-- Navbar -->
+<div id="navbar-placeholder"></div>
+<script>
+  // Inject navbar dynamically
+  fetch("navbar.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("navbar-placeholder").innerHTML = html;
+      const s = document.createElement("script");
+      s.src = "navbar.js";
+      document.body.appendChild(s);
+    });
+</script>
+
+<!-- Header -->
+<header class="bg-white border-b border-gray-200 py-10">
+  <div class="max-w-7xl mx-auto px-4 text-center">
+    <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+      Booter<span class="text-blue-600">Space</span>
+    </h1>
+    <p class="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+      Drop Truth Bombs, Stay Anonymous 💣 — Share your honest thoughts about company culture safely and freely
+    </p>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="max-w-5xl mx-auto mt-6 px-4">
+
+  <!-- Post a Review -->
+  <div class="bg-white p-4 rounded-xl shadow mb-6">
+    <textarea id="reviewText" class="w-full border rounded p-3" rows="3"
+      placeholder="Write your anonymous review about the company..."></textarea>
+    <button onclick="postReview()"
+      class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+      Post Review
+    </button>
+  </div>
+
+  <!-- Company Reviews List -->
+  <div id="reviewsList" class="space-y-4">
+    <!-- Reviews will be dynamically injected here -->
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="text-center text-gray-500 py-8 text-sm">
+  © 2026 BooterSpace
+</footer>
+
+<script type="module">
+// Placeholder functions for posting & fetching reviews
+// To be implemented with Firestore like your Community page
+window.postReview = async () => {
+  const text = document.getElementById("reviewText").value.trim();
+  if(!text) return alert("Please write something!");
+  alert("Post function not implemented yet."); // Replace with Firestore logic
+};
+</script>
+
+</body>
+</html>
