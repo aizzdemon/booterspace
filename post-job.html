@@ -45,19 +45,22 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- HEADER -->
 <header>
-  <div class="logo-box">KARDAN</div>
-
   <h1 class="text-2xl font-bold text-center mt-6">Post a Job</h1>
-
-  <nav class="mt-4 text-center space-x-2">
-    <a href="index.html" class="nav-button"><i class="fas fa-home"></i> Home</a>
-    <a href="jobs.html" class="nav-button"><i class="fas fa-briefcase"></i> Jobs</a>
-    <a href="companies.html" class="nav-button"><i class="fas fa-building"></i> Companies</a>
-    <a href="profile.html" class="nav-button"><i class="fas fa-user"></i> Profile</a>
-  </nav>
 </header>
 
 <!-- FORM -->

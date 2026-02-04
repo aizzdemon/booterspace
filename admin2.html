@@ -131,6 +131,18 @@
 </head>
 
 <body class="bg-gray-100 p-6">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
   <!-- Tabs -->
   <div class="flex gap-3 mb-4">

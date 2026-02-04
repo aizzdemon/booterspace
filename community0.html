@@ -225,13 +225,17 @@ window.openProfile = uid => location.href = `profile.html?uid=${uid}`;
 </head>
 
 <body class="bg-slate-50 pb-20">
-
-<div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("navbar").innerHTML = h);
-</script>
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
 
 <!-- UI remains exactly same -->
 </body>

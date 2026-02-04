@@ -12,10 +12,20 @@
 
 </head>
 <body class="bg-gray-100">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- NAVBAR -->
-<div id="navbar"></div>
-
 <!-- HEADER -->
 <header class="bg-blue-600 text-white p-6 text-center shadow">
   <h1 class="text-3xl font-bold">📚 KARDAN Book Store</h1>
@@ -35,17 +45,7 @@
 </div>
 
 <!-- NAVBAR LOAD -->
-<script type="module">
-fetch("navbar.html")
-  .then(r=>r.text())
-  .then(html=>{
-    document.getElementById("navbar").innerHTML = html;
-    const s = document.createElement("script");
-    s.type="module";
-    s.src="navbar.js";
-    document.body.appendChild(s);
-  });
-</script>
+
 
 <!-- ================= FIREBASE v10 ================= -->
 <script type="module">

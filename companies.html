@@ -33,21 +33,20 @@ onAuthStateChanged(window.auth, (user) => {
 
 </head>
 <body class="bg-gray-100">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- Navbar -->
-<div id="navbar-placeholder"></div>
-<script>
-  // Inject navbar dynamically
-  fetch("navbar.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("navbar-placeholder").innerHTML = html;
-      const s = document.createElement("script");
-      s.src = "navbar.js";
-      document.body.appendChild(s);
-    });
-</script>
-
 <!-- Header -->
 <header class="bg-white border-b border-gray-200 py-10">
   <div class="max-w-7xl mx-auto px-4 text-center">

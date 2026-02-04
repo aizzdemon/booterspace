@@ -48,26 +48,17 @@
   </style>
 </head>
 <body class="bg-gray-100">
-
-  <!-- Navigation Bar -->
-  <header class="bg-white shadow p-4">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-      <div class="text-purple-600 text-xl font-bold">KARDAN</div>
-      <nav>
-        <ul class="flex space-x-4">
-          <li><a href="index.html" class="nav-button"><i class="fas fa-home"></i> Home</a></li>
-          <li><a href="jobs.html" class="nav-button"><i class="fas fa-briefcase"></i> Jobs</a></li>
-           <li><a href="buy-books.html" class="join-button">Buy Books</a></li>
-          <li><a href="post-job.html" class="nav-button" style="background-color: #7c3aed; color: white;"><i class="fas fa-upload"></i> Post a Job</a></li>
-          <li><a href="profile.html" class="nav-button"><i class="fas fa-user"></i> Profile</a></li>
-          <li><a href="companies.html" class="nav-button"><i class="fas fa-building"></i> Companies</a></li>
-          <li><a href="places-to-hangout.html" class="nav-button"><i class="fas fa-comments"></i> Places to Hangout</a></li>
-          <li><a href="index.html#contact" class="nav-button"><i class="fas fa-envelope"></i> Contact</a></li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
   <!-- Page Title -->
   <section class="bg-purple-600 p-4 text-white text-center">
     <h1 class="text-3xl font-bold">Places to Hangout</h1>

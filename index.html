@@ -17,19 +17,20 @@ body { background-color: #f8fafc; }
 </style>
 </head>
 <body class="font-sans antialiased text-gray-900 bg-gray-50">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- Navbar -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module"; 
-  s.src="navbar.js"; 
-  document.body.appendChild(s);
-});
-</script>
-
 <!-- Header -->
 <header class="bg-white border-b border-gray-200 py-10">
   <div class="max-w-7xl mx-auto px-4 text-center">

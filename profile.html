@@ -20,20 +20,19 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
   <!-- 🔥 SaaS Navbar -->
-<div id="navbar"></div>
-
-<script>
-fetch("navbar.html")
-.then(r=>r.text())
-.then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.src="navbar.js";
-  document.body.appendChild(s);
-});
-</script>
-
 <!-- 🔍 SEARCH BAR -->
 <div class="bg-white border-b sticky top-0 z-20 shadow-sm">
   <div class="max-w-6xl mx-auto p-4 flex gap-2">

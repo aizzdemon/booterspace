@@ -59,6 +59,18 @@
 </head>
 
 <body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-4">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
   <!-- Logo Section -->
   <div class="logo mb-8 text-center">

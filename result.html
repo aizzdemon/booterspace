@@ -90,10 +90,20 @@
     </style>
 </head>
 <body>
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- 🔹 NAVBAR -->
-<div id="navbar"></div>
-
 <!-- 🔹 PAGE CONTENT -->
 <div class="page-wrapper">
     <div class="container">
@@ -136,13 +146,7 @@
 </div>
 
 <!-- 🔹 LOAD NAVBAR -->
-<script>
-fetch("navbar.html")
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById("navbar").innerHTML = data;
-  });
-</script>
+
 
 </body>
 </html>

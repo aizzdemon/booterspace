@@ -12,20 +12,21 @@
 </head>
 
 <body class="bg-gray-100">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- 🔥 NAVBAR -->
-<div id="navbar"></div>
 <!-- Navbar -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module"; 
-  s.src="navbar.js"; 
-  document.body.appendChild(s);
-});
-</script>
 <!-- PAGE HEADER -->
 <header class="bg-purple-600 p-6 text-white text-center shadow">
   <h1 class="text-3xl font-bold">Places to Hangout</h1>

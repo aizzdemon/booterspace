@@ -63,20 +63,20 @@ body { background:#f8fafc; font-family:'Plus Jakarta Sans',sans-serif; }
 </head>
 
 <body class="min-h-screen bg-gray-50">
-
-<!-- ================= NAVBAR ================= -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then(r=>r.text())
-  .then(html=>{
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
     document.getElementById("navbar").innerHTML=html;
     const s=document.createElement("script");
-    s.type="module"; s.src="navbar.js";
+    s.type="module"; 
+    s.src="navbar.js"; 
     document.body.appendChild(s);
   });
-</script>
+  </script>
 
+
+<!-- ================= NAVBAR ================= -->
 <!-- ================= HEADER ================= -->
 <header class="bg-white border-b py-10">
   <div class="max-w-7xl mx-auto px-4 text-center">

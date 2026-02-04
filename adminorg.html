@@ -17,6 +17,18 @@
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- LOGIN SCREEN -->
 <div id="loginDiv" class="flex items-center justify-center min-h-screen p-4">

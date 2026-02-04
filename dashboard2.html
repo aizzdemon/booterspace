@@ -46,19 +46,20 @@ body { background:#f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; }
 </head>
 
 <body class="min-h-screen bg-gray-50">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- ================= NAVBAR (FETCHED FROM EXTERNAL) ================= -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML = html;
-  const s = document.createElement("script");
-  s.type = "module";
-  s.src = "navbar.js";
-  document.body.appendChild(s);
-});
-</script>
-
 <!-- ================= HEADER ================= -->
 <header class="bg-white border-b border-gray-200 py-10">
   <div class="max-w-7xl mx-auto px-4 text-center">

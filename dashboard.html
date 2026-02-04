@@ -44,6 +44,18 @@
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen text-slate-900">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- Loading Overlay -->
 <div id="globalLoader" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center">

@@ -44,6 +44,18 @@
     </style>
 </head>
 <body class="bg-gray-100 p-4 sm:p-8">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
     <div class="max-w-4xl mx-auto">
         <header class="text-center mb-8">

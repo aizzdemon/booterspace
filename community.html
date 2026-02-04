@@ -276,21 +276,20 @@ window.openProfile = (uid) => {
 </head>
 
 <body class="bg-slate-50 font-sans text-slate-900 pb-20">
-
-<!-- 🔥 NAVBAR INJECTION -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then(res => res.text())
-  .then(html => {
-    document.getElementById("navbar").innerHTML = html;
-    const s = document.createElement("script");
-    s.type = "module";
-    s.src = "navbar.js";
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
     document.body.appendChild(s);
   });
-</script>
+  </script>
 
+
+<!-- 🔥 NAVBAR INJECTION -->
 <header class="bg-white border-b py-8 px-4">
   <div class="max-w-6xl mx-auto flex flex-col items-center">
       <div class="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3">Feed</div>

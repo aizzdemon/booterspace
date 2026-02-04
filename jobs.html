@@ -56,19 +56,20 @@ input:not(:placeholder-shown) + .clear-btn { display: flex; }
 </head>
 
 <body class="bg-gray-50 min-h-screen flex flex-col">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
 <!-- ================= NAVBAR ================= -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML = html;
-  const s = document.createElement("script");
-  s.type = "module";
-  s.src = "navbar.js";
-  document.body.appendChild(s);
-}).catch(e => console.error("Navbar failed to load"));
-</script>
-
 <!-- ================= HEADER ================= -->
 <header class="bg-white border-b">
   <div class="max-w-6xl mx-auto px-4 py-10 text-center">

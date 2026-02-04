@@ -87,6 +87,18 @@
 </head>
 
 <body class="flex flex-col">
+  <!-- Navbar -->
+  <div id="navbar"></div>
+  <script>
+  fetch("navbar.html").then(r=>r.text()).then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; 
+    s.src="navbar.js"; 
+    document.body.appendChild(s);
+  });
+  </script>
+
 
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 py-8">
