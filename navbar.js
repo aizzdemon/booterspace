@@ -212,6 +212,25 @@ mLogoutBtn.addEventListener("click", async () => {
 // MOBILE MENU
 // =======================
 
-document.getElementById("menuBtn").addEventListener("click", () => {
-  document.getElementById("mobileMenu").classList.toggle("hidden");
+const menuBtn = document.getElementById("menuBtn");
+const mobileMenu = document.getElementById("mobileMenu");
+
+menuBtn?.addEventListener("click", () => {
+  if (!mobileMenu) return;
+  const isHidden = mobileMenu.classList.toggle("hidden");
+  menuBtn.setAttribute("aria-expanded", String(!isHidden));
+});
+
+mobileMenu?.querySelectorAll("a").forEach((link) => {
+  link.addEventListener("click", () => {
+    mobileMenu.classList.add("hidden");
+    menuBtn?.setAttribute("aria-expanded", "false");
+  });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    mobileMenu?.classList.add("hidden");
+    menuBtn?.setAttribute("aria-expanded", "false");
+  }
 });
