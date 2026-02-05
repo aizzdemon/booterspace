@@ -1,4 +1,21 @@
 <nav class="bg-white shadow-sm border-b px-4 md:px-6 py-3 sticky top-0 z-40">
+  <div id="notificationPermissionBanner" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl border border-blue-200 bg-white p-5 shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900">Allow Notifications</h3>
+      <p id="notificationPermissionText" class="mt-2 text-sm font-medium text-slate-700">
+        Enable notifications to get instant alerts for new messages, connection requests, jobs, comments, and posts.
+      </p>
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <button id="enableNotificationsBtn" class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700">
+          Allow Notifications
+        </button>
+        <button id="dismissNotificationsPromptBtn" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">
+          Not now
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
 
     <!-- Logo -->
@@ -68,6 +85,14 @@
         </div>
       </div>
 
+      <!-- 💬 Message Button -->
+      <button id="messageBtn" class="relative text-gray-600 hover:text-blue-600" title="Messages" aria-label="Messages">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8m-8 4h5m-9 5l1.4-3.2A9 9 0 1112 21a8.96 8.96 0 01-4-.9L3 21z" />
+        </svg>
+        <span id="messageCount" class="absolute -top-1 -right-1 hidden bg-indigo-500 text-white text-[10px] px-1.5 rounded-full">0</span>
+      </button>
+
       <!-- Profile -->
       <a id="profileBtn"
          href="profile.html"
@@ -112,6 +137,13 @@
       Notifications
       <span id="mNotificationCount"
         class="hidden bg-red-500 text-white text-xs px-2 rounded-full">0</span>
+    </button>
+
+    <button id="mMessageBtn"
+      class="flex w-full items-center justify-between rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">
+      Messages
+      <span id="mMessageCount"
+        class="hidden bg-indigo-500 text-white text-xs px-2 rounded-full">0</span>
     </button>
 
     <a href="jobs.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Jobs</a>
