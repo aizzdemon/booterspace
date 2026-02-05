@@ -29,6 +29,8 @@ if (!auth || !db) {
   console.warn("Navbar auth/db init failed: make sure Firebase is initialized before navbar.js");
 }
 
+window.FCM_VAPID_KEY = import.meta?.env?.VITE_FCM_VAPID_KEY || window.FCM_VAPID_KEY;
+const FCM_VAPID_KEY = typeof window.FCM_VAPID_KEY === "string" ? window.FCM_VAPID_KEY.trim() : "";
 function resolveFcmVapidKey() {
   if (typeof window.FCM_VAPID_KEY === "string" && window.FCM_VAPID_KEY.trim()) {
     return window.FCM_VAPID_KEY.trim();
