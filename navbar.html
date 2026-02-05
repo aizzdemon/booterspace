@@ -1,5 +1,5 @@
-<nav class="bg-white shadow-sm border-b px-6 py-3">
-  <div class="max-w-7xl mx-auto flex justify-between items-center">
+<nav class="bg-white shadow-sm border-b px-4 md:px-6 py-3 sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
 
     <!-- Logo -->
     <a href="index.html" class="flex items-center">
@@ -93,28 +93,33 @@
     </div>
 
     <!-- Hamburger -->
-    <button id="menuBtn" class="md:hidden text-gray-700 text-2xl">
-      ☰
+    <button id="menuBtn"
+      class="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-700"
+      aria-label="Open mobile menu"
+      aria-expanded="false"
+      aria-controls="mobileMenu">
+      <span class="text-2xl leading-none">☰</span>
     </button>
   </div>
 
   <!-- Mobile Menu -->
-  <div id="mobileMenu" class="hidden md:hidden bg-white border-t p-4 space-y-4">
+  <div id="mobileMenu"
+    class="hidden md:hidden bg-white border-t px-4 pb-6 pt-4 space-y-4 max-h-[calc(100vh-68px)] overflow-y-auto">
 
     <!-- 🔔 Mobile Notification -->
     <button id="mNotificationBtn"
-      class="flex items-center justify-between font-semibold">
+      class="flex w-full items-center justify-between rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">
       Notifications
       <span id="mNotificationCount"
         class="hidden bg-red-500 text-white text-xs px-2 rounded-full">0</span>
     </button>
 
-    <a href="jobs.html" class="block font-semibold">Jobs</a>
-    <a href="govt.html" class="hover:text-blue-600">Govt. Jobs</a>
-    <a href="companies.html" class="block font-semibold">Companies</a>
-    <a href="hangout.html" class="block font-semibold">Hangouts</a>
-    <a href="books.html" class="hover:text-blue-600">Books</a>
-    <a href="community.html" class="block font-semibold">Community</a>
+    <a href="jobs.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Jobs</a>
+    <a href="govt.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Govt. Jobs</a>
+    <a href="companies.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Companies</a>
+    <a href="hangout.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Hangouts</a>
+    <a href="books.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Books</a>
+    <a href="community.html" class="block rounded-lg px-2 py-2 font-semibold hover:bg-gray-50">Community</a>
 
     <div class="border-t pt-4 space-y-3">
 
