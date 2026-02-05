@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notifications - BooterSpace</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+window.app = app;
+window.auth = auth;
+window.db = db;
+let currentUser = null;
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (!user) {
+    document.getElementById("notificationsList").innerHTML =
+      '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">Please login to view notifications.</div><div class="mt-3 text-center"><a href="login.html" class="text-sm font-semibold text-blue-600 hover:underline">Go to login</a></div>';
+    document.getElementById("suggestionList").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
+    document.getElementById("suggestionListMobile").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
+    return;
+  }
+
+  await Promise.all([loadNotifications(), loadSuggestions()]);
+});
+
+async function loadNotifications() {
+  const wrap = document.getElementById("notificationsList");
+  wrap.innerHTML = '<div class="p-6 text-center text-gray-400">Loading notifications...</div>';
+
+  try {
+    const q = query(collection(db, "users", currentUser.uid, "notifications"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">No notifications yet.</div>';
+      return;
+    }
+
+    wrap.innerHTML = snap.docs.map((d) => {
+      const n = d.data();
+      const createdAt = n.createdAt?.toDate ? n.createdAt.toDate() : null;
+      const label = resolveNotificationLabel(n.text || "");
+      return `
+        <article class="bg-white rounded-2xl border p-4 md:p-5 shadow-sm ${n.read ? "" : "border-blue-200 bg-blue-50/40"}">
+          <div class="flex items-start gap-3">
+            <div class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-sm">${label.icon}</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="font-bold text-slate-800 text-sm md:text-base">${label.title}</p>
+                ${n.read ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Read</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">Unread</span>'}
+              </div>
+              <p class="text-sm text-slate-600 mt-1 break-words">${n.text || "You have a new notification."}</p>
+              <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
+            </div>
+            ${n.read ? "" : `<button onclick="markOneRead('${d.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Mark read</button>`}
+          </div>
+        </article>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error("Notification load failed", err);
+    wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-red-500">Could not load notifications.</div>';
+  }
+}
+
+function resolveNotificationLabel(text = "") {
+  const lower = text.toLowerCase();
+  if (lower.includes("message")) return { title: "New message", icon: "💬" };
+  if (lower.includes("connection")) return { title: "Connection update", icon: "🤝" };
+  if (lower.includes("job")) return { title: "Job update", icon: "💼" };
+  if (lower.includes("comment")) return { title: "New comment", icon: "💭" };
+  if (lower.includes("post")) return { title: "New post", icon: "📝" };
+  return { title: "Notification", icon: "🔔" };
+}
+
+window.markOneRead = async (id) => {
+  if (!currentUser) return;
+  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), { read: true });
+  loadNotifications();
+};
+
+window.markAllRead = async () => {
+  if (!currentUser) return;
+  const snap = await getDocs(collection(db, "users", currentUser.uid, "notifications"));
+  await Promise.all(snap.docs.filter((d) => !d.data().read).map((d) => updateDoc(d.ref, { read: true })));
+  loadNotifications();
+};
+
+function renderSuggestionsList(container, suggestions) {
+  if (!container) return;
+
+  if (!suggestions.length) {
+    container.innerHTML = '<p class="text-[10px] text-gray-400 italic">No new suggestions found.</p>';
+    return;
+  }
+
+  container.innerHTML = suggestions.map((user) => `
+    <div class="flex items-center gap-3 group">
+      <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'User')}&background=random`}" class="w-8 h-8 rounded-full border border-gray-100 shadow-sm object-cover" alt="User" />
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-bold text-gray-800 truncate cursor-pointer hover:text-blue-600" onclick="openProfile('${user.id}')">${user.fullName || "Anonymous"}</p>
+        <p class="text-[9px] text-gray-400 uppercase tracking-tighter">${user.bio || "Maker"}</p>
+      </div>
+      <button onclick="connectUser('${user.id}')" id="btn-${user.id}" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 p-1">+</button>
+    </div>
+  `).join("");
+}
+
+async function loadSuggestions() {
+  const list = document.getElementById("suggestionList");
+  const listMobile = document.getElementById("suggestionListMobile");
+
+  if (!currentUser) return;
+
+  try {
+    const connectionsSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
+    const connectedIds = connectionsSnap.docs.map((d) => d.id);
+    connectedIds.push(currentUser.uid);
+
+    const usersSnap = await getDocs(collection(db, "users"));
+    let suggestions = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => !connectedIds.includes(u.id));
+    suggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+    renderSuggestionsList(list, suggestions);
+    renderSuggestionsList(listMobile, suggestions);
+  } catch (err) {
+    console.error("Suggestions load failed", err);
+    if (list) list.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
+    if (listMobile) listMobile.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
+  }
+}
+
+window.connectUser = async (targetUid) => {
+  if (!currentUser) return alert("Login required");
+
+  const btn = document.getElementById(`btn-${targetUid}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳";
+  }
+
+  try {
+    await setDoc(doc(db, "users", currentUser.uid, "connections", targetUid), { connectedAt: serverTimestamp() });
+    await setDoc(doc(db, "users", targetUid, "connections", currentUser.uid), { connectedAt: serverTimestamp() });
+    await loadSuggestions();
+  } catch (err) {
+    console.error("Connection failed", err);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "+";
+    }
+  }
+};
+
+window.openProfile = (uid) => {
+  window.location.href = `profile.html?uid=${uid}`;
+};
+</script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 pb-20">
+<div id="navbar"></div>
+<script>
+fetch("navbar.html")
+  .then((res) => res.text())
+  .then((html) => {
+    document.getElementById("navbar").innerHTML = html;
+    const s = document.createElement("script");
+    s.type = "module";
+    s.src = "navbar.js";
+    document.body.appendChild(s);
+  });
+</script>
+
+<header class="bg-white border-b py-8 px-4">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-[10px] font-black uppercase tracking-widest text-blue-600">Notifications</p>
+    <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
+      <h1 class="text-3xl md:text-4xl font-black tracking-tight">All Updates</h1>
+      <button onclick="markAllRead()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Mark all as read</button>
+    </div>
+    <p class="text-gray-500 mt-2 text-sm">See messages, connection updates, jobs, comments, and posts in one place.</p>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto mt-8 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <aside class="lg:col-span-3 hidden lg:block sticky top-24 h-fit">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="font-black text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+        Suggestions
+      </h2>
+      <div id="suggestionList" class="space-y-4">
+        <p class="text-[10px] text-gray-400 italic">Loading suggestions...</p>
+      </div>
+      <button onclick="loadSuggestions()" class="w-full mt-6 py-2 text-[11px] font-bold text-gray-500 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">Shuffle suggestions</button>
+    </div>
+  </aside>
+
+  <section class="lg:col-span-9 xl:col-span-7">
+    <section class="lg:hidden mb-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-black text-xs uppercase tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+            People Suggestions
+          </h2>
+          <button onclick="loadSuggestions()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800">Refresh</button>
+        </div>
+        <div id="suggestionListMobile" class="space-y-3">
+          <p class="text-[10px] text-gray-400 italic">Loading suggestions...</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="notificationsList" class="space-y-4"></div>
+  </section>
+
+  <aside class="hidden xl:block xl:col-span-2"></aside>
+</main>
+</body>
+</html>
