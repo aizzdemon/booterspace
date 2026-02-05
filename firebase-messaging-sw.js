@@ -12,11 +12,36 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(
-    payload.notification.title,
-    {
-      body: payload.notification.body,
-      icon: "/logo.png"
+  const title = payload?.notification?.title || "BooterSpace Notification";
+  const body = payload?.notification?.body || payload?.data?.text || "You have a new update";
+
+  self.registration.showNotification(title, {
+    body,
+    icon: payload?.notification?.icon || "https://aizzdemon.github.io/booterspace/assets/images/booterspace.png",
+    data: {
+      url: payload?.data?.url || "/notifications.html"
     }
+  });
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification?.data?.url || "/notifications.html";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(targetUrl) && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+
+      return null;
+    })
   );
 });
