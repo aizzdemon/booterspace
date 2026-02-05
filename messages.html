@@ -1,238 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <!-- FCM VAPID -->
-  <meta
-    name="fcm-vapid-key"
-    content="BEXXcNApWgB7q2zcauzld7kL5nyI4ahXVr8xN3OSgjhtqzz2dQwkKIbMTjy4deMO2vcTseaGdWXuonaxcdpf8cI"
-  />
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messages – BooterSpace</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- ================= FIREBASE LOGIC ================= -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      orderBy,
-      onSnapshot,
-      doc,
-      setDoc,
-      updateDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-    import {
-      getMessaging,
-      getToken,
-      onMessage
-    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-messaging.js";
-
-    /* ================= CONFIG ================= */
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-      authDomain: "kar-kardan.firebaseapp.com",
-      projectId: "kar-kardan",
-      storageBucket: "kar-kardan.firebasestorage.app",
-      messagingSenderId: "554147696994",
-      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const messaging = getMessaging(app);
-
-    let currentUser = null;
-    let unsubscribeMessages = null;
-
-    /* ================= AUTH ================= */
-
-    onAuthStateChanged(auth, async user => {
-      currentUser = user;
-
-      if (!user) {
-        document.getElementById("messagesList").innerHTML =
-          `<div class="bg-white p-6 rounded-xl text-center text-gray-500">
-            Please login to view messages
-           </div>`;
-        return;
-      }
-
-      await registerFCMToken();
-      startRealtimeMessages();
-    });
-
-    /* ================= FCM TOKEN SAVE ================= */
-
-    async function registerFCMToken() {
-      try {
-        const vapidKey = document
-          .querySelector('meta[name="fcm-vapid-key"]')
-          .getAttribute("content");
-
-        const token = await getToken(messaging, { vapidKey });
-
-        if (token) {
-          await updateDoc(doc(db, "users", currentUser.uid), {
-            fcmToken: token,
-            updatedAt: serverTimestamp()
-          });
-        }
-      } catch (err) {
-        console.warn("FCM token error", err);
-      }
-    }
-
-    /* ================= REALTIME MESSAGES ================= */
-
-    function startRealtimeMessages() {
-      const wrap = document.getElementById("messagesList");
-
-      const q = query(
-        collection(db, "users", currentUser.uid, "notifications"),
-        orderBy("createdAt", "desc")
-      );
-
-      unsubscribeMessages?.();
-
-      unsubscribeMessages = onSnapshot(q, snap => {
-        if (snap.empty) {
-          wrap.innerHTML =
-            `<div class="bg-white p-6 rounded-xl text-center text-gray-400">
-              No messages yet
-             </div>`;
-          return;
-        }
-
-        wrap.innerHTML = snap.docs.map(d => {
-          const n = d.data();
-          return `
-            <div class="bg-white border rounded-xl p-4 ${
-              n.read ? "" : "bg-indigo-50 border-indigo-200"
-            }">
-              <div class="flex justify-between items-center">
-                <p class="font-bold text-sm">
-                  ${n.direction === "incoming" ? "New Message" : "Sent Message"}
-                </p>
-                ${
-                  !n.read && n.direction === "incoming"
-                    ? `<button onclick="markRead('${d.id}')" class="text-xs text-indigo-600 font-semibold">Mark read</button>`
-                    : ""
-                }
-              </div>
-              <p class="text-sm mt-2 text-gray-700">${n.body}</p>
-            </div>
-          `;
-        }).join("");
-      });
-    }
-
-    /* ================= MARK READ ================= */
-
-    window.markRead = async (id) => {
-      if (!currentUser) return;
-      await updateDoc(
-        doc(db, "users", currentUser.uid, "notifications", id),
-        { read: true }
-      );
-    };
-
-    /* ================= SEND MESSAGE ================= */
-
-    window.sendMessage = async () => {
-      const targetUid = document.getElementById("toUid").value.trim();
-      const body = document.getElementById("msgBody").value.trim();
-
-      if (!targetUid || !body) return alert("Missing data");
-
-      const id = doc(
-        collection(db, "users", currentUser.uid, "notifications")
-      ).id;
-
-      await Promise.all([
-        setDoc(doc(db, "users", currentUser.uid, "notifications", id), {
-          body,
-          direction: "outgoing",
-          read: true,
-          createdAt: serverTimestamp()
-        }),
-        setDoc(doc(db, "users", targetUid, "notifications", id), {
-          body,
-          direction: "incoming",
-          read: false,
-          createdAt: serverTimestamp()
-        })
-      ]);
-
-      document.getElementById("msgBody").value = "";
-    };
-
-    /* ================= FOREGROUND PUSH ================= */
-
-    onMessage(messaging, payload => {
-      alert(payload.notification.title + "\n" + payload.notification.body);
-    });
-  </script>
+  <title>Easy Messages</title>
 </head>
+<body>
 
-<body class="bg-slate-50 pb-24">
+<h3>Messages</h3>
 
-  <!-- NAVBAR -->
-  <div id="navbar"></div>
-  <script>
-    fetch("navbar.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("navbar").innerHTML = html;
-        const s = document.createElement("script");
-        s.type = "module";
-        s.src = "navbar.js";
-        document.body.appendChild(s);
-      });
-  </script>
+<input id="msg" placeholder="Type message">
+<button onclick="send()">Send</button>
 
-  <!-- HEADER -->
-  <header class="bg-white border-b py-8 px-4">
-    <div class="max-w-5xl mx-auto">
-      <h1 class="text-3xl font-black">Messages</h1>
-      <p class="text-gray-500 mt-2">Real-time private messages</p>
-    </div>
-  </header>
+<ul id="list"></ul>
 
-  <!-- MAIN -->
-  <main class="max-w-5xl mx-auto mt-8 px-4 space-y-6">
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc,
+  query, orderBy, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 
-    <!-- SEND MESSAGE -->
-    <div class="bg-white border rounded-xl p-4 space-y-3">
-      <input
-        id="toUid"
-        placeholder="Receiver UID"
-        class="w-full border rounded-lg p-2 text-sm"
-      />
-      <textarea
-        id="msgBody"
-        placeholder="Type message..."
-        class="w-full border rounded-lg p-2 text-sm"
-      ></textarea>
-      <button
-        onclick="sendMessage()"
-        class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm"
-      >
-        Send Message
-      </button>
-    </div>
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
 
-    <!-- MESSAGE LIST -->
-    <div id="messagesList" class="space-y-4"></div>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  </main>
+const chatId = "chat_123";
+let me = null;
+
+// Ask notification permission
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+onAuthStateChanged(auth, user => {
+  if (!user) return alert("Login required");
+  me = user;
+  listen();
+});
+
+function listen() {
+  const q = query(
+    collection(db, "messages", chatId, "chats"),
+    orderBy("createdAt")
+  );
+
+  onSnapshot(q, snap => {
+    document.getElementById("list").innerHTML = "";
+
+    snap.forEach(doc => {
+      const m = doc.data();
+
+      const li = document.createElement("li");
+      li.textContent = m.text;
+      document.getElementById("list").appendChild(li);
+
+      // 🔔 Simple browser notification
+      if (m.senderId !== me.uid && Notification.permission === "granted") {
+        new Notification("New Message", {
+          body: m.text
+        });
+      }
+    });
+  });
+}
+
+window.send = async () => {
+  const text = msg.value;
+
+  await addDoc(collection(db, "messages", chatId, "chats"), {
+    text,
+    senderId: me.uid,
+    createdAt: serverTimestamp()
+  });
+
+  msg.value = "";
+};
+</script>
+
 </body>
 </html>
