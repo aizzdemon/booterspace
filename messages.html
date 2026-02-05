@@ -1,393 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- FCM VAPID -->
   <meta
-  name="fcm-vapid-key"
-  content="BEXXcNApWgB7q2zcauzld7kL5nyI4ahXVr8xN3OSgjhtqzz2dQwkKIbMTjy4deMO2vcTseaGdWXuonaxcdpf8cI"
-    />
+    name="fcm-vapid-key"
+    content="BEXXcNApWgB7q2zcauzld7kL5nyI4ahXVr8xN3OSgjhtqzz2dQwkKIbMTjy4deMO2vcTseaGdWXuonaxcdpf8cI"
+  />
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Messages - BooterSpace</title>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages – BooterSpace</title>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  doc,
-  updateDoc,
-  setDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+  <script src="https://cdn.tailwindcss.com"></script>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan",
-  storageBucket: "kar-kardan.firebasestorage.app",
-  messagingSenderId: "554147696994",
-  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
-};
+  <!-- ================= FIREBASE LOGIC ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      orderBy,
+      onSnapshot,
+      doc,
+      setDoc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    import {
+      getMessaging,
+      getToken,
+      onMessage
+    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-messaging.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-window.app = app;
-window.auth = auth;
-window.db = db;
-let currentUser = null;
-let composeTarget = null;
+    /* ================= CONFIG ================= */
 
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+    };
 
-  if (!user) {
-    document.getElementById("messagesList").innerHTML =
-      '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">Please login to view messages.</div><div class="mt-3 text-center"><a href="login.html" class="text-sm font-semibold text-blue-600 hover:underline">Go to login</a></div>';
-    document.getElementById("suggestionList").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
-    document.getElementById("suggestionListMobile").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
-    return;
-  }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const messaging = getMessaging(app);
 
-  await handleComposeFromQuery();
-  await Promise.all([loadMessages(), loadSuggestions()]);
-});
+    let currentUser = null;
+    let unsubscribeMessages = null;
 
-async function handleComposeFromQuery() {
-  const params = new URLSearchParams(window.location.search);
-  const targetUid = params.get("composeTo");
-  if (!targetUid || !currentUser || targetUid === currentUser.uid) return;
+    /* ================= AUTH ================= */
 
-  await openComposeForUser(targetUid);
-}
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
 
-async function loadMessages() {
-  const wrap = document.getElementById("messagesList");
-  wrap.innerHTML = '<div class="p-6 text-center text-gray-400">Loading messages...</div>';
+      if (!user) {
+        document.getElementById("messagesList").innerHTML =
+          `<div class="bg-white p-6 rounded-xl text-center text-gray-500">
+            Please login to view messages
+           </div>`;
+        return;
+      }
 
-  try {
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
-    const snap = await getDocs(q);
-
-    const messages = snap.docs.filter((d) => {
-      const data = d.data();
-      const text = (data.text || "").toLowerCase();
-      return data.type === "message" || text.includes("message");
+      await registerFCMToken();
+      startRealtimeMessages();
     });
 
-    if (!messages.length) {
-      wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">No messages yet.</div>';
-      return;
+    /* ================= FCM TOKEN SAVE ================= */
+
+    async function registerFCMToken() {
+      try {
+        const vapidKey = document
+          .querySelector('meta[name="fcm-vapid-key"]')
+          .getAttribute("content");
+
+        const token = await getToken(messaging, { vapidKey });
+
+        if (token) {
+          await updateDoc(doc(db, "users", currentUser.uid), {
+            fcmToken: token,
+            updatedAt: serverTimestamp()
+          });
+        }
+      } catch (err) {
+        console.warn("FCM token error", err);
+      }
     }
 
-    wrap.innerHTML = messages.map((d) => {
-      const n = d.data();
-      const createdAt = n.createdAt?.toDate ? n.createdAt.toDate() : null;
+    /* ================= REALTIME MESSAGES ================= */
 
-      return `
-        <article class="bg-white rounded-2xl border p-4 md:p-5 shadow-sm ${n.read ? "" : "border-indigo-200 bg-indigo-50/40"}">
-          <div class="flex items-start gap-3">
-            <div class="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm">💬</div>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="font-bold text-slate-800 text-sm md:text-base">${n.direction === "outgoing" ? "Sent message" : "New message"}</p>
-                <span class="text-[10px] font-bold uppercase tracking-wider ${getStatusClass(n.deliveryStatus || (n.read ? "read" : "delivered"))}">${(n.deliveryStatus || (n.read ? "read" : "delivered")).toUpperCase()}</span>
+    function startRealtimeMessages() {
+      const wrap = document.getElementById("messagesList");
+
+      const q = query(
+        collection(db, "users", currentUser.uid, "notifications"),
+        orderBy("createdAt", "desc")
+      );
+
+      unsubscribeMessages?.();
+
+      unsubscribeMessages = onSnapshot(q, snap => {
+        if (snap.empty) {
+          wrap.innerHTML =
+            `<div class="bg-white p-6 rounded-xl text-center text-gray-400">
+              No messages yet
+             </div>`;
+          return;
+        }
+
+        wrap.innerHTML = snap.docs.map(d => {
+          const n = d.data();
+          return `
+            <div class="bg-white border rounded-xl p-4 ${
+              n.read ? "" : "bg-indigo-50 border-indigo-200"
+            }">
+              <div class="flex justify-between items-center">
+                <p class="font-bold text-sm">
+                  ${n.direction === "incoming" ? "New Message" : "Sent Message"}
+                </p>
+                ${
+                  !n.read && n.direction === "incoming"
+                    ? `<button onclick="markRead('${d.id}')" class="text-xs text-indigo-600 font-semibold">Mark read</button>`
+                    : ""
+                }
               </div>
-              <p class="text-sm text-slate-600 mt-1 break-words">${n.text || "You have a new message."}</p>
-              <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
+              <p class="text-sm mt-2 text-gray-700">${n.body}</p>
             </div>
-            ${n.read || n.direction === "outgoing" ? "" : `<button onclick="markMessageRead('${d.id}')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Mark read</button>`}
-          </div>
-        </article>
-      `;
-    }).join("");
-  } catch (err) {
-    console.error("Message load failed", err);
-    wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-red-500">Could not load messages.</div>';
-  }
-}
-
-window.markMessageRead = async (id) => {
-  if (!currentUser) return;
-  const notifRef = doc(db, "users", currentUser.uid, "notifications", id);
-  const notifSnap = await getDoc(notifRef);
-  const notif = notifSnap.data();
-
-  await updateDoc(notifRef, { read: true, deliveryStatus: "read" });
-
-  if (notif?.fromUid) {
-    try {
-      await updateDoc(doc(db, "users", notif.fromUid, "notifications", id), { deliveryStatus: "read" });
-    } catch (err) {
-      console.warn("Sender status update skipped", err);
+          `;
+        }).join("");
+      });
     }
-  }
-  await updateDoc(doc(db, "notifications", id), { read: true });
-  loadMessages();
-};
 
-window.markAllMessagesRead = async () => {
-  if (!currentUser) return;
+    /* ================= MARK READ ================= */
 
-  const snap = await getDocs(query(collection(db, "notifications"), where("userId", "==", currentUser.uid)));
-  const unreadMessages = snap.docs.filter((d) => {
-    const data = d.data();
-    return !data.read && (data.text || "").toLowerCase().includes("message");
-  });
+    window.markRead = async (id) => {
+      if (!currentUser) return;
+      await updateDoc(
+        doc(db, "users", currentUser.uid, "notifications", id),
+        { read: true }
+      );
+    };
 
-  await Promise.all(unreadMessages.map((d) => updateDoc(d.ref, { read: true })));
-  loadMessages();
-};
+    /* ================= SEND MESSAGE ================= */
 
-function getStatusClass(status) {
-  if (status === "read") return "text-emerald-600";
-  if (status === "delivered") return "text-indigo-600";
-  return "text-amber-600";
-}
+    window.sendMessage = async () => {
+      const targetUid = document.getElementById("toUid").value.trim();
+      const body = document.getElementById("msgBody").value.trim();
 
-async function openComposeForUser(uid) {
-  const targetSnap = await getDoc(doc(db, "users", uid));
-  if (!targetSnap.exists()) return;
+      if (!targetUid || !body) return alert("Missing data");
 
-  composeTarget = { id: uid, ...targetSnap.data() };
-  document.getElementById("composeRecipient").textContent = composeTarget.fullName || "User";
-  document.getElementById("composeStatus").textContent = "Status flow: Sent → Delivered → Read";
-  document.getElementById("composeMessage").value = "";
-  document.getElementById("composeModal").classList.remove("hidden");
-}
+      const id = doc(
+        collection(db, "users", currentUser.uid, "notifications")
+      ).id;
 
-window.closeComposeModal = () => {
-  document.getElementById("composeModal").classList.add("hidden");
-};
+      await Promise.all([
+        setDoc(doc(db, "users", currentUser.uid, "notifications", id), {
+          body,
+          direction: "outgoing",
+          read: true,
+          createdAt: serverTimestamp()
+        }),
+        setDoc(doc(db, "users", targetUid, "notifications", id), {
+          body,
+          direction: "incoming",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+      ]);
 
-window.sendMessageToTarget = async () => {
-  if (!currentUser || !composeTarget) return;
+      document.getElementById("msgBody").value = "";
+    };
 
-  const body = document.getElementById("composeMessage").value.trim();
-  if (!body) return;
+    /* ================= FOREGROUND PUSH ================= */
 
-  const msgId = doc(collection(db, "users", currentUser.uid, "notifications")).id;
-  const senderName = currentUser.displayName || "User";
-  const receiverName = composeTarget.fullName || "User";
-
-  const senderPayload = {
-    type: "message",
-    id: msgId,
-    text: `Message to ${receiverName}: ${body}`,
-    body,
-    fromUid: currentUser.uid,
-    toUid: composeTarget.id,
-    direction: "outgoing",
-    deliveryStatus: "sent",
-    read: true,
-    createdAt: serverTimestamp()
-  };
-
-  const receiverPayload = {
-    type: "message",
-    id: msgId,
-    text: `${senderName} sent a message: ${body}`,
-    body,
-    fromUid: currentUser.uid,
-    toUid: composeTarget.id,
-    direction: "incoming",
-    deliveryStatus: "delivered",
-    read: false,
-    createdAt: serverTimestamp()
-  };
-
-  const btn = document.getElementById("sendMessageBtn");
-  btn.disabled = true;
-  btn.textContent = "Sending...";
-
-  try {
-    await Promise.all([
-      setDoc(doc(db, "users", currentUser.uid, "notifications", msgId), senderPayload),
-      setDoc(doc(db, "users", composeTarget.id, "notifications", msgId), receiverPayload)
-    ]);
-    window.closeComposeModal();
-    await loadMessages();
-  } catch (err) {
-    console.error("Send failed", err);
-    alert("Unable to send message right now.");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Send";
-  }
-};
-
-function renderSuggestionsList(container, suggestions) {
-  if (!container) return;
-
-  if (!suggestions.length) {
-    container.innerHTML = '<p class="text-[10px] text-gray-400 italic">No new suggestions found.</p>';
-    return;
-  }
-
-  container.innerHTML = suggestions.map((user) => `
-    <div class="flex items-center gap-3 group">
-      <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'User')}&background=random`}" class="w-8 h-8 rounded-full border border-gray-100 shadow-sm object-cover" alt="User" />
-      <div class="flex-1 min-w-0">
-        <p class="text-xs font-bold text-gray-800 truncate cursor-pointer hover:text-blue-600" onclick="openProfile('${user.id}')">${user.fullName || "Anonymous"}</p>
-        <p class="text-[9px] text-gray-400 uppercase tracking-tighter">${user.bio || "Maker"}</p>
-      </div>
-      <button onclick="connectUser('${user.id}')" id="btn-${user.id}" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 p-1">+</button>
-    </div>
-  `).join("");
-}
-
-async function loadSuggestions() {
-  const list = document.getElementById("suggestionList");
-  const listMobile = document.getElementById("suggestionListMobile");
-
-  if (!currentUser) return;
-
-  try {
-    const connectionsSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-    const connectedIds = connectionsSnap.docs.map((d) => d.id);
-    connectedIds.push(currentUser.uid);
-
-    const usersSnap = await getDocs(collection(db, "users"));
-    let suggestions = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => !connectedIds.includes(u.id));
-    suggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
-
-    renderSuggestionsList(list, suggestions);
-    renderSuggestionsList(listMobile, suggestions);
-  } catch (err) {
-    console.error("Suggestions load failed", err);
-    if (list) list.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
-    if (listMobile) listMobile.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
-  }
-}
-
-window.loadSuggestions = loadSuggestions;
-
-window.connectUser = async (targetUid) => {
-  if (!currentUser) return alert("Login required");
-
-  const btn = document.getElementById(`btn-${targetUid}`);
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "⏳";
-  }
-
-  try {
-    await setDoc(doc(db, "users", targetUid, "connections", currentUser.uid), {
-      fromUserId: currentUser.uid,
-      status: "pending",
-      createdAt: serverTimestamp()
+    onMessage(messaging, payload => {
+      alert(payload.notification.title + "\n" + payload.notification.body);
     });
-
-    if (btn) {
-      btn.textContent = "✓";
-    }
-
-    await loadSuggestions();
-  } catch (err) {
-    console.error("Connection failed", err);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "+";
-    }
-  }
-};
-
-window.openProfile = (uid) => {
-  window.location.href = `profile.html?uid=${uid}`;
-};
-</script>
+  </script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 pb-20">
-<div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then((res) => res.text())
-  .then((html) => {
-    document.getElementById("navbar").innerHTML = html;
-    const s = document.createElement("script");
-    s.type = "module";
-    s.src = "navbar.js";
-    document.body.appendChild(s);
-  });
-</script>
 
-<header class="bg-white border-b py-8 px-4">
-  <div class="max-w-6xl mx-auto">
-    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-600">Messages</p>
-    <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
-      <h1 class="text-3xl md:text-4xl font-black tracking-tight">All Messages</h1>
-      <button onclick="markAllMessagesRead()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Mark all as read</button>
+<body class="bg-slate-50 pb-24">
+
+  <!-- NAVBAR -->
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar").innerHTML = html;
+        const s = document.createElement("script");
+        s.type = "module";
+        s.src = "navbar.js";
+        document.body.appendChild(s);
+      });
+  </script>
+
+  <!-- HEADER -->
+  <header class="bg-white border-b py-8 px-4">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-3xl font-black">Messages</h1>
+      <p class="text-gray-500 mt-2">Real-time private messages</p>
     </div>
-    <p class="text-gray-500 mt-2 text-sm">View all message-related notifications in one place.</p>
-  </div>
-</header>
+  </header>
 
-<main class="max-w-6xl mx-auto mt-8 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
-  <aside class="lg:col-span-3 hidden lg:block sticky top-24 h-fit">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-      <h2 class="font-black text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
-        <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
-        Suggestions
-      </h2>
-      <div id="suggestionList" class="space-y-4">
-        <p class="text-[10px] text-gray-400 italic">Loading suggestions...</p>
-      </div>
-      <button onclick="loadSuggestions()" class="w-full mt-6 py-2 text-[11px] font-bold text-gray-500 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">Shuffle suggestions</button>
+  <!-- MAIN -->
+  <main class="max-w-5xl mx-auto mt-8 px-4 space-y-6">
+
+    <!-- SEND MESSAGE -->
+    <div class="bg-white border rounded-xl p-4 space-y-3">
+      <input
+        id="toUid"
+        placeholder="Receiver UID"
+        class="w-full border rounded-lg p-2 text-sm"
+      />
+      <textarea
+        id="msgBody"
+        placeholder="Type message..."
+        class="w-full border rounded-lg p-2 text-sm"
+      ></textarea>
+      <button
+        onclick="sendMessage()"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm"
+      >
+        Send Message
+      </button>
     </div>
-  </aside>
 
-  <section class="lg:col-span-9 xl:col-span-7">
-    <section class="lg:hidden mb-6">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-black text-xs uppercase tracking-wider flex items-center gap-2">
-            <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
-            People Suggestions
-          </h2>
-          <button onclick="loadSuggestions()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800">Refresh</button>
-        </div>
-        <div id="suggestionListMobile" class="space-y-3">
-          <p class="text-[10px] text-gray-400 italic">Loading suggestions...</p>
-        </div>
-      </div>
-    </section>
-
+    <!-- MESSAGE LIST -->
     <div id="messagesList" class="space-y-4"></div>
-  </section>
 
-  <aside class="hidden xl:block xl:col-span-2"></aside>
-</main>
-
-<div id="composeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-  <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-    <div class="px-5 py-4 border-b flex items-center justify-between">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">New Message</p>
-        <h3 class="text-lg font-black text-slate-900 mt-1">To: <span id="composeRecipient">User</span></h3>
-      </div>
-      <button onclick="closeComposeModal()" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
-    </div>
-    <div class="px-5 py-4 space-y-3">
-      <p id="composeStatus" class="text-xs text-slate-500">Status flow: Sent → Delivered → Read</p>
-      <textarea id="composeMessage" rows="5" placeholder="Write your message..." class="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-    </div>
-    <div class="px-5 py-4 bg-slate-50 border-t flex justify-end gap-2">
-      <button onclick="closeComposeModal()" class="px-4 py-2 text-sm font-semibold border rounded-lg text-slate-600 hover:bg-white">Cancel</button>
-      <button id="sendMessageBtn" onclick="sendMessageToTarget()" class="px-5 py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Send</button>
-    </div>
-  </div>
-</div>
+  </main>
 </body>
 </html>
