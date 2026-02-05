@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "ed502dbc-48ba-4e0e-9a22-f9965a27767a",
+    });
+  });
+</script>
 <meta charset="UTF-8">
 <title>BooterSpace</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
