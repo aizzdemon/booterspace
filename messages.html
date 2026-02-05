@@ -12,6 +12,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import {
   getFirestore,
   collection,
+  getDoc,
   getDocs,
   query,
   orderBy,
@@ -37,6 +38,7 @@ window.app = app;
 window.auth = auth;
 window.db = db;
 let currentUser = null;
+let composeTarget = null;
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
@@ -49,8 +51,17 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  await handleComposeFromQuery();
   await Promise.all([loadMessages(), loadSuggestions()]);
 });
+
+async function handleComposeFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const targetUid = params.get("composeTo");
+  if (!targetUid || !currentUser || targetUid === currentUser.uid) return;
+
+  await openComposeForUser(targetUid);
+}
 
 async function loadMessages() {
   const wrap = document.getElementById("messagesList");
@@ -61,8 +72,9 @@ async function loadMessages() {
     const snap = await getDocs(q);
 
     const messages = snap.docs.filter((d) => {
-      const text = (d.data().text || "").toLowerCase();
-      return text.includes("message");
+      const data = d.data();
+      const text = (data.text || "").toLowerCase();
+      return data.type === "message" || text.includes("message");
     });
 
     if (!messages.length) {
@@ -80,13 +92,13 @@ async function loadMessages() {
             <div class="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm">💬</div>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <p class="font-bold text-slate-800 text-sm md:text-base">New message</p>
-                ${n.read ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Read</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Unread</span>'}
+                <p class="font-bold text-slate-800 text-sm md:text-base">${n.direction === "outgoing" ? "Sent message" : "New message"}</p>
+                <span class="text-[10px] font-bold uppercase tracking-wider ${getStatusClass(n.deliveryStatus || (n.read ? "read" : "delivered"))}">${(n.deliveryStatus || (n.read ? "read" : "delivered")).toUpperCase()}</span>
               </div>
               <p class="text-sm text-slate-600 mt-1 break-words">${n.text || "You have a new message."}</p>
               <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
             </div>
-            ${n.read ? "" : `<button onclick="markMessageRead('${d.id}')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Mark read</button>`}
+            ${n.read || n.direction === "outgoing" ? "" : `<button onclick="markMessageRead('${d.id}')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Mark read</button>`}
           </div>
         </article>
       `;
@@ -99,7 +111,19 @@ async function loadMessages() {
 
 window.markMessageRead = async (id) => {
   if (!currentUser) return;
-  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), { read: true });
+  const notifRef = doc(db, "users", currentUser.uid, "notifications", id);
+  const notifSnap = await getDoc(notifRef);
+  const notif = notifSnap.data();
+
+  await updateDoc(notifRef, { read: true, deliveryStatus: "read" });
+
+  if (notif?.fromUid) {
+    try {
+      await updateDoc(doc(db, "users", notif.fromUid, "notifications", id), { deliveryStatus: "read" });
+    } catch (err) {
+      console.warn("Sender status update skipped", err);
+    }
+  }
   loadMessages();
 };
 
@@ -114,6 +138,83 @@ window.markAllMessagesRead = async () => {
 
   await Promise.all(unreadMessages.map((d) => updateDoc(d.ref, { read: true })));
   loadMessages();
+};
+
+function getStatusClass(status) {
+  if (status === "read") return "text-emerald-600";
+  if (status === "delivered") return "text-indigo-600";
+  return "text-amber-600";
+}
+
+async function openComposeForUser(uid) {
+  const targetSnap = await getDoc(doc(db, "users", uid));
+  if (!targetSnap.exists()) return;
+
+  composeTarget = { id: uid, ...targetSnap.data() };
+  document.getElementById("composeRecipient").textContent = composeTarget.fullName || "User";
+  document.getElementById("composeStatus").textContent = "Status flow: Sent → Delivered → Read";
+  document.getElementById("composeMessage").value = "";
+  document.getElementById("composeModal").classList.remove("hidden");
+}
+
+window.closeComposeModal = () => {
+  document.getElementById("composeModal").classList.add("hidden");
+};
+
+window.sendMessageToTarget = async () => {
+  if (!currentUser || !composeTarget) return;
+
+  const body = document.getElementById("composeMessage").value.trim();
+  if (!body) return;
+
+  const msgId = doc(collection(db, "users", currentUser.uid, "notifications")).id;
+  const senderName = currentUser.displayName || "User";
+  const receiverName = composeTarget.fullName || "User";
+
+  const senderPayload = {
+    type: "message",
+    id: msgId,
+    text: `Message to ${receiverName}: ${body}`,
+    body,
+    fromUid: currentUser.uid,
+    toUid: composeTarget.id,
+    direction: "outgoing",
+    deliveryStatus: "sent",
+    read: true,
+    createdAt: serverTimestamp()
+  };
+
+  const receiverPayload = {
+    type: "message",
+    id: msgId,
+    text: `${senderName} sent a message: ${body}`,
+    body,
+    fromUid: currentUser.uid,
+    toUid: composeTarget.id,
+    direction: "incoming",
+    deliveryStatus: "delivered",
+    read: false,
+    createdAt: serverTimestamp()
+  };
+
+  const btn = document.getElementById("sendMessageBtn");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+
+  try {
+    await Promise.all([
+      setDoc(doc(db, "users", currentUser.uid, "notifications", msgId), senderPayload),
+      setDoc(doc(db, "users", composeTarget.id, "notifications", msgId), receiverPayload)
+    ]);
+    closeComposeModal();
+    await loadMessages();
+  } catch (err) {
+    console.error("Send failed", err);
+    alert("Unable to send message right now.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Send";
+  }
 };
 
 function renderSuggestionsList(container, suggestions) {
@@ -247,5 +348,25 @@ fetch("navbar.html")
 
   <aside class="hidden xl:block xl:col-span-2"></aside>
 </main>
+
+<div id="composeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+  <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+    <div class="px-5 py-4 border-b flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">New Message</p>
+        <h3 class="text-lg font-black text-slate-900 mt-1">To: <span id="composeRecipient">User</span></h3>
+      </div>
+      <button onclick="closeComposeModal()" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+    </div>
+    <div class="px-5 py-4 space-y-3">
+      <p id="composeStatus" class="text-xs text-slate-500">Status flow: Sent → Delivered → Read</p>
+      <textarea id="composeMessage" rows="5" placeholder="Write your message..." class="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 border-t flex justify-end gap-2">
+      <button onclick="closeComposeModal()" class="px-4 py-2 text-sm font-semibold border rounded-lg text-slate-600 hover:bg-white">Cancel</button>
+      <button id="sendMessageBtn" onclick="sendMessageToTarget()" class="px-5 py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Send</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

@@ -496,7 +496,7 @@ function openDetailView(userId) {
                 <p class="text-gray-500 text-sm mt-1">${user.education} @ ${user.university}</p>
                 <div class="mt-4 flex gap-2 justify-center md:justify-start">
                     <button id="detailRequestBtn" onclick="sendConnectionRequest('${user.id}', event)" ${requestBtn.disabled ? 'disabled' : ''} class="px-6 py-2 rounded-lg font-bold shadow-sm transition ${requestBtn.classes}">${requestBtn.label}</button>
-                    <button class="px-6 py-2 border rounded-lg font-bold text-gray-600 hover:bg-gray-50 transition">Message</button>
+                    <button onclick="openMessageComposer('${user.id}')" class="px-6 py-2 border rounded-lg font-bold text-gray-600 hover:bg-gray-50 transition">Message</button>
                 </div>
             </div>
         </div>
@@ -513,6 +513,16 @@ function openDetailView(userId) {
     </div>
   `;
 }
+
+
+window.openMessageComposer = function(userId) {
+  if (!state.currentUser) {
+    alert("Please login first.");
+    return;
+  }
+
+  window.location.href = `messages.html?composeTo=${encodeURIComponent(userId)}`;
+};
 
 function showResultsList() {
   detailViewContainer.classList.add('hidden');
