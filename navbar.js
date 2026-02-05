@@ -397,11 +397,11 @@ mNotificationBtn?.addEventListener("click", () => {
 });
 
 messageBtn?.addEventListener("click", () => {
-  window.location.href = "notifications.html";
+  window.location.href = "messages.html";
 });
 
 mMessageBtn?.addEventListener("click", () => {
-  window.location.href = "notifications.html";
+  window.location.href = "messages.html";
 });
 
 // =======================
