@@ -31,6 +31,15 @@ if (!auth || !db) {
 
 window.FCM_VAPID_KEY = import.meta?.env?.VITE_FCM_VAPID_KEY || window.FCM_VAPID_KEY;
 const FCM_VAPID_KEY = typeof window.FCM_VAPID_KEY === "string" ? window.FCM_VAPID_KEY.trim() : "";
+function resolveFcmVapidKey() {
+  if (typeof window.FCM_VAPID_KEY === "string" && window.FCM_VAPID_KEY.trim()) {
+    return window.FCM_VAPID_KEY.trim();
+  }
+
+  const metaTag = document.querySelector('meta[name="fcm-vapid-key"]');
+  const metaContent = metaTag?.getAttribute("content")?.trim();
+  return metaContent || "";
+}
 
 
 function resolveServiceWorkerPath(fileName) {
@@ -263,13 +272,14 @@ async function setupRealPushNotifications(user) {
     const swPath = resolveServiceWorkerPath("firebase-messaging-sw.js");
     swRegistration = swRegistration || await navigator.serviceWorker.register(swPath);
 
-    if (!FCM_VAPID_KEY) {
+    const fcmVapidKey = resolveFcmVapidKey();
+    if (!fcmVapidKey) {
       console.warn("FCM_VAPID_KEY is missing on window; cannot fetch FCM token.");
       return;
     }
 
     const token = await getToken(messaging, {
-      vapidKey: FCM_VAPID_KEY,
+      vapidKey: fcmVapidKey,
       serviceWorkerRegistration: swRegistration
     });
 
