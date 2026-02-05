@@ -215,7 +215,8 @@ const state = {
   isSearching: false,
   searchResults: [],
   currentUser: null,
-  profileData: {}
+  profileData: {},
+  requestStatusMap: {}
 };
 
 /* ================= AUTH & FETCH ================= */
@@ -348,10 +349,98 @@ async function runSearch() {
       const searchable = `${u.fullName} ${u.education} ${u.university} ${u.position}`.toLowerCase();
       if (searchable.includes(q)) results.push({ id: doc.id, ...u });
     });
+
+    await hydrateRequestStatuses(results);
     state.searchResults = results;
     renderResults(results);
   } catch (error) { console.error(error); }
 }
+
+async function hydrateRequestStatuses(users) {
+  const nextStatusMap = {};
+
+  if (!state.currentUser) {
+    users.forEach(u => { nextStatusMap[u.id] = "guest"; });
+    state.requestStatusMap = nextStatusMap;
+    return;
+  }
+
+  await Promise.all(users.map(async (u) => {
+    try {
+      const [connectionDoc, outgoingDoc, incomingDoc] = await Promise.all([
+        db.collection("users").doc(state.currentUser.uid).collection("connections").doc(u.id).get(),
+        db.collection("users").doc(state.currentUser.uid).collection("outgoingRequests").doc(u.id).get(),
+        db.collection("users").doc(state.currentUser.uid).collection("incomingRequests").doc(u.id).get()
+      ]);
+
+      if (connectionDoc.exists) {
+        nextStatusMap[u.id] = "connected";
+      } else if (outgoingDoc.exists) {
+        nextStatusMap[u.id] = outgoingDoc.data().status === "accepted" ? "connected" : "pending";
+      } else if (incomingDoc.exists) {
+        nextStatusMap[u.id] = "received";
+      } else {
+        nextStatusMap[u.id] = "none";
+      }
+    } catch (err) {
+      console.error(err);
+      nextStatusMap[u.id] = "none";
+    }
+  }));
+
+  state.requestStatusMap = nextStatusMap;
+}
+
+function getRequestButtonConfig(status) {
+  const configMap = {
+    guest: { label: "Login Required", classes: "bg-gray-100 text-gray-500", disabled: true },
+    none: { label: "Send Request", classes: "bg-blue-600 text-white hover:bg-blue-700", disabled: false },
+    pending: { label: "Request Sent", classes: "bg-amber-100 text-amber-700", disabled: true },
+    received: { label: "Request Received", classes: "bg-emerald-100 text-emerald-700", disabled: true },
+    connected: { label: "Connected", classes: "bg-green-100 text-green-700", disabled: true }
+  };
+
+  return configMap[status] || configMap.none;
+}
+
+window.sendConnectionRequest = async function(userId, event) {
+  if (event) event.stopPropagation();
+  if (!state.currentUser) return alert("Please login first.");
+
+  const currentStatus = state.requestStatusMap[userId] || "none";
+  if (currentStatus !== "none") return;
+
+  const senderRef = db.collection("users").doc(state.currentUser.uid);
+  const targetRef = db.collection("users").doc(userId);
+  const requestPayload = {
+    fromUid: state.currentUser.uid,
+    toUid: userId,
+    fromName: state.profileData.fullName || state.currentUser.displayName || "User",
+    status: "pending",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await Promise.all([
+      senderRef.collection("outgoingRequests").doc(userId).set(requestPayload, { merge: true }),
+      targetRef.collection("incomingRequests").doc(state.currentUser.uid).set(requestPayload, { merge: true })
+    ]);
+
+    state.requestStatusMap[userId] = "pending";
+    renderResults(state.searchResults);
+
+    const detailBtn = document.getElementById("detailRequestBtn");
+    if (detailBtn) {
+      const cfg = getRequestButtonConfig("pending");
+      detailBtn.innerText = cfg.label;
+      detailBtn.className = `px-6 py-2 rounded-lg font-bold shadow-sm transition ${cfg.classes}`;
+      detailBtn.disabled = true;
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Unable to send request right now.");
+  }
+};
 
 function activateSearchLayout() {
   if (state.isSearching) return;
@@ -371,6 +460,8 @@ function renderResults(users) {
   resultsCount.innerText = `${users.length} found`;
   resultsView.innerHTML = users.length ? '' : '<div class="p-8 bg-white rounded-xl border text-center text-gray-400">No matches found</div>';
   users.forEach(u => {
+    const status = state.requestStatusMap[u.id] || "none";
+    const requestBtn = getRequestButtonConfig(status);
     const card = document.createElement('div');
     card.className = "bg-white p-4 rounded-xl border hover:shadow-md transition flex justify-between items-center cursor-pointer group";
     card.onclick = () => openDetailView(u.id);
@@ -382,7 +473,10 @@ function renderResults(users) {
           <p class="text-xs text-gray-500">${u.position || u.education || "Professional"}</p>
         </div>
       </div>
-      <button class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs font-bold">View</button>
+      <div class="flex items-center gap-2">
+        <button onclick="sendConnectionRequest('${u.id}', event)" ${requestBtn.disabled ? 'disabled' : ''} class="px-3 py-1 rounded-full text-xs font-bold transition ${requestBtn.classes}">${requestBtn.label}</button>
+        <button class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs font-bold">View</button>
+      </div>
     `;
     resultsView.appendChild(card);
   });
@@ -391,6 +485,8 @@ function renderResults(users) {
 function openDetailView(userId) {
   const user = state.searchResults.find(u => u.id === userId);
   if (!user) return;
+  const status = state.requestStatusMap[user.id] || "none";
+  const requestBtn = getRequestButtonConfig(status);
   resultsListContainer.classList.add('hidden');
   detailViewContainer.classList.remove('hidden');
   detailViewContainer.innerHTML = `
@@ -405,7 +501,7 @@ function openDetailView(userId) {
                 <p class="text-lg text-blue-600">${user.position || "Professional"}</p>
                 <p class="text-gray-500 text-sm mt-1">${user.education} @ ${user.university}</p>
                 <div class="mt-4 flex gap-2 justify-center md:justify-start">
-                    <button class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-sm hover:bg-blue-700 transition">Connect</button>
+                    <button id="detailRequestBtn" onclick="sendConnectionRequest('${user.id}', event)" ${requestBtn.disabled ? 'disabled' : ''} class="px-6 py-2 rounded-lg font-bold shadow-sm transition ${requestBtn.classes}">${requestBtn.label}</button>
                     <button class="px-6 py-2 border rounded-lg font-bold text-gray-600 hover:bg-gray-50 transition">Message</button>
                 </div>
             </div>
