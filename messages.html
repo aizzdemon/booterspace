@@ -212,7 +212,7 @@ window.sendMessageToTarget = async () => {
       setDoc(doc(db, "users", currentUser.uid, "notifications", msgId), senderPayload),
       setDoc(doc(db, "users", composeTarget.id, "notifications", msgId), receiverPayload)
     ]);
-    closeComposeModal();
+    window.closeComposeModal();
     await loadMessages();
   } catch (err) {
     console.error("Send failed", err);
@@ -266,6 +266,8 @@ async function loadSuggestions() {
     if (listMobile) listMobile.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
   }
 }
+
+window.loadSuggestions = loadSuggestions;
 
 window.connectUser = async (targetUid) => {
   if (!currentUser) return alert("Login required");
