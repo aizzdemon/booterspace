@@ -31,6 +31,16 @@ if (!auth || !db) {
 
 const FCM_VAPID_KEY = window.FCM_VAPID_KEY || "";
 
+
+function resolveServiceWorkerPath(fileName) {
+  if (window.location.hostname.endsWith("github.io")) {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    if (segments.length > 0) return `/${segments[0]}/${fileName}`;
+  }
+  return `/${fileName}`;
+}
+
+
 // =======================
 // NAV ELEMENTS
 // =======================
@@ -249,7 +259,8 @@ async function setupRealPushNotifications(user) {
     if (!messagingSupported) return;
 
     messaging = messaging || getMessaging(firebaseApp);
-    swRegistration = swRegistration || await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const swPath = resolveServiceWorkerPath("firebase-messaging-sw.js");
+    swRegistration = swRegistration || await navigator.serviceWorker.register(swPath);
 
     if (!FCM_VAPID_KEY) {
       console.warn("FCM_VAPID_KEY is missing on window; cannot fetch FCM token.");
