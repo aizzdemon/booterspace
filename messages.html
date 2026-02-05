@@ -14,6 +14,7 @@ import {
   collection,
   getDocs,
   query,
+  where,
   orderBy,
   doc,
   updateDoc,
@@ -57,7 +58,11 @@ async function loadMessages() {
   wrap.innerHTML = '<div class="p-6 text-center text-gray-400">Loading messages...</div>';
 
   try {
-    const q = query(collection(db, "users", currentUser.uid, "notifications"), orderBy("createdAt", "desc"));
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
     const snap = await getDocs(q);
 
     const messages = snap.docs.filter((d) => {
@@ -99,14 +104,14 @@ async function loadMessages() {
 
 window.markMessageRead = async (id) => {
   if (!currentUser) return;
-  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), { read: true });
+  await updateDoc(doc(db, "notifications", id), { read: true });
   loadMessages();
 };
 
 window.markAllMessagesRead = async () => {
   if (!currentUser) return;
 
-  const snap = await getDocs(collection(db, "users", currentUser.uid, "notifications"));
+  const snap = await getDocs(query(collection(db, "notifications"), where("userId", "==", currentUser.uid)));
   const unreadMessages = snap.docs.filter((d) => {
     const data = d.data();
     return !data.read && (data.text || "").toLowerCase().includes("message");
@@ -170,8 +175,16 @@ window.connectUser = async (targetUid) => {
   }
 
   try {
-    await setDoc(doc(db, "users", currentUser.uid, "connections", targetUid), { connectedAt: serverTimestamp() });
-    await setDoc(doc(db, "users", targetUid, "connections", currentUser.uid), { connectedAt: serverTimestamp() });
+    await setDoc(doc(db, "users", targetUid, "connections", currentUser.uid), {
+      fromUserId: currentUser.uid,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    if (btn) {
+      btn.textContent = "✓";
+    }
+
     await loadSuggestions();
   } catch (err) {
     console.error("Connection failed", err);

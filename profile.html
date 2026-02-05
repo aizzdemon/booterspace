@@ -361,18 +361,17 @@ async function hydrateRequestStatuses(users) {
 
   await Promise.all(users.map(async (u) => {
     try {
-      const [connectionDoc, outgoingDoc, incomingDoc] = await Promise.all([
+      const [incomingRequestDoc, outgoingRequestDoc] = await Promise.all([
         db.collection("users").doc(state.currentUser.uid).collection("connections").doc(u.id).get(),
-        db.collection("users").doc(state.currentUser.uid).collection("outgoingRequests").doc(u.id).get(),
-        db.collection("users").doc(state.currentUser.uid).collection("incomingRequests").doc(u.id).get()
+        db.collection("users").doc(u.id).collection("connections").doc(state.currentUser.uid).get()
       ]);
 
-      if (connectionDoc.exists) {
-        nextStatusMap[u.id] = "connected";
-      } else if (outgoingDoc.exists) {
-        nextStatusMap[u.id] = outgoingDoc.data().status === "accepted" ? "connected" : "pending";
-      } else if (incomingDoc.exists) {
-        nextStatusMap[u.id] = "received";
+      if (incomingRequestDoc.exists) {
+        const incomingStatus = incomingRequestDoc.data().status || "pending";
+        nextStatusMap[u.id] = incomingStatus === "accepted" ? "connected" : "received";
+      } else if (outgoingRequestDoc.exists) {
+        const outgoingStatus = outgoingRequestDoc.data().status || "pending";
+        nextStatusMap[u.id] = outgoingStatus === "accepted" ? "connected" : "pending";
       } else {
         nextStatusMap[u.id] = "none";
       }
@@ -404,21 +403,15 @@ window.sendConnectionRequest = async function(userId, event) {
   const currentStatus = state.requestStatusMap[userId] || "none";
   if (currentStatus !== "none") return;
 
-  const senderRef = db.collection("users").doc(state.currentUser.uid);
   const targetRef = db.collection("users").doc(userId);
   const requestPayload = {
-    fromUid: state.currentUser.uid,
-    toUid: userId,
-    fromName: state.profileData.fullName || state.currentUser.displayName || "User",
+    fromUserId: state.currentUser.uid,
     status: "pending",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
-    await Promise.all([
-      senderRef.collection("outgoingRequests").doc(userId).set(requestPayload, { merge: true }),
-      targetRef.collection("incomingRequests").doc(state.currentUser.uid).set(requestPayload, { merge: true })
-    ]);
+    await targetRef.collection("connections").doc(state.currentUser.uid).set(requestPayload, { merge: true });
 
     state.requestStatusMap[userId] = "pending";
     renderResults(state.searchResults);
