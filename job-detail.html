@@ -165,6 +165,14 @@ const db = window.db;
 let currentUser=null;
 let currentJobId=null;
 
+const feedbackBoxEl = document.getElementById("feedbackBox");
+const feedbackEmailEl = document.getElementById("feedbackEmail");
+const feedbackTextEl = document.getElementById("feedbackText");
+const alertModalEl = document.getElementById("alertModal");
+const alertTitleEl = document.getElementById("alertTitle");
+const alertMsgEl = document.getElementById("alertMsg");
+const authButtonsEl = document.getElementById("authButtons");
+
 onAuthStateChanged(auth,u=>{ currentUser=u; });
 
 function getJobId(){
@@ -259,37 +267,38 @@ window.shareJob=(title)=>{
       url: window.location.href
     });
   } else {
-    document.execCommand('copy');
-    showAlert("Link Copied","Job link copied to clipboard");
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => showAlert("Link Copied","Job link copied to clipboard"))
+      .catch(() => showAlert("Share","Please copy this URL manually: " + window.location.href));
   }
 };
 
-window.toggleFeedback=()=>feedbackBox.classList.toggle("open");
+window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
 
 window.submitFeedback=async()=>{
-  if(!feedbackText.value.trim()) return;
+  if(!feedbackTextEl.value.trim()) return;
   await addDoc(collection(db,"feedbacks"),{
-    email:feedbackEmail.value,
-    message:feedbackText.value,
+    email:feedbackEmailEl.value,
+    message:feedbackTextEl.value,
     jobId:currentJobId,
     createdAt:window.serverTimestamp()
   });
-  feedbackText.value = "";
+  feedbackTextEl.value = "";
   showAlert("Thank You ❤️","Your feedback has been submitted");
 };
 
 function showLoginPopup(){
-  alertTitle.innerText="Login Required";
-  alertMsg.innerText="Please sign in or create an account to save jobs or apply.";
-  authButtons.classList.remove("hidden");
-  alertModal.style.display="flex";
+  alertTitleEl.innerText="Login Required";
+  alertMsgEl.innerText="Please sign in or create an account to save jobs or apply.";
+  authButtonsEl.classList.remove("hidden");
+  alertModalEl.style.display="flex";
 }
 
 function showAlert(t,m){
-  alertTitle.innerText=t;
-  alertMsg.innerText=m;
-  authButtons.classList.add("hidden");
-  alertModal.style.display="flex";
+  alertTitleEl.innerText=t;
+  alertMsgEl.innerText=m;
+  authButtonsEl.classList.add("hidden");
+  alertModalEl.style.display="flex";
 }
 
 function renderError(msg){
