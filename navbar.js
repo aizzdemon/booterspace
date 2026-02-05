@@ -1,8 +1,10 @@
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getApp, getApps } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import {
   getFirestore,
   doc,
   getDoc,
+  getDocs,
   collection,
   query,
   orderBy,
@@ -10,8 +12,13 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-const auth = window.auth;
-const db = getFirestore(window.app);
+const firebaseApp = window.app || (getApps().length ? getApp() : null);
+const auth = window.auth || (firebaseApp ? getAuth(firebaseApp) : null);
+const db = window.db || (firebaseApp ? getFirestore(firebaseApp) : null);
+
+if (!auth || !db) {
+  console.warn("Navbar auth/db init failed: make sure Firebase is initialized before navbar.js");
+}
 
 // =======================
 // NAV ELEMENTS
@@ -46,7 +53,7 @@ let unsubscribeNotifications = null;
 // AUTH LISTENER
 // =======================
 
-onAuthStateChanged(auth, async (user) => {
+auth && onAuthStateChanged(auth, async (user) => {
   if (user) {
     // UI
     loginBtn.classList.add("hidden");
@@ -198,12 +205,12 @@ async function markAllNotificationsRead() {
 // LOGOUT
 // =======================
 
-logoutBtn.addEventListener("click", async () => {
+logoutBtn?.addEventListener("click", async () => {
   await signOut(auth);
   window.location.href = "login.html";
 });
 
-mLogoutBtn.addEventListener("click", async () => {
+mLogoutBtn?.addEventListener("click", async () => {
   await signOut(auth);
   window.location.href = "login.html";
 });
