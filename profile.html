@@ -13,6 +13,27 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!-- Firebase (required for navbar login/logout state) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+window.app = app;
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+</script>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -35,6 +56,7 @@ fetch("navbar.html")
 .then(html=>{
   document.getElementById("navbar").innerHTML=html;
   const s=document.createElement("script");
+  s.type="module";
   s.src="navbar.js";
   document.body.appendChild(s);
 });
