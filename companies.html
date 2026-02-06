@@ -9,10 +9,13 @@
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, query, orderBy, getDocs,
+  doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, limit, where
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-const firebaseConfig = {
+  const firebaseConfig = {
   apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
   authDomain: "kar-kardan.firebaseapp.com",
   projectId: "kar-kardan",
@@ -25,9 +28,10 @@ const app = initializeApp(firebaseConfig);
 window.auth = getAuth(app);
 window.db = getFirestore(app);
 
-// Auth listener
+let currentUser = null;
+  // Auth listener
 onAuthStateChanged(window.auth, (user) => {
-  if(!user) console.log("User not logged in");
+    currentUser = user;
 });
 </script>
 
