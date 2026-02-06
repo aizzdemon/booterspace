@@ -29,7 +29,7 @@ window.auth = getAuth(app);
 window.db = getFirestore(app);
 
 let currentUser = null;
-
+ // Auth listener
 onAuthStateChanged(window.auth, (user) => {
   currentUser = user;
   loadPosts();
