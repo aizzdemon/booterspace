@@ -38,6 +38,8 @@
         let chatUnsubscribe = null;
         let currentTab = 'chats'; 
         let userRequests = []; 
+        let allConversations = [];
+        let suggestedUsers = [];
 
         const initAuth = async () => {
             try {
@@ -56,29 +58,30 @@
             if (user) {
                 setupRequestsListener();
                 loadConversations();
-                loadAllUsers();
                 loadSuggestions();
                 checkQueryString();
             } else {
-                document.getElementById('conversation-list').innerHTML = '<p class="p-4 text-xs text-gray-400 italic">Please login to chat</p>';
+                const list = document.getElementById('conversation-list');
+                if(list) list.innerHTML = '<p class="p-4 text-xs text-gray-400 italic text-center">Please login to chat</p>';
             }
         });
 
-        initAuth();
+        // Initialize components
+        window.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+        });
 
-        // Rule 1: Strict Paths - Using public data for requests so both parties can query
         function getRequestsCollection() {
             return collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
         }
 
         function setupRequestsListener() {
             if (!currentUser) return;
-            // Rule 2: No complex queries. Fetch and filter in JS.
             const q = query(getRequestsCollection());
             onSnapshot(q, (snapshot) => {
                 userRequests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                loadSuggestions(); 
-                loadAllUsers();
+                if (currentTab === 'new-chat') renderNewChatUI();
+                else renderSuggestedUI();
             }, (err) => console.error("Request listener error:", err));
         }
 
@@ -88,27 +91,14 @@
 
             const requestId = `${currentUser.uid}_${targetUid}`;
             try {
-                // Persistent request storage
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
                     fromId: currentUser.uid,
                     toId: targetUid,
                     fromName: currentUser.displayName || "User",
                     toName: fullName,
-                    status: 'pending',
+                    status: 'accepted',
                     timestamp: serverTimestamp()
                 });
-                
-                // Optional: Store a notification document specifically for the recipient
-                const notificationId = `${targetUid}_req_${currentUser.uid}`;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', notificationId), {
-                    toId: targetUid,
-                    fromId: currentUser.uid,
-                    fromName: currentUser.displayName || "User",
-                    type: 'connection_request',
-                    read: false,
-                    timestamp: serverTimestamp()
-                });
-
             } catch (err) {
                 console.error("Failed to send request:", err);
             }
@@ -169,21 +159,39 @@
         window.switchTab = (tab) => {
             currentTab = tab;
             const chatList = document.getElementById('conversation-list');
-            const peopleList = document.getElementById('people-list');
+            const suggestContainer = document.getElementById('suggest-tab-content');
+            const newChatContainer = document.getElementById('new-chat-content');
             const chatTabBtn = document.getElementById('tab-chats');
-            const peopleTabBtn = document.getElementById('tab-people');
+            const suggestTabBtn = document.getElementById('tab-suggest');
+            const searchInput = document.getElementById('sidebar-search');
+
+            if (searchInput) searchInput.value = '';
+            
+            chatList.classList.add('hidden');
+            suggestContainer.classList.add('hidden');
+            newChatContainer.classList.add('hidden');
+            chatTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+            suggestTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
 
             if (tab === 'chats') {
                 chatList.classList.remove('hidden');
-                peopleList.classList.add('hidden');
                 chatTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                peopleTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
-            } else {
-                chatList.classList.add('hidden');
-                peopleList.classList.remove('hidden');
-                peopleTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                chatTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                if (searchInput) searchInput.placeholder = "Search messages...";
+                renderConversations();
+            } else if (tab === 'suggest') {
+                suggestContainer.classList.remove('hidden');
+                suggestTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                if (searchInput) searchInput.placeholder = "Search new people...";
+                renderSuggestedUI();
+            } else if (tab === 'new-chat') {
+                newChatContainer.classList.remove('hidden');
+                if (searchInput) searchInput.placeholder = "Search connected people...";
+                renderNewChatUI();
             }
+
+            document.getElementById('sidebar-panel').classList.remove('hidden');
+            document.getElementById('chat-panel').classList.add('hidden');
+            document.getElementById('chat-panel').classList.remove('flex');
         };
 
         function renderMessages(messages) {
@@ -246,130 +254,160 @@
         async function loadConversations() {
             if (!currentUser) return;
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'));
-            
             onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('conversation-list');
-                const convs = snapshot.docs
+                allConversations = snapshot.docs
                     .map(d => ({ id: d.id, ...d.data() }))
                     .filter(c => c.participants && c.participants.includes(currentUser.uid));
-
-                if (convs.length === 0) {
-                    list.innerHTML = '<div class="p-8 text-center text-gray-400"><p class="text-sm">No chats yet.</p><button onclick="switchTab(\'people\')" class="text-indigo-600 text-xs font-bold mt-2">Find People</button></div>';
-                    return;
-                }
-
-                list.innerHTML = convs.map(c => {
-                    const otherId = c.participants.find(p => p !== currentUser.uid);
-                    const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
-                    const isActive = activeChatId === c.id;
-
-                    return `
-                        <div onclick="startChat('${otherId}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 text-lg">
-                                    ${(displayName || '?').charAt(0)}
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <h4 class="text-sm font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
-                                    <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessage}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join("");
-            }, (err) => console.error("Conv list error:", err));
+                renderConversations();
+            });
         }
 
-        async function loadAllUsers() {
-            if (!currentUser) return;
-            const list = document.getElementById('people-list');
-            try {
-                const q = query(collection(db, 'users'), limit(50));
-                const snapshot = await getDocs(q);
-                const users = snapshot.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(u => u.id !== currentUser.uid);
+        function renderConversations(filter = '') {
+            const list = document.getElementById('conversation-list');
+            if (currentTab !== 'chats') return;
 
-                list.innerHTML = users.map(user => {
-                    const req = userRequests.find(r => (r.fromId === currentUser.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === currentUser.uid));
-                    const isPending = req && req.status === 'pending';
-                    const isIncoming = req && req.fromId === user.id;
+            const filtered = allConversations.filter(c => {
+                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
+                return (displayName || '').toLowerCase().includes(filter.toLowerCase()) || 
+                       (c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
+            });
 
-                    return `
-                        <div onclick="startChat('${user.id}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b bg-white">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden">
-                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=random" class="w-full h-full object-cover" />
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <h4 class="text-sm font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
-                                    <p class="text-[10px] text-slate-400 truncate uppercase tracking-tighter">${user.bio || "Community Member"}</p>
-                                </div>
-                                <div>
-                                    ${isPending ? 
-                                        `<span class="text-[10px] font-bold ${isIncoming ? 'text-amber-500' : 'text-slate-400'} uppercase">${isIncoming ? 'Invited You' : 'Pending'}</span>` : 
-                                        `<button onclick="sendRequest('${user.id}', '${user.fullName}')" class="text-indigo-600 p-2 hover:bg-indigo-50 rounded-full transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                            </svg>
-                                        </button>`
-                                    }
-                                </div>
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="p-8 text-center text-gray-400"><p class="text-sm">${filter ? 'No results found.' : 'No chats yet.'}</p></div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(c => {
+                const otherId = c.participants.find(p => p !== currentUser.uid);
+                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const isActive = activeChatId === c.id;
+
+                return `
+                    <div onclick="startChat('${otherId}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 text-lg">
+                                ${(displayName || '?').charAt(0)}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-sm font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
+                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessage}</p>
                             </div>
                         </div>
-                    `;
-                }).join("");
-            } catch (err) {
-                list.innerHTML = '<p class="p-4 text-xs text-red-400 italic text-center">Failed to load connections</p>';
-            }
+                    </div>
+                `;
+            }).join("");
         }
 
         async function loadSuggestions() {
-            const list = document.getElementById("suggestion-list");
             if (!currentUser) return;
             try {
                 const usersSnap = await getDocs(collection(db, "users"));
-                let suggestions = usersSnap.docs
+                let totalUsers = usersSnap.docs
                     .map((d) => ({ id: d.id, ...d.data() }))
                     .filter((u) => u.id !== currentUser.uid);
                 
-                suggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
-
-                list.innerHTML = suggestions.map((user) => {
-                    const req = userRequests.find(r => (r.fromId === currentUser.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === currentUser.uid));
-                    const isPending = req && req.status === 'pending';
-                    const isIncoming = req && req.fromId === user.id;
-
-                    return `
-                        <div class="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl group transition-all cursor-pointer" onclick="startChat('${user.id}')">
-                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=random" class="w-10 h-10 rounded-full" />
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-slate-800 truncate">${user.fullName || "Anonymous"}</p>
-                                <p class="text-[10px] text-slate-400 truncate">${user.bio || "Maker"}</p>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                ${isPending ? 
-                                    `<div class="w-8 h-8 rounded-full flex items-center justify-center ${isIncoming ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    </div>` : 
-                                    `<button onclick="sendRequest('${user.id}', '${user.fullName}')" class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-90 shadow-md">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </button>`
-                                }
-                            </div>
-                        </div>
-                    `;
-                }).join("");
+                suggestedUsers = totalUsers.sort(() => 0.5 - Math.random());
+                renderSuggestedUI();
+                if (currentTab === 'new-chat') renderNewChatUI();
             } catch (err) {
-                list.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
+                console.error("Suggestions failed", err);
             }
         }
+
+        function renderSuggestedUI(filter = '') {
+            const list = document.getElementById("suggestion-list");
+            if (!list || currentTab !== 'suggest') return;
+
+            const filtered = suggestedUsers.filter(u => 
+                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<p class="p-8 text-center text-gray-400 italic text-sm">No suggested users found.</p>';
+                return;
+            }
+
+            list.innerHTML = filtered.map((user) => {
+                const req = userRequests.find(r => (r.fromId === currentUser.uid && r.toId === user.id));
+                const isSent = !!req;
+
+                return `
+                    <div class="p-4 border-b hover:bg-slate-50 transition-colors flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-slate-400 font-bold">
+                                ${(user.fullName || 'U').charAt(0)}
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
+                                <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Member"}</p>
+                            </div>
+                        </div>
+                        <div class="ml-2">
+                            ${isSent ? 
+                                `<div class="w-9 h-9 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </div>` :
+                                `<button onclick="sendRequest('${user.id}', '${user.fullName}')" class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                </button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderNewChatUI(filter = '') {
+            const list = document.getElementById("new-chat-list");
+            if (!list || currentTab !== 'new-chat') return;
+
+            const connectedUids = userRequests
+                .filter(r => r.status === 'accepted' && (r.fromId === currentUser.uid || r.toId === currentUser.uid))
+                .map(r => r.fromId === currentUser.uid ? r.toId : r.fromId);
+
+            const connectedUsers = suggestedUsers.filter(u => connectedUids.includes(u.id));
+
+            const filtered = connectedUsers.filter(u => 
+                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="p-12 text-center">
+                        <p class="text-slate-400 text-sm italic">No connected people found.</p>
+                        <button onclick="switchTab('suggest')" class="mt-4 text-xs font-bold text-indigo-600 uppercase tracking-widest hover:underline">Find People to Connect</button>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filtered.map((user) => `
+                <div onclick="startChat('${user.id}')" class="p-4 border-b hover:bg-indigo-50 cursor-pointer transition-colors flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                        ${(user.fullName || 'U').charAt(0)}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="text-sm font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
+                        <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Contact"}</p>
+                    </div>
+                    <div class="text-indigo-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        window.handleSearch = (e) => {
+            const val = e.target.value;
+            if (currentTab === 'chats') renderConversations(val);
+            else if (currentTab === 'suggest') renderSuggestedUI(val);
+            else if (currentTab === 'new-chat') renderNewChatUI(val);
+        };
 
         window.startChat = startChat;
         window.loadSuggestions = loadSuggestions;
         window.sendRequest = sendRequest;
+        window.switchTab = switchTab;
 
         window.addEventListener('input', (e) => {
             if (e.target.id === 'chat-input') {
@@ -385,60 +423,61 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        @media (max-width: 768px) {
-            .mobile-full { position: fixed; inset: 0; z-index: 50; background: white; }
+        .fab-btn {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            z-index: 40;
         }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 overflow-hidden main-container">
 
-<div id="navbar"></div>
-<script>
-    fetch("navbar.html")
-        .then((res) => res.text())
-        .then((html) => {
-            document.getElementById("navbar").innerHTML = html;
-            const s = document.createElement("script");
-            s.type = "module";
-            s.src = "navbar.js";
-            document.body.appendChild(s);
-        })
-        .catch(err => {
-            document.getElementById("navbar").innerHTML = `
-                <nav class="bg-white border-b px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-40">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black">B</div>
-                        <span class="font-black tracking-tighter text-lg">BooterSpace</span>
-                    </div>
-                </nav>
-            `;
-        });
-</script>
-
 <main class="app-content max-w-7xl mx-auto w-full md:p-4 lg:p-6">
-    <div class="flex-1 flex bg-white md:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div class="flex-1 flex bg-white md:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative">
         
         <!-- Sidebar -->
         <aside id="sidebar-panel" class="w-full md:w-80 lg:w-96 border-r flex flex-col bg-white overflow-hidden">
-            <div class="flex border-b">
-                <button id="tab-chats" onclick="switchTab('chats')" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-indigo-600 border-b-2 border-indigo-600">
+            <div class="p-4 border-b">
+                <div class="relative">
+                    <input id="sidebar-search" type="text" oninput="handleSearch(event)" placeholder="Search messages..." class="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b bg-slate-50/50">
+                <button id="tab-chats" onclick="switchTab('chats')" class="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-indigo-600 border-b-2 border-indigo-600 transition-all">
                     Chats
                 </button>
-                <button id="tab-people" onclick="switchTab('people')" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">
-                    Connections
+                <button id="tab-suggest" onclick="switchTab('suggest')" class="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">
+                    Discover
                 </button>
             </div>
             
             <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
-            <div id="people-list" class="flex-1 overflow-y-auto hidden"></div>
             
-            <div class="p-4 border-t hidden md:block bg-slate-50/30">
-                <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 flex justify-between items-center">
-                    <span>Suggested People</span>
-                    <button onclick="loadSuggestions()" class="text-indigo-600 hover:underline">Shuffle</button>
-                </h3>
-                <div id="suggestion-list" class="space-y-1"></div>
+            <div id="suggest-tab-content" class="flex-1 flex flex-col overflow-hidden hidden">
+                <div class="px-4 py-3 bg-slate-50 flex justify-between items-center border-b">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Find New Makers</span>
+                    <button onclick="loadSuggestions()" class="text-[10px] text-indigo-600 font-bold hover:underline uppercase">Shuffle</button>
+                </div>
+                <div id="suggestion-list" class="flex-1 overflow-y-auto"></div>
             </div>
+
+            <div id="new-chat-content" class="flex-1 flex flex-col overflow-hidden hidden">
+                <div class="px-4 py-3 bg-indigo-50 flex justify-between items-center border-b">
+                    <span class="text-[10px] font-black uppercase text-indigo-600">New Conversation</span>
+                    <button onclick="switchTab('chats')" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div id="new-chat-list" class="flex-1 overflow-y-auto"></div>
+            </div>
+
+            <button onclick="switchTab('new-chat')" class="fab-btn w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-indigo-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            </button>
         </aside>
 
         <!-- Chat Area -->
@@ -449,8 +488,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                     </svg>
                 </div>
-                <h3 class="text-xl font-black text-slate-800">Your Messages</h3>
-                <p class="text-slate-500 max-w-xs mx-auto mt-2 text-sm">Select a connection to start chatting.</p>
+                <h3 class="text-xl font-black text-slate-800">BooterSpace Chat</h3>
+                <p class="text-slate-500 max-w-xs mx-auto mt-2 text-sm">Select a recent chat or click the <span class="text-indigo-600 font-bold">+</span> button to start a new one with your connections.</p>
+                <button onclick="switchTab('suggest')" class="mt-4 px-6 py-2 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-md hover:bg-indigo-700 transition-all">Find New People</button>
             </div>
 
             <div id="chat-window" class="hidden flex-1 flex flex-col h-full">
@@ -471,7 +511,7 @@
                 <footer class="p-3 md:p-4 bg-white border-t">
                     <div class="flex items-end gap-2 bg-slate-50 rounded-2xl border p-1.5 md:p-2">
                         <textarea id="chat-input" rows="1" placeholder="Type a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-2 py-1.5 resize-none overflow-hidden max-h-32" onkeydown="if(event.key === 'Enter' && !event.shiftKey && window.innerWidth > 768){ event.preventDefault(); sendMessage(); }"></textarea>
-                        <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2.5 rounded-xl">
+                        <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2.5 rounded-xl transition-all active:scale-90">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
                         </button>
                     </div>
@@ -480,5 +520,6 @@
         </section>
     </div>
 </main>
+
 </body>
 </html>
