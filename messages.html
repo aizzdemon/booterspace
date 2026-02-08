@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat - BooterSpace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            doc,
+            setDoc,
+            addDoc,
+            getDoc,
+            getDocs,
+            query,
+            where,
+            orderBy,
+            onSnapshot,
+            serverTimestamp,
+            limit
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration and Global State
+        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I","authDomain": "kar-kardan.firebaseapp.com","projectId": "kar-kardan","storageBucket": "kar-kardan.firebasestorage.app","messagingSenderId": "554147696994","appId": "1:554147696994:web:221dcb883e3b65dcea5c3b"}');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-chat';
+
+        let currentUser = null;
+        let activeChatId = null;
+        let activeRecipient = null;
+        let chatUnsubscribe = null;
+
+        // --- AUTH INITIALIZATION ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth initialization failed:", error);
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (user) {
+                // Initialize Chat UI
+                loadConversations();
+                loadSuggestions();
+                checkQueryString();
+            } else {
+                // If no user, redirect or handle empty state
+                document.getElementById('conversation-list').innerHTML = '<p class="p-4 text-xs text-gray-400 italic">Please login to chat</p>';
+            }
+        });
+
+        // Initialize on load
+        initAuth();
+
+        // --- CORE CHAT LOGIC ---
+
+        function getChatId(uid1, uid2) {
+            return [uid1, uid2].sort().join('_');
+        }
+
+        async function checkQueryString() {
+            const params = new URLSearchParams(window.location.search);
+            const targetUid = params.get("composeTo");
+            if (targetUid && currentUser && targetUid !== currentUser.uid) {
+                startChat(targetUid);
+            }
+        }
+
+        async function startChat(targetUid) {
+            if (!currentUser) return;
+            if (chatUnsubscribe) chatUnsubscribe();
+            
+            const targetSnap = await getDoc(doc(db, 'users', targetUid));
+            if (!targetSnap.exists()) return;
+            
+            activeRecipient = { id: targetUid, ...targetSnap.data() };
+            activeChatId = getChatId(currentUser.uid, targetUid);
+            
+            // UI Updates
+            document.getElementById('chat-placeholder').classList.add('hidden');
+            document.getElementById('chat-window').classList.remove('hidden');
+            document.getElementById('recipient-name').textContent = activeRecipient.fullName || "User";
+            document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
+            document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
+            
+            // Listen for messages using the strict environment paths
+            const q = query(
+                collection(db, 'artifacts', appId, 'public', 'data', `chat_${activeChatId}`),
+                orderBy('createdAt', 'asc')
+            );
+
+            chatUnsubscribe = onSnapshot(q, (snapshot) => {
+                renderMessages(snapshot.docs.map(d => d.data()));
+            }, (error) => {
+                console.error("Chat error:", error);
+            });
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-container');
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-400 italic text-sm">No messages yet. Say hello!</div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isMine = msg.senderId === currentUser.uid;
+                const time = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...';
+                
+                return `
+                    <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-4">
+                        <div class="max-w-[75%]">
+                            <div class="${isMine ? 'bg-indigo-600 text-white rounded-l-2xl rounded-tr-2xl' : 'bg-white text-slate-800 border rounded-r-2xl rounded-tl-2xl'} p-3 shadow-sm">
+                                <p class="text-sm leading-relaxed break-words">${msg.text}</p>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-1 px-1 ${isMine ? 'text-right' : 'text-left'}">${time}</p>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text || !activeChatId || !currentUser) return;
+
+            const msgData = {
+                text,
+                senderId: currentUser.uid,
+                senderName: currentUser.displayName || "User",
+                createdAt: serverTimestamp()
+            };
+
+            input.value = '';
+            
+            try {
+                // 1. Add to the chat history (Public Data path)
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `chat_${activeChatId}`), msgData);
+                
+                // 2. Update/Create conversation metadata
+                const meta = {
+                    lastMessage: text,
+                    lastTimestamp: serverTimestamp(),
+                    participants: [currentUser.uid, activeRecipient.id],
+                    recipientName: activeRecipient.fullName || "User",
+                    senderName: currentUser.displayName || "User"
+                };
+
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId), meta, { merge: true });
+            } catch (err) {
+                console.error("Failed to send:", err);
+            }
+        };
+
+        async function loadConversations() {
+            if (!currentUser) return;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'));
+            
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('conversation-list');
+                const convs = snapshot.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(c => c.participants && c.participants.includes(currentUser.uid));
+
+                if (convs.length === 0) {
+                    list.innerHTML = '<p class="p-4 text-xs text-gray-400 italic">No active chats</p>';
+                    return;
+                }
+
+                list.innerHTML = convs.map(c => {
+                    const otherId = c.participants.find(p => p !== currentUser.uid);
+                    const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
+                    const isActive = activeChatId === c.id;
+
+                    return `
+                        <div onclick="startChat('${otherId}')" class="p-3 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600">
+                                    ${(displayName || '?').charAt(0)}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="text-sm font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
+                                    <p class="text-xs text-slate-500 truncate">${c.lastMessage}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }, (err) => console.error("Conv list error:", err));
+        }
+
+        async function loadSuggestions() {
+            const list = document.getElementById("suggestion-list");
+            if (!currentUser) return;
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                let suggestions = usersSnap.docs
+                    .map((d) => ({ id: d.id, ...d.data() }))
+                    .filter((u) => u.id !== currentUser.uid);
+                
+                suggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+                list.innerHTML = suggestions.map((user) => `
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg group transition-all">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=random" class="w-8 h-8 rounded-full" />
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-800 truncate">${user.fullName || "Anonymous"}</p>
+                            <p class="text-[9px] text-slate-400 truncate">${user.bio || "Maker"}</p>
+                        </div>
+                        <button onclick="startChat('${user.id}')" class="text-indigo-600 hover:scale-110 transition-transform p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.827-1.233L3 21l1.657-4.584C3.659 15.019 3 13.591 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                        </button>
+                    </div>
+                `).join("");
+            } catch (err) {
+                list.innerHTML = '<p class="text-[10px] text-gray-400 italic">Finding makers...</p>';
+            }
+        }
+
+        // Global exports
+        window.startChat = startChat;
+        window.loadSuggestions = loadSuggestions;
+
+    </script>
+
+    <style>
+        .chat-height { height: calc(100vh - 80px); }
+        @media (max-width: 768px) {
+            .chat-height { height: calc(100vh - 120px); }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 overflow-hidden">
+
+<div id="navbar"></div>
+<script>
+    // Fetch and Inject Navbar
+    fetch("navbar.html")
+        .then((res) => res.text())
+        .then((html) => {
+            document.getElementById("navbar").innerHTML = html;
+            // Re-run navbar scripts if necessary
+            const s = document.createElement("script");
+            s.type = "module";
+            s.src = "navbar.js";
+            document.body.appendChild(s);
+        })
+        .catch(err => {
+            console.error("Navbar failed to load:", err);
+            // Fallback header if navbar.html is missing
+            document.getElementById("navbar").innerHTML = `
+                <nav class="bg-white border-b px-6 py-3 flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black">B</div>
+                        <span class="font-black tracking-tighter text-lg">BooterSpace <span class="text-indigo-600">Chat</span></span>
+                    </div>
+                </nav>
+            `;
+        });
+</script>
+
+<main class="max-w-7xl mx-auto md:p-6 p-2 h-screen flex flex-col">
+    <div class="flex-1 flex flex-col md:flex-row gap-6 bg-white md:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden chat-height">
+        
+        <!-- Sidebar: Conversations -->
+        <aside class="w-full md:w-80 border-r flex flex-col bg-white">
+            <div class="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">Conversations</h2>
+            </div>
+            <div id="conversation-list" class="flex-1 overflow-y-auto">
+                <div class="p-8 text-center">
+                    <div class="animate-pulse flex space-x-4 justify-center">
+                        <div class="rounded-full bg-slate-200 h-10 w-10"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Desktop Suggestions -->
+            <div class="p-4 border-t hidden md:block">
+                <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-3 flex justify-between">
+                    Suggested Makers
+                    <button onclick="loadSuggestions()" class="text-indigo-600 hover:underline">Shuffle</button>
+                </h3>
+                <div id="suggestion-list" class="space-y-1"></div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <section class="flex-1 flex flex-col relative bg-slate-50/30">
+            <!-- Empty State -->
+            <div id="chat-placeholder" class="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                <div class="w-20 h-20 bg-indigo-50 text-indigo-200 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-800">Your Messages</h3>
+                <p class="text-slate-500 max-w-xs mx-auto mt-2 text-sm">Select a conversation or start a new one to begin messaging.</p>
+            </div>
+
+            <!-- Active Chat -->
+            <div id="chat-window" class="hidden flex-1 flex flex-col">
+                <!-- Chat Header -->
+                <header class="px-6 py-4 bg-white border-b flex items-center justify-between shadow-sm z-10">
+                    <div class="flex items-center gap-3">
+                        <div id="recipient-avatar" class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">?</div>
+                        <div>
+                            <h3 id="recipient-name" class="font-bold text-slate-800 leading-tight">User</h3>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Messages Feed -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-6 flex flex-col">
+                    <!-- Messages injected here -->
+                </div>
+
+                <!-- Input Area -->
+                <footer class="p-4 bg-white border-t">
+                    <div class="flex items-end gap-2 bg-slate-50 rounded-2xl border p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                        <textarea 
+                            id="chat-input" 
+                            rows="1" 
+                            placeholder="Type a message..." 
+                            class="flex-1 bg-transparent border-none focus:ring-0 p-2 text-sm resize-none overflow-hidden max-h-32"
+                            onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }"
+                        ></textarea>
+                        <button 
+                            onclick="sendMessage()" 
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex-shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                        </button>
+                    </div>
+                </footer>
+            </div>
+        </section>
+    </div>
+</main>
+
+</body>
+</html>
