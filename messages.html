@@ -8,7 +8,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
             collection,
@@ -46,16 +46,11 @@
                 if (response.ok) {
                     const html = await response.text();
                     document.getElementById('navbar-placeholder').innerHTML = html;
-                    
-                    // After navbar is injected, we check if there are auth buttons to hook into
-                    // This assumes navbar.html/navbar.js manages its own UI but we sync state
-                    const logoutBtn = document.getElementById('navbar-logout');
-                    if (logoutBtn) {
-                        logoutBtn.addEventListener('click', async () => {
-                            await signOut(auth);
-                            window.location.reload();
-                        });
-                    }
+
+                    const navbarScript = document.createElement('script');
+                    navbarScript.type = 'module';
+                    navbarScript.src = 'navbar.js';
+                    document.body.appendChild(navbarScript);
                 }
             } catch (error) {
                 console.error("Error loading navbar:", error);
@@ -211,13 +206,10 @@
             document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
             document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
             
-            const q = query(
-                getMessagesCollection(activeChatId),
-                orderBy('createdAt', 'asc')
-            );
+            const q = getMessagesCollection(activeChatId);
 
             chatUnsubscribe = onSnapshot(q, (snapshot) => {
-                renderMessages(snapshot.docs.map(d => d.data()));
+                renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }, (error) => {
                 console.error("Chat error:", error);
             });
@@ -271,12 +263,17 @@
 
         function renderMessages(messages) {
             const container = document.getElementById('messages-container');
-            if (messages.length === 0) {
+            const sortedMessages = [...messages].sort((a, b) => {
+                const aDate = a.createdAt?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
+                const bDate = b.createdAt?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
+                return aDate - bDate;
+            });
+            if (sortedMessages.length === 0) {
                 container.innerHTML = '<div class="p-8 text-center text-gray-400 italic text-sm">No messages yet. Say hello!</div>';
                 return;
             }
 
-            container.innerHTML = messages.map(msg => {
+            container.innerHTML = sortedMessages.map(msg => {
                 const isMine = msg.senderId === currentUser.uid;
                 const time = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...';
                 
@@ -505,7 +502,6 @@
         window.startChat = startChat;
         window.loadSuggestions = loadSuggestions;
         window.sendRequest = sendRequest;
-        window.switchTab = switchTab;
 
         window.addEventListener('input', (e) => {
             if (e.target.id === 'chat-input') {
@@ -649,10 +645,10 @@
 
                 <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col bg-slate-50/50"></div>
 
-                <footer class="p-3 md:p-4 bg-white border-t">
-                    <div class="flex items-end gap-2 bg-slate-100/80 rounded-2xl border border-slate-200 p-1.5 md:p-2">
-                        <textarea id="chat-input" rows="1" placeholder="Type a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-2 py-2 text-[15px] resize-none overflow-hidden max-h-32" onkeydown="if(event.key === 'Enter' && !event.shiftKey && window.innerWidth > 768){ event.preventDefault(); sendMessage(); }"></textarea>
-                        <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2.5 rounded-xl transition-all active:scale-90 shadow-md">
+                <footer class="p-2.5 md:p-3 bg-white border-t">
+                    <div class="flex items-end gap-2 bg-slate-100/80 rounded-xl border border-slate-200 p-1 md:p-1.5">
+                        <textarea id="chat-input" rows="1" placeholder="Type a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-2 py-1.5 text-[13px] resize-none overflow-hidden max-h-24" onkeydown="if(event.key === 'Enter' && !event.shiftKey && window.innerWidth > 768){ event.preventDefault(); sendMessage(); }"></textarea>
+                        <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2 rounded-lg transition-all active:scale-90 shadow-md">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
                         </button>
                     </div>
