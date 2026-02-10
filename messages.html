@@ -8,7 +8,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
             collection,
@@ -59,18 +59,9 @@
 
         const initAuth = async () => {
             try {
-                // Check if user is already logged in via navbar's system (usually shared Firebase instance)
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // We don't force anonymous if the user is supposed to be logged in via Navbar
-                    // But for this environment, we ensure an active session exists
-                    onAuthStateChanged(auth, (user) => {
-                        if (!user) signInAnonymously(auth);
-                    });
-                }
+                await signInAnonymously(auth);
             } catch (error) {
-                console.error("Auth initialization failed:", error);
+                console.warn("Auth failed", error);
             }
         };
 
