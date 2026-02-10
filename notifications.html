@@ -89,8 +89,10 @@ function renderNotificationsErrorState() {
 function buildNotificationElement(id, notificationData) {
   const label = resolveNotificationLabel(notificationData.text || "");
   const createdAt = notificationData.createdAt?.toDate ? notificationData.createdAt.toDate() : null;
+  const targetLink = resolveNotificationTarget(notificationData);
 
   const article = document.createElement("article");
+  article.dataset.notificationTarget = targetLink;
   article.dataset.notificationId = id;
   article.className = `bg-white rounded-2xl border p-4 md:p-5 shadow-sm ${notificationData.read ? "" : "border-blue-200 bg-blue-50/40"}`;
   article.innerHTML = `
@@ -104,14 +106,30 @@ function buildNotificationElement(id, notificationData) {
         <p class="text-sm text-slate-600 mt-1 break-words">${notificationData.text || "You have a new notification."}</p>
         <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
       </div>
-      ${notificationData.read ? "" : `<button data-mark-read-id="${id}" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Mark read</button>`}
+      <div class="flex flex-col items-end gap-2">
+        <button data-open-notification-id="${id}" class="text-xs font-semibold text-slate-600 hover:text-slate-800">View</button>
+        ${notificationData.read ? "" : `<button data-mark-read-id="${id}" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Mark read</button>`}
+      </div>
     </div>
   `;
 
+  const openButton = article.querySelector("[data-open-notification-id]");
+  if (openButton) {
+    openButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openNotification(id);
+    });
+  }
+
   const readButton = article.querySelector("[data-mark-read-id]");
   if (readButton) {
-    readButton.addEventListener("click", () => markOneRead(id));
+    readButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      markOneRead(id);
+    });
   }
+
+  article.addEventListener("click", () => openNotification(id));
 
   return article;
 }
@@ -183,6 +201,44 @@ function startNotificationsListener(uid) {
   );
 }
 
+
+function resolveNotificationTarget(notificationData = {}) {
+  const rawLink = (notificationData.link || notificationData.url || "").toString().trim();
+  if (rawLink) return rawLink;
+
+  if (notificationData.jobId) {
+    return `job-detail.html?id=${encodeURIComponent(notificationData.jobId)}`;
+  }
+
+  if (notificationData.chatId) {
+    return `messages.html?chatId=${encodeURIComponent(notificationData.chatId)}`;
+  }
+
+  const targetUid = notificationData.fromId || notificationData.senderId || notificationData.userIdRef;
+  if (targetUid) {
+    return `messages.html?composeTo=${encodeURIComponent(targetUid)}`;
+  }
+
+  const lower = (notificationData.text || "").toLowerCase();
+  if (notificationData.type === "job_posted" || lower.includes("job")) return "jobs.html";
+  if (notificationData.type === "message" || lower.includes("message")) return "messages.html";
+  return "notifications.html";
+}
+
+window.openNotification = async (id) => {
+  if (!currentUser) return;
+  const ref = doc(db, "users", currentUser.uid, "notifications", id);
+  const el = notificationElements.get(id);
+  const target = el?.dataset?.notificationTarget || "notifications.html";
+
+  try {
+    await updateDoc(ref, { read: true });
+  } catch (err) {
+    console.warn("Failed to mark notification as read before redirect", err);
+  }
+
+  window.location.href = target;
+};
 function resolveNotificationLabel(text = "") {
   const lower = text.toLowerCase();
   if (lower.includes("message")) return { title: "New message", icon: "💬" };

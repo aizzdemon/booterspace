@@ -138,7 +138,8 @@
         dislikes: 0
       };
 
-      await db.collection("jobs").add(createdJob);
+      const createdJobRef = await db.collection("jobs").add(createdJob);
+      const createdJobId = createdJobRef.id;
 
       const usersSnap = await db.collection("users").get();
       const senderLabel = currentUser.displayName || currentUser.email || "A company";
@@ -150,6 +151,8 @@
           userId: u.id,
           text: notificationText,
           type: "job_posted",
+          jobId: createdJobId,
+          link: `job-detail.html?id=${encodeURIComponent(createdJobId)}`,
           jobTitle: createdJob.title,
           company: createdJob.company,
           postedBy: currentUser.uid,
