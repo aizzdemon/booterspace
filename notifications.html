@@ -16,8 +16,8 @@ import {
   query,
   where,
   orderBy,
+  onSnapshot,
   doc,
-  getDoc,
   updateDoc,
   serverTimestamp,
   setDoc
@@ -39,62 +39,148 @@ window.app = app;
 window.auth = auth;
 window.db = db;
 let currentUser = null;
+let notificationsUnsubscribe = null;
+const notificationElements = new Map();
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
+
+  if (notificationsUnsubscribe) {
+    notificationsUnsubscribe();
+    notificationsUnsubscribe = null;
+  }
+
   if (!user) {
-    document.getElementById("notificationsList").innerHTML =
+    getNotificationsContainer().innerHTML =
       '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">Please login to view notifications.</div><div class="mt-3 text-center"><a href="login.html" class="text-sm font-semibold text-blue-600 hover:underline">Go to login</a></div>';
     document.getElementById("suggestionList").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
     document.getElementById("suggestionListMobile").innerHTML = '<p class="text-xs text-gray-400 italic">Login required</p>';
     return;
   }
 
-  await Promise.all([loadNotifications(), loadSuggestions()]);
+  startNotificationsListener(user.uid);
+  await loadSuggestions();
 });
 
-async function loadNotifications() {
-  const wrap = document.getElementById("notificationsList");
+function getNotificationsContainer() {
+  return document.getElementById("notifications-list") || document.getElementById("notificationsList");
+}
+
+function renderNotificationsLoadingState() {
+  const wrap = getNotificationsContainer();
+  if (!wrap) return;
   wrap.innerHTML = '<div class="p-6 text-center text-gray-400">Loading notifications...</div>';
+}
 
-  try {
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">No notifications yet.</div>';
-      return;
-    }
-
-    wrap.innerHTML = snap.docs.map((d) => {
-      const n = d.data();
-      const createdAt = n.createdAt?.toDate ? n.createdAt.toDate() : null;
-      const label = resolveNotificationLabel(n.text || "");
-      return `
-        <article class="bg-white rounded-2xl border p-4 md:p-5 shadow-sm ${n.read ? "" : "border-blue-200 bg-blue-50/40"}">
-          <div class="flex items-start gap-3">
-            <div class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-sm">${label.icon}</div>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="font-bold text-slate-800 text-sm md:text-base">${label.title}</p>
-                ${n.read ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Read</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">Unread</span>'}
-              </div>
-              <p class="text-sm text-slate-600 mt-1 break-words">${n.text || "You have a new notification."}</p>
-              <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
-            </div>
-            ${n.read ? "" : `<button onclick="markOneRead('${d.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Mark read</button>`}
-          </div>
-        </article>
-      `;
-    }).join("");
-  } catch (err) {
-    console.error("Notification load failed", err);
-    wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-red-500">Could not load notifications.</div>';
+function renderNotificationsEmptyState() {
+  const wrap = getNotificationsContainer();
+  if (!wrap) return;
+  if (!wrap.querySelector("[data-notification-id]")) {
+    wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-gray-500">No notifications yet.</div>';
   }
+}
+
+function renderNotificationsErrorState() {
+  const wrap = getNotificationsContainer();
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="bg-white rounded-2xl border p-8 text-center text-red-500">Could not load notifications in real-time. Please refresh.</div>';
+}
+
+function buildNotificationElement(id, notificationData) {
+  const label = resolveNotificationLabel(notificationData.text || "");
+  const createdAt = notificationData.createdAt?.toDate ? notificationData.createdAt.toDate() : null;
+
+  const article = document.createElement("article");
+  article.dataset.notificationId = id;
+  article.className = `bg-white rounded-2xl border p-4 md:p-5 shadow-sm ${notificationData.read ? "" : "border-blue-200 bg-blue-50/40"}`;
+  article.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-sm">${label.icon}</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="font-bold text-slate-800 text-sm md:text-base">${label.title}</p>
+          ${notificationData.read ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Read</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">Unread</span>'}
+        </div>
+        <p class="text-sm text-slate-600 mt-1 break-words">${notificationData.text || "You have a new notification."}</p>
+        <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
+      </div>
+      ${notificationData.read ? "" : `<button data-mark-read-id="${id}" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Mark read</button>`}
+    </div>
+  `;
+
+  const readButton = article.querySelector("[data-mark-read-id]");
+  if (readButton) {
+    readButton.addEventListener("click", () => markOneRead(id));
+  }
+
+  return article;
+}
+
+function insertNotificationAtIndex(container, element, index) {
+  const items = container.querySelectorAll("[data-notification-id]");
+  const anchor = items[index];
+  if (anchor) {
+    container.insertBefore(element, anchor);
+  } else {
+    container.appendChild(element);
+  }
+}
+
+// Creates a real-time listener for users/{uid}/notifications sorted newest-first.
+function startNotificationsListener(uid) {
+  const wrap = getNotificationsContainer();
+  if (!wrap) return;
+
+  renderNotificationsLoadingState();
+  notificationElements.clear();
+
+  const notificationsRef = collection(db, "users", uid, "notifications");
+  const notificationsQuery = query(notificationsRef, orderBy("createdAt", "desc"));
+
+  notificationsUnsubscribe = onSnapshot(
+    notificationsQuery,
+    (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const hasPlaceholder = wrap.querySelector(":scope > :not([data-notification-id])");
+        if (hasPlaceholder) {
+          wrap.innerHTML = "";
+        }
+
+        const id = change.doc.id;
+        const data = change.doc.data();
+
+        if (change.type === "removed") {
+          const existing = notificationElements.get(id);
+          if (existing) {
+            existing.remove();
+            notificationElements.delete(id);
+          }
+          return;
+        }
+
+        const nextElement = buildNotificationElement(id, data);
+        const existing = notificationElements.get(id);
+
+        if (existing) {
+          existing.remove();
+          insertNotificationAtIndex(wrap, nextElement, change.newIndex);
+        } else {
+          insertNotificationAtIndex(wrap, nextElement, change.newIndex);
+        }
+
+        notificationElements.set(id, nextElement);
+      });
+
+      if (!snapshot.docs.length) {
+        notificationElements.clear();
+        renderNotificationsEmptyState();
+      }
+    },
+    (error) => {
+      console.error("Notification listener failed", error);
+      renderNotificationsErrorState();
+    }
+  );
 }
 
 function resolveNotificationLabel(text = "") {
@@ -109,15 +195,13 @@ function resolveNotificationLabel(text = "") {
 
 window.markOneRead = async (id) => {
   if (!currentUser) return;
-  await updateDoc(doc(db, "notifications", id), { read: true });
-  loadNotifications();
+  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), { read: true });
 };
 
 window.markAllRead = async () => {
   if (!currentUser) return;
-  const snap = await getDocs(query(collection(db, "notifications"), where("userId", "==", currentUser.uid)));
+  const snap = await getDocs(query(collection(db, "users", currentUser.uid, "notifications"), where("read", "!=", true)));
   await Promise.all(snap.docs.filter((d) => !d.data().read).map((d) => updateDoc(d.ref, { read: true })));
-  loadNotifications();
 };
 
 function renderSuggestionsList(container, suggestions) {
@@ -253,7 +337,7 @@ fetch("navbar.html")
       </div>
     </section>
 
-    <div id="notificationsList" class="space-y-4"></div>
+    <div id="notifications-list" class="space-y-4"></div>
   </section>
 
   <aside class="hidden xl:block xl:col-span-2"></aside>
