@@ -195,10 +195,54 @@ if (change.type === "removed") {
 }
 liveNotifications.set(key, {
   id: change.doc.id,
+  ref: change.doc.ref,
   source,
   ...change.doc.data()
 });
 });
+}
+
+function getNotificationLink(notification) {
+if (!notification) return "notifications.html";
+
+const rawLink = (notification.link || notification.url || "").toString().trim();
+if (rawLink) return rawLink;
+
+if (notification.jobId) return `job-detail.html?id=${encodeURIComponent(notification.jobId)}`;
+if (notification.chatId) return `messages.html?chatId=${encodeURIComponent(notification.chatId)}`;
+if (notification.fromId || notification.senderId || notification.userIdRef) {
+const target = notification.fromId || notification.senderId || notification.userIdRef;
+return `messages.html?composeTo=${encodeURIComponent(target)}`;
+}
+
+const text = (notification.text || "").toLowerCase();
+if (notification.type === "job_posted" || text.includes("job")) return "jobs.html";
+if (notification.type === "message" || text.includes("message")) return "messages.html";
+
+return "notifications.html";
+}
+
+async function markVisibleNotificationsAsRead() {
+const unreadItems = Array.from(liveNotifications.values()).filter((n) => !n.read && n.ref);
+if (!unreadItems.length) {
+  activeUnreadCount = 0;
+  renderTotalBadge();
+  return;
+}
+
+try {
+  await Promise.all(unreadItems.map((n) => updateDoc(n.ref, { read: true })));
+  unreadItems.forEach((n) => {
+    n.read = true;
+  });
+  activeUnreadCount = 0;
+  activeUnreadMessages = 0;
+  renderTotalBadge();
+  updateMessageBadge(0);
+  renderNotifications();
+} catch (error) {
+  console.error("Failed to mark notifications as read:", error);
+}
 }
 
 function renderNotifications() {
@@ -223,11 +267,12 @@ items.forEach((n) => {
   }
 
   const createdAtMillis = n.createdAt?.seconds ? n.createdAt.seconds * 1000 : null;
+  const targetHref = getNotificationLink(n);
   notificationList.innerHTML += `
-    <div class="px-4 py-3 border-b hover:bg-gray-50 ${n.read ? "" : "bg-blue-50"}">
+    <a href="${targetHref}" class="block px-4 py-3 border-b hover:bg-gray-50 ${n.read ? "" : "bg-blue-50"}">
       <p class="text-sm text-gray-800">${n.text || "You have a new notification."}</p>
       <span class="text-xs text-gray-400">${createdAtMillis ? new Date(createdAtMillis).toLocaleString() : "Just now"}</span>
-    </div>`;
+    </a>`;
 });
 
 renderTotalBadge();
@@ -309,6 +354,14 @@ notificationPermissionBanner?.classList.remove("hidden");
 
 notificationBtn?.addEventListener("click", () => {
 notificationDropdown?.classList.toggle("hidden");
+if (!notificationDropdown?.classList.contains("hidden")) {
+markVisibleNotificationsAsRead();
+}
+});
+
+mNotificationBtn?.addEventListener("click", async () => {
+await markVisibleNotificationsAsRead();
+window.location.href = "notifications.html";
 });
 
 logoutBtn?.addEventListener("click", async () => {
