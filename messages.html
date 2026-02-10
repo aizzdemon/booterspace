@@ -15,6 +15,7 @@
             doc,
             setDoc,
             addDoc,
+            updateDoc,
             getDoc,
             getDocs,
             query,
@@ -111,6 +112,20 @@
             return collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
         }
 
+        function getUserNotificationsCollection(uid) {
+            return collection(db, 'users', uid, 'notifications');
+        }
+
+        async function createNotification(uid, text, meta = {}) {
+            if (!uid || !text) return;
+            await addDoc(getUserNotificationsCollection(uid), {
+                text,
+                read: false,
+                createdAt: serverTimestamp(),
+                ...meta
+            });
+        }
+
         function getConversationDoc(chatId) {
             return doc(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId);
         }
@@ -144,8 +159,8 @@
             onSnapshot(requestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
         }
 
-        async function sendRequest(targetUid, fullName) {
-            if (event) event.stopPropagation();
+        async function sendRequest(targetUid, fullName, ev) {
+            if (ev) ev.stopPropagation();
             if (!currentUser || currentUser.isAnonymous) {
                 showToast("Please log in to connect with makers");
                 return;
@@ -158,11 +173,50 @@
                     toId: targetUid,
                     fromName: currentUser.displayName || "User",
                     toName: fullName,
-                    status: 'accepted',
+                    status: 'pending',
                     timestamp: serverTimestamp()
                 });
+
+                await createNotification(targetUid, `${currentUser.displayName || "Someone"} sent you a connection request.`, {
+                    type: 'connection_request',
+                    fromId: currentUser.uid,
+                    requestId
+                });
+
+                showToast('Connection request sent');
             } catch (err) {
                 console.error("Failed to send request:", err);
+            }
+        }
+
+        async function acceptRequest(requestId, fromId, fromName, ev) {
+            if (ev) ev.stopPropagation();
+            if (!currentUser || currentUser.isAnonymous) {
+                showToast("Please log in to accept requests");
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
+                    status: 'accepted',
+                    acceptedAt: serverTimestamp()
+                });
+
+                await createNotification(fromId, `${currentUser.displayName || "A user"} accepted your connection request.`, {
+                    type: 'connection_accepted',
+                    toId: currentUser.uid,
+                    requestId
+                });
+
+                await createNotification(currentUser.uid, `You accepted ${fromName || "a maker"}'s connection request.`, {
+                    type: 'connection_accepted',
+                    fromId,
+                    requestId
+                });
+
+                showToast('Connection request accepted');
+            } catch (err) {
+                console.error('Failed to accept request:', err);
             }
         }
 
@@ -402,8 +456,12 @@
             }
 
             list.innerHTML = filtered.map((user) => {
-                const req = userRequests.find(r => (r.fromId === currentUser?.uid && r.toId === user.id));
-                const isSent = !!req;
+                const sentReq = userRequests.find(r => r.fromId === currentUser?.uid && r.toId === user.id);
+                const incomingReq = userRequests.find(r => r.fromId === user.id && r.toId === currentUser?.uid);
+                const acceptedReq = userRequests.find(r =>
+                    r.status === 'accepted' &&
+                    ((r.fromId === currentUser?.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === currentUser?.uid))
+                );
 
                 return `
                     <div class="p-4 border-b hover:bg-slate-50 transition-colors flex items-center justify-between">
@@ -417,11 +475,19 @@
                             </div>
                         </div>
                         <div class="ml-2">
-                            ${isSent ? 
+                            ${acceptedReq ?
                                 `<div class="w-9 h-9 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                 </div>` :
-                                `<button onclick="sendRequest('${user.id}', '${user.fullName}')" class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90">
+                            incomingReq?.status === 'pending' ?
+                                `<button onclick="acceptRequest('${incomingReq.id}', '${user.id}', '${(user.fullName || 'Maker').replace(/'/g, "\\'")}', event)" class="px-3 h-9 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 text-xs font-bold">
+                                    Accept
+                                </button>` :
+                            sentReq?.status === 'pending' ?
+                                `<div class="px-3 h-9 bg-amber-50 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                    Sent
+                                </div>` :
+                                `<button onclick="sendRequest('${user.id}', '${(user.fullName || 'Maker').replace(/'/g, "\\'")}', event)" class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                                 </button>`
                             }
@@ -498,6 +564,7 @@
         window.startChat = startChat;
         window.loadSuggestions = loadSuggestions;
         window.sendRequest = sendRequest;
+        window.acceptRequest = acceptRequest;
 
         window.addEventListener('input', (e) => {
             if (e.target.id === 'chat-input') {

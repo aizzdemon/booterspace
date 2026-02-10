@@ -122,7 +122,7 @@
     if (!currentUser) return;
 
     try {
-      await db.collection("jobs").add({
+      const createdJob = {
         userId: currentUser.uid,              // ✅ REQUIRED BY RULE
         title: jobTitle.value.trim(),
         company: companyName.value.trim(),
@@ -136,7 +136,28 @@
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         likes: 0,
         dislikes: 0
-      });
+      };
+
+      await db.collection("jobs").add(createdJob);
+
+      const usersSnap = await db.collection("users").get();
+      const senderLabel = currentUser.displayName || currentUser.email || "A company";
+      const notificationText = `New job posted: ${createdJob.title} at ${createdJob.company} by ${senderLabel}.`;
+
+      const notifyTasks = usersSnap.docs
+        .filter((u) => u.id !== currentUser.uid)
+        .map((u) => db.collection("users").doc(u.id).collection("notifications").add({
+          userId: u.id,
+          text: notificationText,
+          type: "job_posted",
+          jobTitle: createdJob.title,
+          company: createdJob.company,
+          postedBy: currentUser.uid,
+          read: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }));
+
+      await Promise.all(notifyTasks);
 
       document.getElementById("successMessage").classList.remove("hidden");
       document.getElementById("jobForm").reset();
