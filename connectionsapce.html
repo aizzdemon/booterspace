@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConnectionSapce - BooterSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-shadow { box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08); }
+    .soft-border { border: 1px solid rgba(148, 163, 184, 0.2); }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "navbar.js";
+      document.body.appendChild(s);
+    }).catch(e => console.error("Navbar failed to load", e));
+  </script>
+
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <aside class="lg:col-span-1 space-y-5">
+        <div class="bg-white rounded-2xl p-5 card-shadow soft-border">
+          <h1 class="text-2xl font-extrabold text-slate-900">ConnectionSapce</h1>
+          <p class="text-slate-500 text-sm mt-2">Find creators, founders, recruiters and peers based on your interests.</p>
+          <button id="inviteContactsBtn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-2.5 rounded-xl">+ Invite contacts</button>
+          <p id="inviteFeedback" class="mt-2 text-xs text-slate-500"></p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 card-shadow soft-border">
+          <h2 class="font-bold text-slate-900 mb-4">Manage my network</h2>
+          <div class="space-y-2 text-sm">
+            <button id="connectionsBtn" class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700">
+              <span>Connections</span>
+              <span id="connectionsCount" class="text-slate-400">0</span>
+            </button>
+            <button id="pendingBtn" class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700">
+              <span>Pending invites</span>
+              <span id="pendingCount" class="text-slate-400">0</span>
+            </button>
+            <button id="followersBtn" class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700">
+              <span>Followers</span>
+              <span id="followersCount" class="text-slate-400">0</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl p-5 md:p-6 card-shadow soft-border">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">People you may know in BooterSpace</h2>
+              <p class="text-slate-500 text-sm">Curated suggestions based on community activity, follows and shared interests.</p>
+            </div>
+            <button id="viewAllBtn" class="text-sm font-semibold border border-slate-300 hover:border-slate-400 text-slate-700 px-4 py-2 rounded-lg">View all</button>
+          </div>
+
+          <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-6" id="suggestionGrid"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 card-shadow soft-border">
+          <h3 id="networkPanelTitle" class="text-lg font-bold text-slate-900 mb-3">Network panel</h3>
+          <div id="networkPanelList" class="space-y-2 text-sm text-slate-700">
+            <p class="text-slate-500">Select Connections, Pending invites, or Followers to load live data.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      getDoc,
+      doc,
+      addDoc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      serverTimestamp,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+    };
+
+    const app = window.app || (getApps().length ? getApp() : initializeApp(firebaseConfig));
+    const auth = window.auth || getAuth(app);
+    const db = window.db || getFirestore(app);
+    window.app = app;
+    window.auth = auth;
+    window.db = db;
+
+    const appId = "booterspace-chat";
+    const suggestionGrid = document.getElementById("suggestionGrid");
+    const viewAllBtn = document.getElementById("viewAllBtn");
+    const inviteContactsBtn = document.getElementById("inviteContactsBtn");
+    const inviteFeedback = document.getElementById("inviteFeedback");
+
+    const connectionsBtn = document.getElementById("connectionsBtn");
+    const pendingBtn = document.getElementById("pendingBtn");
+    const followersBtn = document.getElementById("followersBtn");
+
+    const connectionsCount = document.getElementById("connectionsCount");
+    const pendingCount = document.getElementById("pendingCount");
+    const followersCount = document.getElementById("followersCount");
+
+    const networkPanelTitle = document.getElementById("networkPanelTitle");
+    const networkPanelList = document.getElementById("networkPanelList");
+
+    let currentUser = null;
+    let showAll = false;
+    let suggestionsCache = [];
+    const palette = ["3b82f6", "10b981", "f59e0b", "8b5cf6", "ef4444", "06b6d4"];
+
+    function requireLogin() {
+      if (!currentUser || currentUser.isAnonymous) {
+        alert("Please login first.");
+        window.location.href = "login.html";
+        return false;
+      }
+      return true;
+    }
+
+    function renderSuggestionCards() {
+      const list = showAll ? suggestionsCache : suggestionsCache.slice(0, 6);
+      if (!list.length) {
+        suggestionGrid.innerHTML = `<p class="text-slate-500 text-sm">No suggestions found right now.</p>`;
+        return;
+      }
+
+      suggestionGrid.innerHTML = list.map((user, i) => {
+        const name = user.fullName || user.name || "User";
+        const title = user.bio || user.headline || "BooterSpace member";
+        const tag = user.skills || user.interests || "Community";
+        const bg = palette[i % palette.length];
+
+        return `
+          <article class="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition bg-white">
+            <div class="flex items-center gap-3">
+              <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=fff&bold=true`}" alt="${name}" class="w-12 h-12 rounded-full object-cover" />
+              <div class="min-w-0">
+                <p class="font-bold text-slate-900 text-sm truncate">${name}</p>
+                <p class="text-xs text-slate-500 truncate">${title}</p>
+              </div>
+            </div>
+            <p class="mt-3 text-[11px] text-slate-500 uppercase tracking-wide truncate">${tag}</p>
+            <div class="mt-4 flex gap-2">
+              <button data-action="connect" data-id="${user.id}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg">${user._status || "Connect"}</button>
+              <button data-action="message" data-id="${user.id}" class="px-3 border border-slate-300 hover:border-slate-400 text-xs rounded-lg">Message</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function fetchNetworkState() {
+      if (!currentUser) return { connected: new Set(), incoming: new Map(), outgoing: new Set() };
+
+      const connectedSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
+      const connected = new Set(connectedSnap.docs.map(d => d.id));
+
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const outgoingSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "pending")));
+      const incomingSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+
+      const outgoing = new Set(outgoingSnap.docs.map(d => d.data().toId));
+      const incoming = new Map(incomingSnap.docs.map(d => [d.data().fromId, d.id]));
+
+      return { connected, incoming, outgoing };
+    }
+
+    async function loadSuggestions() {
+      if (!currentUser) return;
+
+      const usersSnap = await getDocs(collection(db, "users"));
+      const state = await fetchNetworkState();
+
+      suggestionsCache = usersSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.id !== currentUser.uid)
+        .map((u) => {
+          if (state.connected.has(u.id)) return { ...u, _status: "Connected" };
+          if (state.incoming.has(u.id)) return { ...u, _status: "Accept" };
+          if (state.outgoing.has(u.id)) return { ...u, _status: "Pending" };
+          return { ...u, _status: "Connect" };
+        });
+
+      renderSuggestionCards();
+    }
+
+    async function updateCounters() {
+      if (!currentUser) return;
+
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+
+      const [connectedSnap, pendingSnap, followerSnap] = await Promise.all([
+        getDocs(collection(db, "users", currentUser.uid, "connections")),
+        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"))),
+        getDocs(collection(db, "users", currentUser.uid, "followers"))
+      ]);
+
+      connectionsCount.textContent = connectedSnap.size;
+      pendingCount.textContent = pendingSnap.size;
+      followersCount.textContent = followerSnap.size;
+    }
+
+    async function sendConnectionRequest(targetId) {
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const existing = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("toId", "==", targetId), where("status", "==", "pending")));
+      if (!existing.empty) return;
+
+      await addDoc(reqRef, {
+        fromId: currentUser.uid,
+        toId: targetId,
+        fromName: currentUser.displayName || "User",
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+
+      await addDoc(collection(db, "users", targetId, "notifications"), {
+        text: "You received a connection request.",
+        fromId: currentUser.uid,
+        createdAt: serverTimestamp(),
+        read: false,
+        type: "connection_request",
+        link: "connectionsapce.html"
+      });
+    }
+
+    async function acceptIncomingRequest(fromId) {
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const incoming = await getDocs(query(reqRef, where("fromId", "==", fromId), where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      if (incoming.empty) return;
+
+      const requestDoc = incoming.docs[0];
+      await updateDoc(requestDoc.ref, { status: "accepted", respondedAt: serverTimestamp() });
+
+      await Promise.all([
+        setDoc(doc(db, "users", currentUser.uid, "connections", fromId), { connectedAt: serverTimestamp() }),
+        setDoc(doc(db, "users", fromId, "connections", currentUser.uid), { connectedAt: serverTimestamp() })
+      ]);
+    }
+
+    async function logMessageClick(targetId) {
+      await addDoc(collection(db, "users", currentUser.uid, "networkActions"), {
+        action: "message_click",
+        targetId,
+        createdAt: serverTimestamp()
+      });
+      window.location.href = `messages.html?composeTo=${encodeURIComponent(targetId)}`;
+    }
+
+    async function handleSuggestionAction(event) {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn || !requireLogin()) return;
+
+      const action = btn.dataset.action;
+      const targetId = btn.dataset.id;
+      if (!targetId || targetId === currentUser.uid) return;
+
+      btn.disabled = true;
+      try {
+        if (action === "connect") {
+          const status = btn.textContent.trim();
+          if (status === "Connect") await sendConnectionRequest(targetId);
+          else if (status === "Accept") await acceptIncomingRequest(targetId);
+          else if (status === "Pending") alert("Connection request already pending.");
+          else if (status === "Connected") alert("You are already connected.");
+        }
+
+        if (action === "message") {
+          await logMessageClick(targetId);
+          return;
+        }
+
+        await Promise.all([loadSuggestions(), updateCounters()]);
+      } catch (e) {
+        console.error("Action failed", e);
+        alert("Action failed, please try again.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadConnectionsPanel() {
+      if (!requireLogin()) return;
+      networkPanelTitle.textContent = "Connections";
+
+      const snap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
+      if (snap.empty) {
+        networkPanelList.innerHTML = '<p class="text-slate-500">No connections yet.</p>';
+        return;
+      }
+
+      const rows = await Promise.all(snap.docs.map(async (d) => {
+        const userSnap = await getDoc(doc(db, "users", d.id));
+        const u = userSnap.exists() ? userSnap.data() : {};
+        return `<div class="p-3 border rounded-lg bg-slate-50">${u.fullName || u.name || "User"}</div>`;
+      }));
+
+      networkPanelList.innerHTML = rows.join("");
+    }
+
+    async function loadPendingPanel() {
+      if (!requireLogin()) return;
+      networkPanelTitle.textContent = "Pending invites";
+
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const snap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"), orderBy("createdAt", "desc")));
+      if (snap.empty) {
+        networkPanelList.innerHTML = '<p class="text-slate-500">No pending invites.</p>';
+        return;
+      }
+
+      const rows = snap.docs.map((d) => {
+        const item = d.data();
+        return `
+          <div class="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-3">
+            <span>${item.fromName || item.fromId}</span>
+            <button data-accept-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white">Accept</button>
+          </div>
+        `;
+      });
+
+      networkPanelList.innerHTML = rows.join("");
+    }
+
+    async function loadFollowersPanel() {
+      if (!requireLogin()) return;
+      networkPanelTitle.textContent = "Followers";
+
+      const snap = await getDocs(collection(db, "users", currentUser.uid, "followers"));
+      if (snap.empty) {
+        networkPanelList.innerHTML = '<p class="text-slate-500">No followers found.</p>';
+        return;
+      }
+
+      const rows = await Promise.all(snap.docs.map(async (d) => {
+        const userSnap = await getDoc(doc(db, "users", d.id));
+        const u = userSnap.exists() ? userSnap.data() : {};
+        return `<div class="p-3 border rounded-lg bg-slate-50">${u.fullName || u.name || "User"}</div>`;
+      }));
+
+      networkPanelList.innerHTML = rows.join("");
+    }
+
+    async function inviteContact() {
+      if (!requireLogin()) return;
+
+      const contact = prompt("Enter email or username to invite:");
+      if (!contact) return;
+
+      inviteContactsBtn.disabled = true;
+      inviteFeedback.textContent = "Saving invite...";
+
+      try {
+        await addDoc(collection(db, "users", currentUser.uid, "contactInvites"), {
+          contact: contact.trim(),
+          createdAt: serverTimestamp(),
+          status: "pending"
+        });
+        inviteFeedback.textContent = "Invite saved to Firestore.";
+      } catch (e) {
+        console.error(e);
+        inviteFeedback.textContent = "Failed to save invite.";
+      } finally {
+        inviteContactsBtn.disabled = false;
+      }
+    }
+
+    viewAllBtn.addEventListener("click", async () => {
+      showAll = !showAll;
+      viewAllBtn.textContent = showAll ? "Show less" : "View all";
+      renderSuggestionCards();
+
+      if (currentUser && !currentUser.isAnonymous) {
+        await setDoc(doc(db, "users", currentUser.uid, "networkPreferences", "connectionsapce"), {
+          showAll,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+    });
+
+    inviteContactsBtn.addEventListener("click", inviteContact);
+    connectionsBtn.addEventListener("click", loadConnectionsPanel);
+    pendingBtn.addEventListener("click", loadPendingPanel);
+    followersBtn.addEventListener("click", loadFollowersPanel);
+
+    suggestionGrid.addEventListener("click", handleSuggestionAction);
+
+    networkPanelList.addEventListener("click", async (event) => {
+      const acceptBtn = event.target.closest("button[data-accept-from]");
+      if (!acceptBtn || !requireLogin()) return;
+      const fromId = acceptBtn.dataset.acceptFrom;
+
+      acceptBtn.disabled = true;
+      try {
+        await acceptIncomingRequest(fromId);
+        await Promise.all([loadPendingPanel(), loadSuggestions(), updateCounters()]);
+      } catch (e) {
+        console.error(e);
+        alert("Could not accept invite.");
+      } finally {
+        acceptBtn.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      if (!user || user.isAnonymous) {
+        suggestionGrid.innerHTML = '<p class="text-slate-500">Login to load live connection data.</p>';
+        connectionsCount.textContent = "0";
+        pendingCount.textContent = "0";
+        followersCount.textContent = "0";
+        return;
+      }
+
+      try {
+        const prefSnap = await getDoc(doc(db, "users", user.uid, "networkPreferences", "connectionsapce"));
+        showAll = prefSnap.exists() ? !!prefSnap.data().showAll : false;
+        viewAllBtn.textContent = showAll ? "Show less" : "View all";
+
+        await Promise.all([loadSuggestions(), updateCounters()]);
+      } catch (e) {
+        console.error("Failed to load network data", e);
+        suggestionGrid.innerHTML = '<p class="text-red-500 text-sm">Could not load network suggestions.</p>';
+      }
+    });
+  </script>
+</body>
+</html>
