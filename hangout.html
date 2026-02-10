@@ -13,8 +13,6 @@
 
 <body class="bg-gray-100">
 
-<!-- 🔥 NAVBAR -->
-<div id="navbar"></div>
 <!-- Navbar -->
 <div id="navbar"></div>
 <script>
@@ -37,19 +35,24 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 
 
 <!-- ================= FIREBASE ================= -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-<script>
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
   authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan"
-});
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+window.app = app;
+window.auth = getAuth(app);
+window.db = getFirestore(app);
 </script>
 <!-- ================= LOAD PLACES ================= -->
 
