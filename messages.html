@@ -262,6 +262,11 @@
             
             activeRecipient = { id: targetUid, ...targetSnap.data() };
             activeChatId = getChatId(currentUser.uid, targetUid);
+
+            await setDoc(getConversationDoc(activeChatId), {
+                participants: [currentUser.uid, targetUid],
+                createdAt: serverTimestamp()
+            }, { merge: true });
             
             document.getElementById('sidebar-panel').classList.add('hidden', 'md:flex');
             document.getElementById('chat-panel').classList.remove('hidden');
@@ -273,7 +278,10 @@
             document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
             document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
             
-            const q = getMessagesCollection(activeChatId);
+            const q = query(
+                getMessagesCollection(activeChatId),
+                orderBy("createdAt", "asc")
+            );
 
             chatUnsubscribe = onSnapshot(q, (snapshot) => {
                 renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
