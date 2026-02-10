@@ -25,6 +25,7 @@ import {
 };
 
 const app = initializeApp(firebaseConfig);
+window.app = app;
 window.auth = getAuth(app);
 window.db = getFirestore(app);
 
@@ -47,6 +48,7 @@ onAuthStateChanged(window.auth, (user) => {
     .then(html => {
       document.getElementById("navbar-placeholder").innerHTML = html;
       const s = document.createElement("script");
+      s.type = "module";
       s.src = "navbar.js";
       document.body.appendChild(s);
     });
