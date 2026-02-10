@@ -20,7 +20,6 @@
             getDocs,
             query,
             where,
-            orderBy,
             onSnapshot,
             serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
@@ -244,6 +243,17 @@
         async function checkQueryString() {
             const params = new URLSearchParams(window.location.search);
             const targetUid = params.get("composeTo");
+            const chatId = params.get("chatId");
+
+            if (chatId && currentUser) {
+                const [uidA, uidB] = chatId.split('_');
+                const targetUidFromChat = uidA === currentUser.uid ? uidB : uidA;
+                if (targetUidFromChat && targetUidFromChat !== currentUser.uid) {
+                    startChat(targetUidFromChat);
+                    return;
+                }
+            }
+
             if (targetUid && currentUser && targetUid !== currentUser.uid) {
                 startChat(targetUid);
             }
@@ -278,12 +288,7 @@
             document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
             document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
             
-            const q = query(
-                getMessagesCollection(activeChatId),
-                orderBy("createdAt", "asc")
-            );
-
-            chatUnsubscribe = onSnapshot(q, (snapshot) => {
+            chatUnsubscribe = onSnapshot(getMessagesCollection(activeChatId), (snapshot) => {
                 renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }, (error) => {
                 console.error("Chat error:", error);
@@ -375,7 +380,8 @@
                 text,
                 senderId: currentUser.uid,
                 senderName: currentUser.displayName || "User",
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                timestamp: serverTimestamp()
             };
 
             input.value = '';
@@ -393,6 +399,16 @@
                 };
 
                 await setDoc(getConversationDoc(activeChatId), meta, { merge: true });
+
+                await createNotification(activeRecipient.id, `${currentUser.displayName || "Someone"} sent you a new message.`, {
+                    type: 'message',
+                    senderId: currentUser.uid,
+                    fromId: currentUser.uid,
+                    recipientId: activeRecipient.id,
+                    chatId: activeChatId,
+                    messageText: text,
+                    link: `messages.html?chatId=${encodeURIComponent(activeChatId)}`
+                });
             } catch (err) {
                 console.error("Failed to send:", err);
             }
