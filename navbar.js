@@ -80,7 +80,7 @@ let activeRequestCount = 0;
 // =======================
 
 auth && onAuthStateChanged(auth, async (user) => {
-if (user) {
+if (user && !user.isAnonymous) {
 loginBtn?.classList.add("hidden");
 logoutBtn?.classList.remove("hidden");
 profileBtn?.classList.remove("hidden");
@@ -109,8 +109,6 @@ startNotificationListener(user.uid);
 setupConnectionRequestListener(user.uid);
 updateNotificationPermissionUI();
 setupRealPushNotifications(user);
-
-
 } else {
 loginBtn?.classList.remove("hidden");
 logoutBtn?.classList.add("hidden");
