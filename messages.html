@@ -8,7 +8,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
         import {
             getFirestore,
             collection,
@@ -65,7 +65,24 @@
 
         const initAuth = async () => {
             try {
-                await signInAnonymously(auth);
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                    return;
+                }
+
+                await new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                        unsubscribe();
+                        if (!user) {
+                            try {
+                                await signInAnonymously(auth);
+                            } catch (error) {
+                                console.warn("Anonymous auth failed", error);
+                            }
+                        }
+                        resolve();
+                    });
+                });
             } catch (error) {
                 console.warn("Auth failed", error);
             }
