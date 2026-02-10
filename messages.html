@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
         import {
             getFirestore,
             collection,
@@ -22,12 +22,17 @@
             orderBy,
             onSnapshot,
             serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I","authDomain": "kar-kardan.firebaseapp.com","projectId": "kar-kardan","storageBucket": "kar-kardan.firebasestorage.app","messagingSenderId": "554147696994","appId": "1:554147696994:web:221dcb883e3b65dcea5c3b"}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Share Firebase instances globally so navbar.js can attach to the same app/auth state.
+        window.app = app;
+        window.auth = auth;
+        window.db = db;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-chat';
 
         let currentUser = null;
