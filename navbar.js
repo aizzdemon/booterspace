@@ -8,6 +8,7 @@ getDocs,
 collection,
 query,
 orderBy,
+where,
 onSnapshot,
 updateDoc,
 arrayUnion,
@@ -70,10 +71,13 @@ const enableNotificationsBtn = document.getElementById("enableNotificationsBtn")
 const dismissNotificationsPromptBtn = document.getElementById("dismissNotificationsPromptBtn");
 
 let unsubscribeNotifications = null;
+let unsubscribeGlobalNotifications = null;
 let unsubscribeRequests = null;
 let unsubscribeForegroundMessages = null;
 let activeUnreadCount = 0;
 let activeRequestCount = 0;
+let activeUnreadMessages = 0;
+const liveNotifications = new Map();
 
 // =======================
 // AUTH LISTENER
@@ -81,6 +85,10 @@ let activeRequestCount = 0;
 
 auth && onAuthStateChanged(auth, async (user) => {
 if (user && !user.isAnonymous) {
+if (unsubscribeNotifications) unsubscribeNotifications();
+if (unsubscribeGlobalNotifications) unsubscribeGlobalNotifications();
+liveNotifications.clear();
+
 loginBtn?.classList.add("hidden");
 logoutBtn?.classList.remove("hidden");
 profileBtn?.classList.remove("hidden");
@@ -122,7 +130,10 @@ notificationCount?.classList.add("hidden");
 mNotificationCount?.classList.add("hidden");
 
 if (unsubscribeNotifications) unsubscribeNotifications();
+if (unsubscribeGlobalNotifications) unsubscribeGlobalNotifications();
 if (unsubscribeRequests) unsubscribeRequests();
+liveNotifications.clear();
+notificationList && (notificationList.innerHTML = `<p class="text-center text-sm text-gray-400 py-6">No notifications yet</p>`);
 
 
 }
@@ -153,39 +164,74 @@ renderTotalBadge();
 // =======================
 
 function startNotificationListener(uid) {
-const q = query(
+const userScopedQuery = query(
 collection(db, "users", uid, "notifications"),
 orderBy("createdAt", "desc")
 );
 
-unsubscribeNotifications = onSnapshot(q, (snap) => {
+const globalQuery = query(
+collection(db, "notifications"),
+where("userId", "==", uid),
+orderBy("createdAt", "desc")
+);
+
+unsubscribeNotifications = onSnapshot(userScopedQuery, (snap) => {
+upsertNotificationsFromSnapshot(snap, "user");
+renderNotifications();
+}, (err) => console.error("User notification listener error:", err));
+
+unsubscribeGlobalNotifications = onSnapshot(globalQuery, (snap) => {
+upsertNotificationsFromSnapshot(snap, "global");
+renderNotifications();
+}, (err) => console.error("Global notification listener error:", err));
+}
+
+function upsertNotificationsFromSnapshot(snap, source) {
+snap.docChanges().forEach((change) => {
+const key = `${source}:${change.doc.id}`;
+if (change.type === "removed") {
+  liveNotifications.delete(key);
+  return;
+}
+liveNotifications.set(key, {
+  id: change.doc.id,
+  source,
+  ...change.doc.data()
+});
+});
+}
+
+function renderNotifications() {
+const items = Array.from(liveNotifications.values()).sort((a, b) => {
+  const aMillis = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+  const bMillis = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+  return bMillis - aMillis;
+});
+
 activeUnreadCount = 0;
-let unreadMessages = 0;
+activeUnreadMessages = 0;
 notificationList.innerHTML = "";
 
-if (snap.empty && activeRequestCount === 0) {
+if (!items.length && activeRequestCount === 0) {
   notificationList.innerHTML = `<p class="text-center text-sm text-gray-400 py-6">No notifications yet</p>`;
 }
 
-snap.forEach((docSnap) => {
-  const n = docSnap.data();
+items.forEach((n) => {
   if (!n.read) {
     activeUnreadCount++;
-    if ((n.text || "").toLowerCase().includes("message")) unreadMessages++;
+    if ((n.text || "").toLowerCase().includes("message")) activeUnreadMessages++;
   }
 
+  const createdAtMillis = n.createdAt?.seconds ? n.createdAt.seconds * 1000 : null;
   notificationList.innerHTML += `
     <div class="px-4 py-3 border-b hover:bg-gray-50 ${n.read ? "" : "bg-blue-50"}">
-      <p class="text-sm text-gray-800">${n.text}</p>
-      <span class="text-xs text-gray-400">${n.createdAt ? new Date(n.createdAt.seconds * 1000).toLocaleString() : 'Just now'}</span>
+      <p class="text-sm text-gray-800">${n.text || "You have a new notification."}</p>
+      <span class="text-xs text-gray-400">${createdAtMillis ? new Date(createdAtMillis).toLocaleString() : "Just now"}</span>
     </div>`;
 });
 
 renderTotalBadge();
-updateMessageBadge(unreadMessages);
-
-
-});
+updateMessageBadge(activeUnreadMessages);
 }
 
 function renderTotalBadge() {
