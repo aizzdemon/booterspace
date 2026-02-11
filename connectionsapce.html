@@ -88,9 +88,7 @@
       addDoc,
       setDoc,
       updateDoc,
-      deleteDoc,
-      serverTimestamp,
-      orderBy
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -260,6 +258,21 @@
       ]);
     }
 
+    async function rejectIncomingRequest(fromId) {
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const incoming = await getDocs(query(reqRef, where("fromId", "==", fromId), where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      if (incoming.empty) return;
+
+      await updateDoc(incoming.docs[0].ref, {
+        status: "rejected",
+        respondedAt: serverTimestamp()
+      });
+    }
+
+    function openProfile(targetId) {
+      window.location.href = `profile.html?uid=${encodeURIComponent(targetId)}`;
+    }
+
     async function logMessageClick(targetId) {
       await addDoc(collection(db, "users", currentUser.uid, "networkActions"), {
         action: "message_click",
@@ -325,21 +338,40 @@
       networkPanelTitle.textContent = "Pending invites";
 
       const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const snap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"), orderBy("createdAt", "desc")));
+      const snap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
       if (snap.empty) {
         networkPanelList.innerHTML = '<p class="text-slate-500">No pending invites.</p>';
         return;
       }
 
-      const rows = snap.docs.map((d) => {
-        const item = d.data();
+      const requests = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+      const rows = await Promise.all(requests.map(async (item) => {
+        const userSnap = await getDoc(doc(db, "users", item.fromId));
+        const profile = userSnap.exists() ? userSnap.data() : {};
+        const name = profile.fullName || profile.name || item.fromName || "User";
+        const title = profile.bio || profile.headline || "BooterSpace member";
+        const photo = profile.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&bold=true`;
+
         return `
-          <div class="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-3">
-            <span>${item.fromName || item.fromId}</span>
-            <button data-accept-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white">Accept</button>
+          <div class="p-3 border rounded-xl bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <img src="${photo}" alt="${name}" class="w-10 h-10 rounded-full object-cover" />
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-800 text-sm truncate">${name}</p>
+                <p class="text-xs text-slate-500 truncate">${title}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button data-view-profile="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md border border-slate-300 text-slate-700 hover:border-slate-400">View profile</button>
+              <button data-reject-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">Reject</button>
+              <button data-accept-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">Accept</button>
+            </div>
           </div>
         `;
-      });
+      }));
 
       networkPanelList.innerHTML = rows.join("");
     }
@@ -408,19 +440,33 @@
     suggestionGrid.addEventListener("click", handleSuggestionAction);
 
     networkPanelList.addEventListener("click", async (event) => {
-      const acceptBtn = event.target.closest("button[data-accept-from]");
-      if (!acceptBtn || !requireLogin()) return;
-      const fromId = acceptBtn.dataset.acceptFrom;
+      const viewProfileBtn = event.target.closest("button[data-view-profile]");
+      if (viewProfileBtn) {
+        const targetId = viewProfileBtn.dataset.viewProfile;
+        if (targetId) openProfile(targetId);
+        return;
+      }
 
-      acceptBtn.disabled = true;
+      const acceptBtn = event.target.closest("button[data-accept-from]");
+      const rejectBtn = event.target.closest("button[data-reject-from]");
+      if (!acceptBtn && !rejectBtn) return;
+      if (!requireLogin()) return;
+
+      const fromId = acceptBtn?.dataset.acceptFrom || rejectBtn?.dataset.rejectFrom;
+      if (!fromId) return;
+
+      if (acceptBtn) acceptBtn.disabled = true;
+      if (rejectBtn) rejectBtn.disabled = true;
       try {
-        await acceptIncomingRequest(fromId);
+        if (acceptBtn) await acceptIncomingRequest(fromId);
+        if (rejectBtn) await rejectIncomingRequest(fromId);
         await Promise.all([loadPendingPanel(), loadSuggestions(), updateCounters()]);
       } catch (e) {
         console.error(e);
-        alert("Could not accept invite.");
+        alert("Could not update invite.");
       } finally {
-        acceptBtn.disabled = false;
+        if (acceptBtn) acceptBtn.disabled = false;
+        if (rejectBtn) rejectBtn.disabled = false;
       }
     });
 
