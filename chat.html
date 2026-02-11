@@ -15,6 +15,8 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
 
+<div id="navbar-placeholder"></div>
+
 <div id="app" class="max-w-md mx-auto min-h-screen bg-white shadow-xl flex flex-col relative border-x border-gray-100">
     <!-- Header -->
     <header class="sticky top-0 z-40 glass border-b px-4 py-3 flex justify-between items-center">
@@ -80,11 +82,52 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs, updateDoc, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const firebaseConfig = JSON.parse(__firebase_config);
+const fallbackFirebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const firebaseConfig = (() => {
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        try {
+            return JSON.parse(__firebase_config);
+        } catch (error) {
+            console.warn('Invalid __firebase_config payload, using project fallback config.', error);
+        }
+    }
+
+    return fallbackFirebaseConfig;
+})();
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-v1';
+
+window.app = app;
+window.auth = auth;
+window.db = db;
+
+async function loadNavbar() {
+    try {
+        const response = await fetch('navbar.html');
+        if (!response.ok) return;
+
+        const navbarContainer = document.getElementById('navbar-placeholder');
+        navbarContainer.innerHTML = await response.text();
+
+        const navbarScript = document.createElement('script');
+        navbarScript.type = 'module';
+        navbarScript.src = 'navbar.js';
+        document.body.appendChild(navbarScript);
+    } catch (error) {
+        console.error('Failed to load navbar:', error);
+    }
+}
 
 // State Management
 let user = null;
@@ -132,6 +175,7 @@ onAuthStateChanged(auth, (u) => {
 });
 
 initAuth();
+loadNavbar();
 
 function initializeDataLayer() {
     const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
