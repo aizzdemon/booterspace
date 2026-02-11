@@ -135,6 +135,7 @@
         async function createNotification(uid, text, meta = {}) {
             if (!uid || !text) return;
             await addDoc(getUserNotificationsCollection(uid), {
+                toUid: uid,
                 text,
                 read: false,
                 createdAt: serverTimestamp(),
@@ -187,10 +188,8 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
                     fromId: currentUser.uid,
                     toId: targetUid,
-                    fromName: currentUser.displayName || "User",
-                    toName: fullName,
                     status: 'pending',
-                    timestamp: serverTimestamp()
+                    createdAt: serverTimestamp()
                 });
 
                 await createNotification(targetUid, `${currentUser.displayName || "Someone"} sent you a connection request.`, {
@@ -214,8 +213,7 @@
 
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
-                    status: 'accepted',
-                    acceptedAt: serverTimestamp()
+                    status: 'accepted'
                 });
 
                 await createNotification(fromId, `${currentUser.displayName || "A user"} accepted your connection request.`, {
@@ -273,10 +271,14 @@
             activeRecipient = { id: targetUid, ...targetSnap.data() };
             activeChatId = getChatId(currentUser.uid, targetUid);
 
-            await setDoc(getConversationDoc(activeChatId), {
-                participants: [currentUser.uid, targetUid],
-                createdAt: serverTimestamp()
-            }, { merge: true });
+            const chatRef = getConversationDoc(activeChatId);
+            const chatSnap = await getDoc(chatRef);
+            if (!chatSnap.exists()) {
+                await setDoc(chatRef, {
+                    participants: [currentUser.uid, targetUid],
+                    createdAt: serverTimestamp()
+                });
+            }
             
             document.getElementById('sidebar-panel').classList.add('hidden', 'md:flex');
             document.getElementById('chat-panel').classList.remove('hidden');
@@ -379,9 +381,7 @@
             const msgData = {
                 text,
                 senderId: currentUser.uid,
-                senderName: currentUser.displayName || "User",
-                createdAt: serverTimestamp(),
-                timestamp: serverTimestamp()
+                createdAt: serverTimestamp()
             };
 
             input.value = '';
@@ -392,10 +392,7 @@
                 
                 const meta = {
                     lastMessage: text,
-                    lastTimestamp: serverTimestamp(),
-                    participants: [currentUser.uid, activeRecipient.id],
-                    recipientName: activeRecipient.fullName || "User",
-                    senderName: currentUser.displayName || "User"
+                    lastMessageAt: serverTimestamp()
                 };
 
                 await setDoc(getConversationDoc(activeChatId), meta, { merge: true });

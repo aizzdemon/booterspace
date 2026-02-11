@@ -80,7 +80,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs, updateDoc, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs, updateDoc, query, where, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const fallbackFirebaseConfig = {
     apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
@@ -181,15 +181,16 @@ function initializeDataLayer() {
     const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
 
     // 1. User Meta-Data & Self Sync
-    onSnapshot(publicPath('users'), (snap) => {
+    onSnapshot(collection(db, 'users'), (snap) => {
         snap.forEach(d => {
-            usersMap[d.id] = d.data();
+            usersMap[d.id] = { uid: d.id, ...d.data() };
         });
-        
-        // Self check
+
         if (!usersMap[user.uid]) {
-            const initialData = { uid: user.uid, displayName: `Explorer_${user.uid.substring(0, 4)}`, joinedAt: serverTimestamp() };
-            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid), initialData);
+            const fallbackName = `Explorer_${user.uid.substring(0, 4)}`;
+            usersMap[user.uid] = { uid: user.uid, displayName: fallbackName };
+            myProfile = usersMap[user.uid];
+            UI.badge.textContent = myProfile.displayName;
         } else {
             myProfile = usersMap[user.uid];
             UI.badge.textContent = myProfile.displayName;
@@ -198,38 +199,37 @@ function initializeDataLayer() {
     });
 
     // 2. Connection Requests & Accepted List
-    onSnapshot(publicPath('connection_requests'), (snap) => {
-        connectionRequests = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        
-        // Derive Connection List
+    const requestsPath = publicPath('connection_requests');
+    const reqMap = new Map();
+    const syncReqs = (snap) => {
+        snap.docChanges().forEach((change) => {
+            if (change.type === 'removed') reqMap.delete(change.doc.id);
+            else reqMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+        });
+        connectionRequests = Array.from(reqMap.values());
+
         connectedUsers = connectionRequests
             .filter(r => r.status === 'accepted' && (r.fromId === user.uid || r.toId === user.uid))
             .map(r => r.fromId === user.uid ? r.toId : r.fromId);
 
         UI.connCount.textContent = `${connectedUsers.length} Connections`;
-        
-        // Badge for pending received requests
         const pending = connectionRequests.filter(r => r.toId === user.uid && r.status === 'pending');
         UI.reqBadge.textContent = pending.length;
         UI.reqBadge.classList.toggle('hidden', pending.length === 0);
-        
         render();
-    });
+    };
+    onSnapshot(query(requestsPath, where('fromId', '==', user.uid)), syncReqs);
+    onSnapshot(query(requestsPath, where('toId', '==', user.uid)), syncReqs);
 
     // 3. Conversation Sync
-    onSnapshot(publicPath('conversations'), (snap) => {
+    onSnapshot(query(publicPath('conversations'), where('participants', 'array-contains', user.uid)), (snap) => {
         conversations = snap.docs.map(d => ({id: d.id, ...d.data()}))
-                        .filter(c => c.participants?.includes(user.uid))
                         .sort((a, b) => (b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0));
         render();
     });
 
-    // 4. Global Feed
-    onSnapshot(publicPath('posts'), (snap) => {
-        posts = snap.docs.map(d => ({id: d.id, ...d.data()}))
-                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        render();
-    });
+    // 4. Feed disabled: no Firestore rules for posts collection.
+    posts = [];
 }
 
 // --- CORE ACTIONS ---
@@ -386,12 +386,7 @@ function renderFeed() {
 window.createPost = async () => {
     const val = document.getElementById('post-input').value.trim();
     if (!val) return;
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
-        authorId: user.uid,
-        content: val,
-        createdAt: serverTimestamp()
-    });
-    document.getElementById('post-input').value = '';
+    showToast('Posting is unavailable with current Firestore rules.');
 };
 
 function renderExplore() {
@@ -528,7 +523,7 @@ window.updateName = async () => {
     const name = document.getElementById('name-input').value.trim();
     if (!name) return;
     try {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid), { displayName: name });
+        await updateDoc(doc(db, 'users', user.uid), { fullName: name });
         showToast("Profile Updated!");
     } catch (e) { console.error(e); }
 };

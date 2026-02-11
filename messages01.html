@@ -144,10 +144,8 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
                     fromId: currentUser.uid,
                     toId: targetUid,
-                    fromName: currentUser.displayName || "User",
-                    toName: fullName,
-                    status: 'accepted',
-                    timestamp: serverTimestamp()
+                    status: 'pending',
+                    createdAt: serverTimestamp()
                 });
             } catch (err) {
                 console.error("Failed to send request:", err);
@@ -191,7 +189,7 @@
             document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
             
             const q = query(
-                collection(db, 'artifacts', appId, 'public', 'data', `chat_${activeChatId}`),
+                collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages'),
                 orderBy('createdAt', 'asc')
             );
 
@@ -281,7 +279,6 @@
             const msgData = {
                 text,
                 senderId: currentUser.uid,
-                senderName: currentUser.displayName || "User",
                 createdAt: serverTimestamp()
             };
 
@@ -289,14 +286,11 @@
             input.style.height = 'auto';
             
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `chat_${activeChatId}`), msgData);
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages'), msgData);
                 
                 const meta = {
                     lastMessage: text,
-                    lastTimestamp: serverTimestamp(),
-                    participants: [currentUser.uid, activeRecipient.id],
-                    recipientName: activeRecipient.fullName || "User",
-                    senderName: currentUser.displayName || "User"
+                    lastMessageAt: serverTimestamp()
                 };
 
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId), meta, { merge: true });
@@ -307,7 +301,7 @@
 
         async function loadConversations() {
             if (!currentUser || currentUser.isAnonymous) return;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'));
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participants', 'array-contains', currentUser.uid));
             onSnapshot(q, (snapshot) => {
                 allConversations = snapshot.docs
                     .map(d => ({ id: d.id, ...d.data() }))
