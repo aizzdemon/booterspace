@@ -121,33 +121,66 @@
 
     <script>
         // --- Init ---
-        // Fix for ReferenceError: check if global variables exist before parsing
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        } catch (e) {
-            console.error("Firebase config error:", e);
-            firebaseConfig = {};
-        }
-
-        // Only initialize if config is valid
-        if (firebaseConfig.apiKey) {
-            firebase.initializeApp(firebaseConfig);
-        } else {
-            console.warn("Firebase config is missing or invalid. Application may not function correctly.");
-        }
-
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+        let db, auth;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
         let currentUser = null;
         let activeChatId = null;
         let msgUnsub = null;
         const knownUsers = {};
 
+        function initializeFirebase() {
+            let config;
+            try {
+                config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            } catch (e) {
+                console.error("Firebase config parsing error:", e);
+                config = null;
+            }
+
+            if (config && config.apiKey) {
+                const app = firebase.initializeApp(config);
+                db = firebase.firestore(app);
+                auth = firebase.auth(app);
+                return true;
+            } else {
+                console.error("Firebase could not be initialized: Missing or invalid config.");
+                return false;
+            }
+        }
+
         // --- Core Authentication ---
         async function init() {
+            if (!initializeFirebase()) return;
+
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    const displayEl = document.getElementById('user-display');
+                    if (displayEl) displayEl.innerText = user.uid;
+                    
+                    // Initialize user profile
+                    const userRef = db.collection('users').doc(user.uid);
+                    try {
+                        const snap = await userRef.get();
+                        if (!snap.exists) {
+                            await userRef.set({
+                                displayName: `User_${user.uid.slice(0, 4)}`,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                        const userData = (await userRef.get()).data();
+                        const nameEl = document.getElementById('my-name');
+                        const avatarEl = document.getElementById('my-avatar');
+                        if (nameEl) nameEl.innerText = userData.displayName;
+                        if (avatarEl) avatarEl.innerText = userData.displayName[0].toUpperCase();
+
+                        startGlobalListeners();
+                    } catch (err) {
+                        console.error("Error setting up user profile:", err);
+                    }
+                }
+            });
+
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await auth.signInWithCustomToken(__initial_auth_token);
@@ -159,33 +192,10 @@
             }
         }
 
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                const displayEl = document.getElementById('user-display');
-                if (displayEl) displayEl.innerText = user.uid;
-                
-                // Initialize user profile
-                const userRef = db.collection('users').doc(user.uid);
-                const snap = await userRef.get();
-                if (!snap.exists) {
-                    await userRef.set({
-                        displayName: `User_${user.uid.slice(0, 4)}`,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-                const userData = (await userRef.get()).data();
-                const nameEl = document.getElementById('my-name');
-                const avatarEl = document.getElementById('my-avatar');
-                if (nameEl) nameEl.innerText = userData.displayName;
-                if (avatarEl) avatarEl.innerText = userData.displayName[0].toUpperCase();
-
-                startGlobalListeners();
-            }
-        });
-
         // --- Global Firestore Listeners (Rule 1 & 2 compliant) ---
         function startGlobalListeners() {
+            if (!db || !currentUser) return;
+
             // 1. Connection Requests (Public Path)
             db.collection('artifacts', appId, 'public', 'data', 'connection_requests')
                 .onSnapshot(snapshot => {
@@ -213,7 +223,7 @@
                     const list = document.getElementById('conversations-list');
                     if (!list) return;
                     list.innerHTML = '';
-                    // Rule 2: Fetch all, then filter and sort in memory
+                    
                     const chats = snapshot.docs
                         .map(doc => ({id: doc.id, ...doc.data()}))
                         .filter(chat => chat.participants && chat.participants.includes(currentUser.uid))
@@ -229,6 +239,7 @@
 
         // --- UI Rendering ---
         async function loadUsers() {
+            if (!db || !currentUser) return;
             try {
                 const snap = await db.collection('users').get();
                 const container = document.getElementById('users-list');
@@ -304,6 +315,7 @@
 
         // --- Actions ---
         async function sendRequest(toId) {
+            if (!db || !currentUser) return;
             try {
                 await db.collection('artifacts', appId, 'public', 'data', 'connection_requests').add({
                     fromId: currentUser.uid,
@@ -317,6 +329,7 @@
         }
 
         async function respondRequest(requestId, fromId, status) {
+            if (!db || !currentUser) return;
             try {
                 await db.collection('artifacts', appId, 'public', 'data', 'connection_requests').doc(requestId).update({ status });
                 if (status === 'accepted') {
@@ -330,6 +343,7 @@
         }
 
         async function openChat(chatId, partnerId) {
+            if (!db || !currentUser) return;
             activeChatId = chatId;
             document.getElementById('empty-chat').classList.add('hidden');
             document.getElementById('chat-header').classList.remove('hidden');
@@ -353,7 +367,6 @@
                 if (!container) return;
                 container.innerHTML = '';
                 
-                // Rule 2 sorting
                 const docs = snap.docs.map(d => ({id: d.id, ...d.data()}))
                     .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
 
@@ -377,9 +390,10 @@
 
         document.getElementById('message-form').onsubmit = async (e) => {
             e.preventDefault();
+            if (!db || !currentUser || !activeChatId) return;
             const input = document.getElementById('message-input');
             const text = input.value.trim();
-            if (!text || !activeChatId) return;
+            if (!text) return;
 
             try {
                 const msgData = {
