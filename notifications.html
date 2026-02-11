@@ -20,7 +20,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
-  setDoc
+  addDoc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -40,6 +40,7 @@ window.auth = auth;
 window.db = db;
 let currentUser = null;
 let notificationsUnsubscribe = null;
+const appId = "booterspace-chat";
 const notificationElements = new Map();
 
 onAuthStateChanged(auth, async (user) => {
@@ -287,12 +288,25 @@ async function loadSuggestions() {
   if (!currentUser) return;
 
   try {
-    const connectionsSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-    const connectedIds = connectionsSnap.docs.map((d) => d.id);
-    connectedIds.push(currentUser.uid);
+    const requestsRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+    const [fromSnap, toSnap] = await Promise.all([
+      getDocs(query(requestsRef, where("fromId", "==", currentUser.uid))),
+      getDocs(query(requestsRef, where("toId", "==", currentUser.uid)))
+    ]);
+
+    const connectedIds = new Set([currentUser.uid]);
+    [fromSnap, toSnap].forEach((snap) => {
+      snap.forEach((d) => {
+        const req = d.data() || {};
+        if (req.status === "accepted" || req.status === "pending") {
+          if (req.fromId) connectedIds.add(req.fromId);
+          if (req.toId) connectedIds.add(req.toId);
+        }
+      });
+    });
 
     const usersSnap = await getDocs(collection(db, "users"));
-    let suggestions = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => !connectedIds.includes(u.id));
+    let suggestions = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => !connectedIds.has(u.id));
     suggestions = suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
 
     renderSuggestionsList(list, suggestions);
@@ -314,8 +328,9 @@ window.connectUser = async (targetUid) => {
   }
 
   try {
-    await setDoc(doc(db, "users", targetUid, "connections", currentUser.uid), {
-      fromUserId: currentUser.uid,
+    await addDoc(collection(db, "artifacts", appId, "public", "data", "connection_requests"), {
+      fromId: currentUser.uid,
+      toId: targetUid,
       status: "pending",
       createdAt: serverTimestamp()
     });

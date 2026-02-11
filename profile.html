@@ -204,6 +204,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const appId = "booterspace-chat";
 
 const state = {
   isSearching: false,
@@ -359,18 +360,23 @@ async function hydrateRequestStatuses(users) {
     return;
   }
 
+  const requestsRef = db.collection("artifacts").doc(appId).collection("public").doc("data").collection("connection_requests");
+
   await Promise.all(users.map(async (u) => {
     try {
-      const [incomingRequestDoc, outgoingRequestDoc] = await Promise.all([
-        db.collection("users").doc(state.currentUser.uid).collection("connections").doc(u.id).get(),
-        db.collection("users").doc(u.id).collection("connections").doc(state.currentUser.uid).get()
+      const [sentSnap, receivedSnap] = await Promise.all([
+        requestsRef.where("fromId", "==", state.currentUser.uid).where("toId", "==", u.id).limit(1).get(),
+        requestsRef.where("fromId", "==", u.id).where("toId", "==", state.currentUser.uid).limit(1).get()
       ]);
 
-      if (incomingRequestDoc.exists) {
-        const incomingStatus = incomingRequestDoc.data().status || "pending";
+      const sentDoc = sentSnap.empty ? null : sentSnap.docs[0].data();
+      const receivedDoc = receivedSnap.empty ? null : receivedSnap.docs[0].data();
+
+      if (receivedDoc) {
+        const incomingStatus = receivedDoc.status || "pending";
         nextStatusMap[u.id] = incomingStatus === "accepted" ? "connected" : "received";
-      } else if (outgoingRequestDoc.exists) {
-        const outgoingStatus = outgoingRequestDoc.data().status || "pending";
+      } else if (sentDoc) {
+        const outgoingStatus = sentDoc.status || "pending";
         nextStatusMap[u.id] = outgoingStatus === "accepted" ? "connected" : "pending";
       } else {
         nextStatusMap[u.id] = "none";
@@ -403,15 +409,15 @@ window.sendConnectionRequest = async function(userId, event) {
   const currentStatus = state.requestStatusMap[userId] || "none";
   if (currentStatus !== "none") return;
 
-  const targetRef = db.collection("users").doc(userId);
   const requestPayload = {
-    fromUserId: state.currentUser.uid,
+    fromId: state.currentUser.uid,
+    toId: userId,
     status: "pending",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
-    await targetRef.collection("connections").doc(state.currentUser.uid).set(requestPayload, { merge: true });
+    await db.collection("artifacts").doc(appId).collection("public").doc("data").collection("connection_requests").add(requestPayload);
 
     state.requestStatusMap[userId] = "pending";
     renderResults(state.searchResults);

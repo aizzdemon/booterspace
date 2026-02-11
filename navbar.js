@@ -71,7 +71,6 @@ const enableNotificationsBtn = document.getElementById("enableNotificationsBtn")
 const dismissNotificationsPromptBtn = document.getElementById("dismissNotificationsPromptBtn");
 
 let unsubscribeNotifications = null;
-let unsubscribeGlobalNotifications = null;
 let unsubscribeRequests = null;
 let unsubscribeForegroundMessages = null;
 let activeUnreadCount = 0;
@@ -86,7 +85,6 @@ const liveNotifications = new Map();
 auth && onAuthStateChanged(auth, async (user) => {
 if (user && !user.isAnonymous) {
 if (unsubscribeNotifications) unsubscribeNotifications();
-if (unsubscribeGlobalNotifications) unsubscribeGlobalNotifications();
 liveNotifications.clear();
 
 loginBtn?.classList.add("hidden");
@@ -130,7 +128,6 @@ notificationCount?.classList.add("hidden");
 mNotificationCount?.classList.add("hidden");
 
 if (unsubscribeNotifications) unsubscribeNotifications();
-if (unsubscribeGlobalNotifications) unsubscribeGlobalNotifications();
 if (unsubscribeRequests) unsubscribeRequests();
 liveNotifications.clear();
 notificationList && (notificationList.innerHTML = `<p class="text-center text-sm text-gray-400 py-6">No notifications yet</p>`);
@@ -145,17 +142,15 @@ notificationList && (notificationList.innerHTML = `<p class="text-center text-sm
 
 function setupConnectionRequestListener(userId) {
 // Listen for connection requests where current user is the recipient
-const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests'));
+const q = query(
+collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests'),
+where('toId', '==', userId),
+where('status', '==', 'pending')
+);
 
 unsubscribeRequests = onSnapshot(q, (snapshot) => {
-const incomingRequests = snapshot.docs
-.map(d => d.data())
-.filter(req => req.toId === userId && req.status === 'pending');
-
-activeRequestCount = incomingRequests.length;
+activeRequestCount = snapshot.size;
 renderTotalBadge();
-
-
 }, (err) => console.error("Request listener error:", err));
 }
 
@@ -169,21 +164,10 @@ collection(db, "users", uid, "notifications"),
 orderBy("createdAt", "desc")
 );
 
-const globalQuery = query(
-collection(db, "notifications"),
-where("userId", "==", uid),
-orderBy("createdAt", "desc")
-);
-
 unsubscribeNotifications = onSnapshot(userScopedQuery, (snap) => {
 upsertNotificationsFromSnapshot(snap, "user");
 renderNotifications();
 }, (err) => console.error("User notification listener error:", err));
-
-unsubscribeGlobalNotifications = onSnapshot(globalQuery, (snap) => {
-upsertNotificationsFromSnapshot(snap, "global");
-renderNotifications();
-}, (err) => console.error("Global notification listener error:", err));
 }
 
 function upsertNotificationsFromSnapshot(snap, source) {
