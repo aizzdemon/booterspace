@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BooterSpace | Social Network</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<div id="app" class="max-w-md mx-auto min-h-screen bg-white shadow-xl flex flex-col relative border-x border-gray-100">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 glass border-b px-4 py-3 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-extrabold text-blue-600 tracking-tight" onclick="switchTab('feed')">BooterSpace</h1>
+            <p id="connection-count" class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">0 Connections</p>
+        </div>
+        <div id="user-badge" onclick="switchTab('profile')" class="cursor-pointer text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full font-bold shadow-md hover:bg-blue-700 transition-all">
+            Loading...
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar pb-24">
+        <!-- Content injected via JS -->
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 max-w-md w-full glass border-t flex justify-around py-3 px-2 z-40 rounded-t-2xl shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <button onclick="switchTab('feed')" class="nav-btn transition-colors duration-200" data-tab="feed">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+        </button>
+        <button onclick="switchTab('explore')" class="nav-btn text-gray-400" data-tab="explore">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button onclick="switchTab('requests')" class="nav-btn text-gray-400 relative" data-tab="requests">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <span id="req-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center border-2 border-white">0</span>
+        </button>
+        <button onclick="switchTab('chats')" class="nav-btn text-gray-400" data-tab="chats">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+        </button>
+    </nav>
+</div>
+
+<!-- Global Messaging Modal -->
+<div id="chat-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md h-[95vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+        <div class="p-4 border-b flex justify-between items-center bg-blue-50">
+            <div class="flex items-center gap-3">
+                <div id="chat-avatar" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow-sm">?</div>
+                <div>
+                    <h3 id="chat-title" class="font-bold text-gray-800 text-sm">Chat</h3>
+                    <p class="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Active Chat</p>
+                </div>
+            </div>
+            <button onclick="closeChat()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l18 18"/></svg>
+            </button>
+        </div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 flex flex-col"></div>
+        <div class="p-4 border-t bg-white flex gap-2 items-center">
+            <input id="chat-input" type="text" placeholder="Write something..." class="flex-1 px-5 py-3 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 text-sm transition-all">
+            <button onclick="handleSendMessage()" class="bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-700 shadow-lg active:scale-90 transition-transform">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs, updateDoc, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-v1';
+
+// State Management
+let user = null;
+let currentTab = 'feed';
+let activeChatId = null;
+let activeChatUnsubscribe = null;
+
+let posts = [];
+let usersMap = {}; // uid -> userObject
+let connectionRequests = []; // All raw requests
+let conversations = []; // All chat metadata
+let connectedUsers = []; // Derived list of accepted connections (uids)
+let myProfile = { displayName: 'Anonymous' };
+
+const UI = {
+    main: document.getElementById('main-content'),
+    badge: document.getElementById('user-badge'),
+    reqBadge: document.getElementById('req-badge'),
+    connCount: document.getElementById('connection-count'),
+    chatModal: document.getElementById('chat-modal'),
+    chatMessages: document.getElementById('chat-messages'),
+    chatInput: document.getElementById('chat-input'),
+    chatTitle: document.getElementById('chat-title'),
+    chatAvatar: document.getElementById('chat-avatar')
+};
+
+// Auth Initialization
+const initAuth = async () => {
+    try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+    } catch (err) {
+        console.error("Auth failed", err);
+    }
+};
+
+onAuthStateChanged(auth, (u) => {
+    user = u;
+    if (user) {
+        initializeDataLayer();
+    }
+});
+
+initAuth();
+
+function initializeDataLayer() {
+    const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
+
+    // 1. User Meta-Data & Self Sync
+    onSnapshot(publicPath('users'), (snap) => {
+        snap.forEach(d => {
+            usersMap[d.id] = d.data();
+        });
+        
+        // Self check
+        if (!usersMap[user.uid]) {
+            const initialData = { uid: user.uid, displayName: `Explorer_${user.uid.substring(0, 4)}`, joinedAt: serverTimestamp() };
+            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid), initialData);
+        } else {
+            myProfile = usersMap[user.uid];
+            UI.badge.textContent = myProfile.displayName;
+        }
+        render();
+    });
+
+    // 2. Connection Requests & Accepted List
+    onSnapshot(publicPath('connection_requests'), (snap) => {
+        connectionRequests = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        
+        // Derive Connection List
+        connectedUsers = connectionRequests
+            .filter(r => r.status === 'accepted' && (r.fromId === user.uid || r.toId === user.uid))
+            .map(r => r.fromId === user.uid ? r.toId : r.fromId);
+
+        UI.connCount.textContent = `${connectedUsers.length} Connections`;
+        
+        // Badge for pending received requests
+        const pending = connectionRequests.filter(r => r.toId === user.uid && r.status === 'pending');
+        UI.reqBadge.textContent = pending.length;
+        UI.reqBadge.classList.toggle('hidden', pending.length === 0);
+        
+        render();
+    });
+
+    // 3. Conversation Sync
+    onSnapshot(publicPath('conversations'), (snap) => {
+        conversations = snap.docs.map(d => ({id: d.id, ...d.data()}))
+                        .filter(c => c.participants?.includes(user.uid))
+                        .sort((a, b) => (b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0));
+        render();
+    });
+
+    // 4. Global Feed
+    onSnapshot(publicPath('posts'), (snap) => {
+        posts = snap.docs.map(d => ({id: d.id, ...d.data()}))
+                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        render();
+    });
+}
+
+// --- CORE ACTIONS ---
+
+window.requestConnection = async (targetUid) => {
+    try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests'), {
+            fromId: user.uid,
+            toId: targetUid,
+            status: 'pending',
+            createdAt: serverTimestamp()
+        });
+        showToast("Request Sent!");
+    } catch (e) { console.error(e); }
+};
+
+window.processRequest = async (id, status, otherUid) => {
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', id), { status });
+        if (status === 'accepted') {
+            // Check if conversation already exists to avoid duplicates
+            const existing = conversations.find(c => c.participants.includes(otherUid));
+            if (!existing) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), {
+                    participants: [user.uid, otherUid],
+                    lastMessage: 'Handshake complete!',
+                    lastMessageAt: serverTimestamp()
+                });
+            }
+            showToast("Connection established!");
+        }
+    } catch (e) { console.error(e); }
+};
+
+window.startChatWithConnection = async (otherUid) => {
+    // Look for existing conversation first
+    const existing = conversations.find(c => c.participants.includes(otherUid));
+    if (existing) {
+        openChat(existing.id, otherUid);
+    } else {
+        // Create new one
+        try {
+            const newDoc = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), {
+                participants: [user.uid, otherUid],
+                lastMessage: 'Chat started',
+                lastMessageAt: serverTimestamp()
+            });
+            openChat(newDoc.id, otherUid);
+        } catch(e) { console.error(e); }
+    }
+};
+
+window.openChat = (chatId, otherUid) => {
+    const peer = usersMap[otherUid] || { displayName: 'User' };
+    activeChatId = chatId;
+    UI.chatTitle.textContent = peer.displayName;
+    UI.chatAvatar.textContent = peer.displayName.charAt(0);
+    UI.chatModal.classList.remove('hidden');
+    UI.chatMessages.innerHTML = '';
+    
+    if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+    activeChatUnsubscribe = onSnapshot(
+        collection(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId, 'messages'),
+        (snap) => {
+            const msgs = snap.docs.map(d => d.data()).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+            UI.chatMessages.innerHTML = msgs.map(m => `
+                <div class="flex ${m.senderId === user.uid ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-[80%] px-4 py-2 rounded-2xl text-sm ${m.senderId === user.uid ? 'bg-blue-600 text-white shadow-md rounded-br-none' : 'bg-white text-gray-800 shadow-sm rounded-bl-none'}">
+                        ${m.text}
+                    </div>
+                </div>
+            `).join('');
+            UI.chatMessages.scrollTop = UI.chatMessages.scrollHeight;
+        }
+    );
+};
+
+window.handleSendMessage = async () => {
+    const text = UI.chatInput.value.trim();
+    if (!text || !activeChatId) return;
+    try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages'), {
+            senderId: user.uid,
+            text,
+            createdAt: serverTimestamp()
+        });
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId), {
+            lastMessage: text,
+            lastMessageAt: serverTimestamp()
+        });
+        UI.chatInput.value = '';
+    } catch (e) { console.error(e); }
+};
+
+window.closeChat = () => {
+    UI.chatModal.classList.add('hidden');
+    if (activeChatUnsubscribe) activeChatUnsubscribe();
+    activeChatId = null;
+};
+
+// --- NAVIGATION & UI ---
+
+window.switchTab = (tab) => {
+    currentTab = tab;
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === tab;
+        btn.classList.toggle('text-blue-600', isActive);
+        btn.classList.toggle('text-gray-400', !isActive);
+    });
+    render();
+};
+
+function render() {
+    if (!user) return;
+    switch(currentTab) {
+        case 'feed': renderFeed(); break;
+        case 'explore': renderExplore(); break;
+        case 'requests': renderRequests(); break;
+        case 'chats': renderChats(); break;
+        case 'profile': renderProfile(); break;
+    }
+}
+
+function renderFeed() {
+    UI.main.innerHTML = `
+        <div class="p-4 bg-white sticky top-[60px] z-30 shadow-sm">
+            <div class="flex gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">${myProfile.displayName.charAt(0)}</div>
+                <div class="flex-1">
+                    <textarea id="post-input" placeholder="What's happening?" class="w-full p-3 bg-gray-50 border-none rounded-2xl h-24 text-sm focus:ring-2 focus:ring-blue-100 resize-none transition-all"></textarea>
+                    <div class="flex justify-end mt-2">
+                        <button onclick="createPost()" class="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-extrabold shadow-blue-100 shadow-xl active:scale-95 transition-all">Publish</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="divide-y divide-gray-50">${posts.map(p => {
+            const author = usersMap[p.authorId] || { displayName: 'User' };
+            return `
+            <div class="p-4 flex gap-4 bg-white">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold border border-blue-100">${author.displayName.charAt(0)}</div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-gray-900">${author.displayName}</span>
+                        <span class="text-[10px] text-gray-400 font-medium">${p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+                    </div>
+                    <p class="text-sm mt-2 text-gray-700 leading-relaxed">${p.content}</p>
+                </div>
+            </div>`;
+        }).join('')}</div>`;
+}
+
+window.createPost = async () => {
+    const val = document.getElementById('post-input').value.trim();
+    if (!val) return;
+    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
+        authorId: user.uid,
+        content: val,
+        createdAt: serverTimestamp()
+    });
+    document.getElementById('post-input').value = '';
+};
+
+function renderExplore() {
+    const pendingSent = connectionRequests.filter(r => r.fromId === user.uid && r.status === 'pending').map(r => r.toId);
+    const others = Object.values(usersMap).filter(u => 
+        u.uid !== user.uid && 
+        !connectedUsers.includes(u.uid) && 
+        !pendingSent.includes(u.uid)
+    );
+
+    UI.main.innerHTML = `
+        <div class="p-6 bg-blue-600 text-white">
+            <h2 class="text-2xl font-black">Find People</h2>
+            <p class="text-blue-100 text-xs mt-1">Grow your network in BooterSpace</p>
+        </div>
+        <div class="divide-y bg-white">${others.map(u => `
+            <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 border-2 border-white shadow-sm">${u.displayName.charAt(0)}</div>
+                    <div>
+                        <div class="text-sm font-bold text-gray-900">${u.displayName}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">UID: ${u.uid.substring(0,6)}</div>
+                    </div>
+                </div>
+                <button onclick="requestConnection('${u.uid}')" class="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 transition-colors">Connect</button>
+            </div>`).join('') || '<div class="p-12 text-center text-gray-400 text-sm">Everyone is already in your circle!</div>'}</div>`;
+}
+
+function renderRequests() {
+    const pendingReceived = connectionRequests.filter(r => r.toId === user.uid && r.status === 'pending');
+    UI.main.innerHTML = `
+        <div class="p-6 bg-gray-900 text-white">
+            <h2 class="text-xl font-bold">Incoming Requests</h2>
+        </div>
+        <div class="divide-y bg-white">${pendingReceived.map(r => {
+            const sender = usersMap[r.fromId] || { displayName: 'Stranger' };
+            return `
+            <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">${sender.displayName.charAt(0)}</div>
+                    <span class="text-sm font-bold">${sender.displayName}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="processRequest('${r.id}', 'accepted', '${r.fromId}')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Accept</button>
+                    <button onclick="processRequest('${r.id}', 'rejected', '${r.fromId}')" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl text-xs font-bold">Ignore</button>
+                </div>
+            </div>`;
+        }).join('') || '<div class="p-20 text-center text-gray-400">Inbox clear</div>'}</div>`;
+}
+
+function renderChats() {
+    // 1. Get uids that we already have a conversation with
+    const activeConversationUids = conversations.map(c => c.participants.find(p => p !== user.uid));
+    
+    // 2. Get connections we HAVE NOT started chatting with yet
+    const connectionsToStart = connectedUsers.filter(uid => !activeConversationUids.includes(uid));
+
+    UI.main.innerHTML = `
+        <div class="p-6 bg-white">
+            <h2 class="text-2xl font-black text-gray-900">Messages</h2>
+            <p class="text-xs text-gray-400 font-medium">Your private space</p>
+        </div>
+
+        <!-- Section: Active History -->
+        <div class="px-6 py-2 bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-y border-gray-100">
+            Recent History
+        </div>
+        <div class="divide-y divide-gray-50 bg-white">
+            ${conversations.map(c => {
+                const peerUid = c.participants.find(p => p !== user.uid);
+                const peer = usersMap[peerUid] || { displayName: 'User' };
+                return `
+                    <div onclick="openChat('${c.id}', '${peerUid}')" class="p-5 flex items-center gap-4 cursor-pointer hover:bg-blue-50/50 transition-all border-l-4 border-transparent hover:border-blue-500">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shadow-sm">
+                            ${peer.displayName.charAt(0)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="text-sm font-extrabold text-gray-900">${peer.displayName}</span>
+                                <span class="text-[9px] text-gray-400 font-bold uppercase">
+                                    ${c.lastMessageAt ? new Date(c.lastMessageAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate font-medium">${c.lastMessage || '...'}</p>
+                        </div>
+                    </div>`;
+            }).join('') || '<div class="p-10 text-center text-gray-300 text-xs italic">No message history yet</div>'}
+        </div>
+
+        <!-- Section: Your Connections (Available to Chat) -->
+        <div class="px-6 py-2 bg-gray-50 text-[10px] font-black text-blue-600 uppercase tracking-widest border-y border-gray-100">
+            Connections
+        </div>
+        <div class="p-4 bg-white grid grid-cols-4 gap-4">
+            ${connectionsToStart.map(uid => {
+                const peer = usersMap[uid] || { displayName: 'User' };
+                return `
+                <div onclick="startChatWithConnection('${uid}')" class="flex flex-col items-center gap-2 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center font-bold text-xl border-2 border-dashed border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                        ${peer.displayName.charAt(0)}
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-600 truncate w-full text-center group-hover:text-blue-600">${peer.displayName.split(' ')[0]}</span>
+                </div>`;
+            }).join('') || (activeConversationUids.length === 0 && connectionsToStart.length === 0 ? 
+                '<div class="col-span-4 p-6 text-center text-gray-300 text-xs italic">Connect with people to chat!</div>' : 
+                '<div class="col-span-4 py-4 text-center text-gray-300 text-xs italic">All connections are in your history</div>')}
+        </div>
+    `;
+}
+
+function renderProfile() {
+    UI.main.innerHTML = `
+        <div class="p-8 space-y-10">
+            <div class="text-center">
+                <div class="w-32 h-32 rounded-3xl bg-blue-600 text-white flex items-center justify-center text-5xl font-black mx-auto shadow-2xl rotate-3">
+                    ${myProfile.displayName.charAt(0)}
+                </div>
+                <h2 class="text-2xl font-black text-gray-900 mt-6">${myProfile.displayName}</h2>
+                <div class="inline-block px-3 py-1 bg-gray-100 rounded-full text-[10px] text-gray-500 font-mono mt-2">${user.uid}</div>
+            </div>
+            
+            <div class="bg-gray-50 p-6 rounded-3xl space-y-5 border border-gray-100">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-blue-600 uppercase tracking-widest px-1">Display Name</label>
+                    <input id="name-input" type="text" value="${myProfile.displayName}" class="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:outline-none transition-all" placeholder="Enter name">
+                </div>
+                <button onclick="updateName()" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-blue-600 transition-all active:scale-95">Update Profile</button>
+            </div>
+        </div>
+    `;
+}
+
+window.updateName = async () => {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) return;
+    try {
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid), { displayName: name });
+        showToast("Profile Updated!");
+    } catch (e) { console.error(e); }
+};
+
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-xs font-black z-[100] shadow-2xl animate-bounce';
+    toast.innerHTML = `<div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        ${msg}
+    </div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+</script>
+</body>
+</html>
