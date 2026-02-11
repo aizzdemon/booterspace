@@ -1,638 +1,402 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Chat - BooterSpace</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureConnect Messenger</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .message-bubble { max-width: 75%; position: relative; }
+        .active-tab { border-left: 4px solid #4f46e5; background: #f5f3ff; }
+        @media (max-width: 768px) {
+            .mobile-hidden { display: none; }
+            .mobile-full { width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans h-screen overflow-hidden">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import {
-            getFirestore,
-            collection,
-            doc,
-            setDoc,
-            addDoc,
-            getDoc,
-            getDocs,
-            query,
-            where,
-            orderBy,
-            onSnapshot,
-            serverTimestamp,
-            limit,
-            deleteDoc
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <div id="app" class="flex h-full w-full">
+        <!-- Sidebar: Conversations & Requests -->
+        <aside id="sidebar" class="w-full md:w-80 lg:w-96 bg-white border-r flex flex-col h-full z-20 transition-all duration-300">
+            <div class="p-4 border-b bg-white sticky top-0">
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-xl font-bold text-indigo-600">SecureConnect</h1>
+                    <div class="flex gap-2">
+                        <button onclick="toggleSection('discover')" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200" title="Find People">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 p-1 bg-gray-100 rounded-lg">
+                    <button id="tab-chats" onclick="switchSidebarTab('chats')" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm">Chats</button>
+                    <button id="tab-requests" onclick="switchSidebarTab('requests')" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500">Requests <span id="req-count" class="hidden bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">0</span></button>
+                </div>
+            </div>
 
-        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I","authDomain": "kar-kardan.firebaseapp.com","projectId": "kar-kardan","storageBucket": "kar-kardan.firebasestorage.app","messagingSenderId": "554147696994","appId": "1:554147696994:web:221dcb883e3b65dcea5c3b"}');
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-chat';
+            <!-- Conversations List -->
+            <div id="sidebar-chats" class="flex-grow overflow-y-auto scrollbar-hide">
+                <div id="conversations-list" class="divide-y">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Connection Requests List -->
+            <div id="sidebar-requests" class="hidden flex-grow overflow-y-auto scrollbar-hide">
+                <div id="requests-list" class="p-4 space-y-3">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="p-4 border-t bg-gray-50 flex items-center gap-3">
+                <div id="my-avatar" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">?</div>
+                <div class="overflow-hidden">
+                    <p id="my-name" class="text-sm font-bold truncate">Loading...</p>
+                    <p id="user-display" class="text-[10px] text-gray-400 font-mono truncate"></p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main id="chat-view" class="flex-grow flex flex-col h-full bg-white relative">
+            <!-- Empty State -->
+            <div id="empty-chat" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10 bg-white">
+                <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold">Your Messages</h3>
+                <p class="text-gray-500 max-w-xs">Select a conversation from the sidebar or find someone new to start chatting.</p>
+                <button onclick="toggleSection('discover')" class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition">Find People</button>
+            </div>
+
+            <!-- Header -->
+            <div id="chat-header" class="hidden p-4 border-b bg-white flex items-center gap-3 z-10">
+                <button onclick="closeChatMobile()" class="md:hidden p-2 text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <div id="chat-partner-avatar" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"></div>
+                <div>
+                    <h2 id="chat-partner-name" class="font-bold text-gray-800 leading-none mb-1">Select Contact</h2>
+                    <p id="chat-partner-status" class="text-xs text-green-500 font-medium">Online</p>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="messages-container" class="flex-grow p-4 overflow-y-auto space-y-4 bg-[#f9fafb] scrollbar-hide">
+                <!-- Messages -->
+            </div>
+
+            <!-- Message Input -->
+            <div id="chat-input-area" class="hidden p-4 border-t bg-white">
+                <form id="message-form" class="flex gap-2">
+                    <input type="text" id="message-input" autocomplete="off" placeholder="Type a message..." class="flex-grow p-3 bg-gray-100 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                    <button type="submit" class="bg-indigo-600 text-white p-3 rounded-2xl hover:bg-indigo-700 transition">
+                        <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"></path></svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Discover/Users Modal Overlay -->
+        <div id="modal-discover" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h2 class="text-lg font-bold">Discover People</h2>
+                    <button onclick="toggleSection('discover')" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="users-list" class="p-4 overflow-y-auto space-y-4 flex-grow">
+                    <!-- User cards -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Init ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         let currentUser = null;
         let activeChatId = null;
-        let activeRecipient = null;
-        let chatUnsubscribe = null;
-        let currentTab = 'chats'; 
-        let userRequests = []; 
-        let allConversations = [];
-        let suggestedUsers = [];
+        let msgUnsub = null;
+        const knownUsers = {};
 
-        // Dynamic Navbar Fetch & Auth Sync
-        async function loadNavbar() {
-            try {
-                const response = await fetch('navbar.html');
-                if (response.ok) {
-                    const html = await response.text();
-                    document.getElementById('navbar-placeholder').innerHTML = html;
-                    
-                    // After navbar is injected, we check if there are auth buttons to hook into
-                    // This assumes navbar.html/navbar.js manages its own UI but we sync state
-                    const logoutBtn = document.getElementById('navbar-logout');
-                    if (logoutBtn) {
-                        logoutBtn.addEventListener('click', async () => {
-                            await signOut(auth);
-                            window.location.reload();
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Error loading navbar:", error);
+        // --- Core Authentication ---
+        async function init() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await auth.signInWithCustomToken(__initial_auth_token);
+            } else {
+                await auth.signInAnonymously();
             }
         }
 
-        const initAuth = async () => {
-            try {
-                // Check if user is already logged in via navbar's system (usually shared Firebase instance)
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // We don't force anonymous if the user is supposed to be logged in via Navbar
-                    // But for this environment, we ensure an active session exists
-                    onAuthStateChanged(auth, (user) => {
-                        if (!user) signInAnonymously(auth);
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-display').innerText = user.uid;
+                
+                // Initialize user profile
+                const userRef = db.collection('users').doc(user.uid);
+                const snap = await userRef.get();
+                if (!snap.exists) {
+                    await userRef.set({
+                        displayName: `User_${user.uid.slice(0, 4)}`,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 }
-            } catch (error) {
-                console.error("Auth initialization failed:", error);
-            }
-        };
+                const userData = (await userRef.get()).data();
+                document.getElementById('my-name').innerText = userData.displayName;
+                document.getElementById('my-avatar').innerText = userData.displayName[0].toUpperCase();
 
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user && !user.isAnonymous) {
-                // Fully logged in user
-                setupRequestsListener();
-                loadConversations();
-                loadSuggestions();
-                checkQueryString();
-                updateAuthUI(true);
-            } else if (user && user.isAnonymous) {
-                // Guest user
-                loadSuggestions();
-                updateAuthUI(false, true);
-            } else {
-                // Logged out
-                const list = document.getElementById('conversation-list');
-                if(list) list.innerHTML = '<div class="p-8 text-center"><p class="text-sm text-gray-400 italic">Please login to start chatting</p></div>';
-                updateAuthUI(false);
+                startGlobalListeners();
             }
         });
 
-        function updateAuthUI(isLoggedIn, isAnonymous = false) {
-            const sidebar = document.getElementById('sidebar-panel');
-            const chatPlaceholder = document.getElementById('chat-placeholder');
+        // --- Global Firestore Listeners (Rule 1 & 2 compliant) ---
+        function startGlobalListeners() {
+            // 1. Connection Requests (Public Path)
+            db.collection('artifacts', appId, 'public', 'data', 'connection_requests')
+                .onSnapshot(snapshot => {
+                    const list = document.getElementById('requests-list');
+                    let count = 0;
+                    list.innerHTML = '';
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.toId === currentUser.uid && data.status === 'pending') {
+                            count++;
+                            renderRequest(doc.id, data);
+                        }
+                    });
+                    const badge = document.getElementById('req-count');
+                    badge.innerText = count;
+                    badge.classList.toggle('hidden', count === 0);
+                }, err => console.error("Req Listener Error:", err));
+
+            // 2. Conversations List
+            db.collection('artifacts', appId, 'public', 'data', 'conversations')
+                .onSnapshot(snapshot => {
+                    const list = document.getElementById('conversations-list');
+                    list.innerHTML = '';
+                    // Rule 2: Fetch all, then filter and sort in memory
+                    const chats = snapshot.docs
+                        .map(doc => ({id: doc.id, ...doc.data()}))
+                        .filter(chat => chat.participants.includes(currentUser.uid))
+                        .sort((a, b) => (b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0));
+
+                    if (chats.length === 0) {
+                        list.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm">No conversations yet</div>';
+                    }
+
+                    chats.forEach(chat => renderConversationRow(chat));
+                }, err => console.error("Chat Listener Error:", err));
+        }
+
+        // --- UI Rendering ---
+        async function loadUsers() {
+            const snap = await db.collection('users').get();
+            const container = document.getElementById('users-list');
+            container.innerHTML = '';
             
-            if (!isLoggedIn && !isAnonymous) {
-                // Optional: Show a login overlay or message
-                console.log("User is logged out");
-            }
+            snap.docs.forEach(doc => {
+                if (doc.id === currentUser.uid) return;
+                const data = doc.data();
+                knownUsers[doc.id] = data.displayName;
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-gray-50 rounded-xl";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+                            ${data.displayName?.[0].toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">${data.displayName}</p>
+                            <p class="text-[10px] text-gray-400 font-mono">${doc.id.slice(0, 8)}...</p>
+                        </div>
+                    </div>
+                    <button onclick="sendRequest('${doc.id}')" class="text-xs font-bold text-indigo-600 px-3 py-1.5 bg-white border border-indigo-100 rounded-lg hover:bg-indigo-50">Connect</button>
+                `;
+                container.appendChild(div);
+            });
         }
 
-        // Initialize components
-        window.addEventListener('DOMContentLoaded', () => {
-            loadNavbar();
-            initAuth();
-        });
+        function renderConversationRow(chat) {
+            const partnerId = chat.participants.find(p => p !== currentUser.uid);
+            const list = document.getElementById('conversations-list');
+            
+            const div = document.createElement('div');
+            div.className = `p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition ${activeChatId === chat.id ? 'active-tab' : ''}`;
+            div.onclick = () => openChat(chat.id, partnerId);
+            
+            const time = chat.lastMessageAt ? new Date(chat.lastMessageAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
 
-        function getRequestsCollection() {
-            return collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
+            div.innerHTML = `
+                <div class="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center font-bold text-gray-600">
+                    ${partnerId[0].toUpperCase()}
+                </div>
+                <div class="flex-grow min-w-0">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <h4 class="font-bold text-sm truncate">User ${partnerId.slice(0, 6)}</h4>
+                        <span class="text-[10px] text-gray-400">${time}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 truncate">${chat.lastMessage || 'Start a conversation'}</p>
+                </div>
+            `;
+            list.appendChild(div);
         }
 
-        function setupRequestsListener() {
-            if (!currentUser || currentUser.isAnonymous) return;
-            const q = query(getRequestsCollection());
-            onSnapshot(q, (snapshot) => {
-                userRequests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                if (currentTab === 'new-chat') renderNewChatUI();
-                else renderSuggestedUI();
-            }, (err) => console.error("Request listener error:", err));
+        function renderRequest(id, data) {
+            const list = document.getElementById('requests-list');
+            const div = document.createElement('div');
+            div.className = "bg-indigo-50 p-3 rounded-xl border border-indigo-100 space-y-2";
+            div.innerHTML = `
+                <p class="text-xs font-medium text-indigo-900">Connection request from <b>${data.fromId.slice(0,8)}</b></p>
+                <div class="flex gap-2">
+                    <button onclick="respondRequest('${id}', '${data.fromId}', 'accepted')" class="flex-1 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">Accept</button>
+                    <button onclick="respondRequest('${id}', '${data.fromId}', 'rejected')" class="flex-1 py-1.5 bg-white text-gray-500 text-xs font-bold rounded-lg border">Ignore</button>
+                </div>
+            `;
+            list.appendChild(div);
         }
 
-        async function sendRequest(targetUid, fullName) {
-            if (event) event.stopPropagation();
-            if (!currentUser || currentUser.isAnonymous) {
-                showToast("Please log in to connect with makers");
-                return;
-            }
-
-            const requestId = `${currentUser.uid}_${targetUid}`;
+        // --- Actions ---
+        async function sendRequest(toId) {
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
+                await db.collection('artifacts', appId, 'public', 'data', 'connection_requests').add({
                     fromId: currentUser.uid,
-                    toId: targetUid,
+                    toId: toId,
                     status: 'pending',
-                    createdAt: serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-            } catch (err) {
-                console.error("Failed to send request:", err);
-            }
+                toggleSection('discover');
+                showToast("Request sent!");
+            } catch (err) { alert(err.message); }
         }
 
-        function getChatId(uid1, uid2) {
-            return [uid1, uid2].sort().join('_');
+        async function respondRequest(requestId, fromId, status) {
+            try {
+                await db.collection('artifacts', appId, 'public', 'data', 'connection_requests').doc(requestId).update({ status });
+                if (status === 'accepted') {
+                    await db.collection('artifacts', appId, 'public', 'data', 'conversations').add({
+                        participants: [currentUser.uid, fromId],
+                        lastMessage: "New connection established!",
+                        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            } catch (err) { console.error(err); }
         }
 
-        async function checkQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            const targetUid = params.get("composeTo");
-            if (targetUid && currentUser && targetUid !== currentUser.uid) {
-                startChat(targetUid);
+        async function openChat(chatId, partnerId) {
+            activeChatId = chatId;
+            document.getElementById('empty-chat').classList.add('hidden');
+            document.getElementById('chat-header').classList.remove('hidden');
+            document.getElementById('chat-input-area').classList.remove('hidden');
+            
+            // Header Info
+            document.getElementById('chat-partner-name').innerText = `User ${partnerId.slice(0, 8)}`;
+            document.getElementById('chat-partner-avatar').innerText = partnerId[0].toUpperCase();
+
+            // Handle mobile UI
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('mobile-hidden');
             }
-        }
 
-        async function startChat(targetUid) {
-            if (!currentUser) return;
-            if (currentUser.isAnonymous) {
-                showToast("Login to start a conversation");
-                return;
-            }
-            if (chatUnsubscribe) chatUnsubscribe();
+            // Messages Listener
+            if (msgUnsub) msgUnsub();
+            const msgRef = db.collection('artifacts', appId, 'public', 'data', 'conversations', chatId, 'messages');
             
-            const targetSnap = await getDoc(doc(db, 'users', targetUid));
-            if (!targetSnap.exists()) return;
-            
-            activeRecipient = { id: targetUid, ...targetSnap.data() };
-            activeChatId = getChatId(currentUser.uid, targetUid);
-            
-            document.getElementById('sidebar-panel').classList.add('hidden', 'md:flex');
-            document.getElementById('chat-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('flex');
+            msgUnsub = msgRef.onSnapshot(snap => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                
+                // Rule 2 sorting
+                const docs = snap.docs.map(d => ({id: d.id, ...d.data()}))
+                    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
 
-            document.getElementById('chat-placeholder').classList.add('hidden');
-            document.getElementById('chat-window').classList.remove('hidden');
-            document.getElementById('recipient-name').textContent = activeRecipient.fullName || "User";
-            document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
-            document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
-            
-            const q = query(
-                collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages'),
-                orderBy('createdAt', 'asc')
-            );
-
-            chatUnsubscribe = onSnapshot(q, (snapshot) => {
-                renderMessages(snapshot.docs.map(d => d.data()));
-            }, (error) => {
-                console.error("Chat error:", error);
+                docs.forEach(msg => {
+                    const isMe = msg.senderId === currentUser.uid;
+                    const div = document.createElement('div');
+                    div.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+                    const time = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...';
+                    
+                    div.innerHTML = `
+                        <div class="message-bubble px-4 py-2 rounded-2xl shadow-sm ${isMe ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border text-gray-800 rounded-tl-none'}">
+                            <p class="text-sm">${msg.text}</p>
+                            <span class="block text-[9px] mt-1 opacity-70 text-right">${time}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
             });
         }
 
-        window.closeChatMobile = () => {
-            document.getElementById('sidebar-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('hidden');
-            document.getElementById('chat-panel').classList.remove('flex');
-            activeChatId = null;
-            if (chatUnsubscribe) chatUnsubscribe();
-        };
-
-        window.switchTab = (tab) => {
-            currentTab = tab;
-            const chatList = document.getElementById('conversation-list');
-            const suggestContainer = document.getElementById('suggest-tab-content');
-            const newChatContainer = document.getElementById('new-chat-content');
-            const chatTabBtn = document.getElementById('tab-chats');
-            const suggestTabBtn = document.getElementById('tab-suggest');
-            const searchInput = document.getElementById('sidebar-search');
-
-            if (searchInput) searchInput.value = '';
-            
-            chatList.classList.add('hidden');
-            suggestContainer.classList.add('hidden');
-            newChatContainer.classList.add('hidden');
-            chatTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
-            suggestTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
-
-            if (tab === 'chats') {
-                chatList.classList.remove('hidden');
-                chatTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                if (searchInput) searchInput.placeholder = "Search messages...";
-                renderConversations();
-            } else if (tab === 'suggest') {
-                suggestContainer.classList.remove('hidden');
-                suggestTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                if (searchInput) searchInput.placeholder = "Search new people...";
-                renderSuggestedUI();
-            } else if (tab === 'new-chat') {
-                newChatContainer.classList.remove('hidden');
-                if (searchInput) searchInput.placeholder = "Search connected people...";
-                renderNewChatUI();
-            }
-
-            document.getElementById('sidebar-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('hidden');
-            document.getElementById('chat-panel').classList.remove('flex');
-        };
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            if (messages.length === 0) {
-                container.innerHTML = '<div class="p-8 text-center text-gray-400 italic text-sm">No messages yet. Say hello!</div>';
-                return;
-            }
-
-            container.innerHTML = messages.map(msg => {
-                const isMine = msg.senderId === currentUser.uid;
-                const time = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...';
-                
-                return `
-                    <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-4 px-2">
-                        <div class="max-w-[90%] md:max-w-[75%]">
-                            <div class="${isMine ? 'bg-indigo-600 text-white rounded-l-2xl rounded-tr-2xl' : 'bg-white text-slate-800 border rounded-r-2xl rounded-tl-2xl'} p-3 shadow-sm">
-                                <p class="text-[15px] font-medium leading-relaxed break-words">${msg.text}</p>
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-1 px-1 ${isMine ? 'text-right' : 'text-left'}">${time}</p>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-            container.scrollTop = container.scrollHeight;
-        }
-
-        window.sendMessage = async () => {
-            const input = document.getElementById('chat-input');
+        document.getElementById('message-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
             const text = input.value.trim();
-            if (!text || !activeChatId || !currentUser || currentUser.isAnonymous) return;
+            if (!text || !activeChatId) return;
 
-            const msgData = {
-                text,
-                senderId: currentUser.uid,
-                createdAt: serverTimestamp()
-            };
-
-            input.value = '';
-            input.style.height = 'auto';
-            
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages'), msgData);
-                
-                const meta = {
-                    lastMessage: text,
-                    lastMessageAt: serverTimestamp()
+                // Key constraint check for Rule alignment
+                const msgData = {
+                    senderId: currentUser.uid,
+                    text: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId), meta, { merge: true });
-            } catch (err) {
-                console.error("Failed to send:", err);
-            }
-        };
-
-        async function loadConversations() {
-            if (!currentUser || currentUser.isAnonymous) return;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participants', 'array-contains', currentUser.uid));
-            onSnapshot(q, (snapshot) => {
-                allConversations = snapshot.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(c => c.participants && c.participants.includes(currentUser.uid));
-                renderConversations();
-            });
-        }
-
-        function renderConversations(filter = '') {
-            const list = document.getElementById('conversation-list');
-            if (currentTab !== 'chats') return;
-
-            if (currentUser?.isAnonymous) {
-                list.innerHTML = `<div class="p-8 text-center text-gray-400"><p class="text-sm">Sign in to see your conversations.</p></div>`;
-                return;
-            }
-
-            const filtered = allConversations.filter(c => {
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
-                return (displayName || '').toLowerCase().includes(filter.toLowerCase()) || 
-                       (c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
-            });
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="p-8 text-center text-gray-400"><p class="text-sm">${filter ? 'No results found.' : 'No chats yet.'}</p></div>`;
-                return;
-            }
-
-            list.innerHTML = filtered.map(c => {
-                const otherId = c.participants.find(p => p !== currentUser.uid);
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
-                const isActive = activeChatId === c.id;
-
-                return `
-                    <div onclick="startChat('${otherId}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 text-lg">
-                                ${(displayName || '?').charAt(0)}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
-                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessage}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        async function loadSuggestions() {
-            try {
-                const usersSnap = await getDocs(collection(db, "users"));
-                let totalUsers = usersSnap.docs
-                    .map((d) => ({ id: d.id, ...d.data() }))
-                    .filter((u) => currentUser ? u.id !== currentUser.uid : true);
                 
-                suggestedUsers = totalUsers.sort(() => 0.5 - Math.random());
-                renderSuggestedUI();
-                if (currentTab === 'new-chat') renderNewChatUI();
-            } catch (err) {
-                console.error("Suggestions failed", err);
-            }
-        }
-
-        function renderSuggestedUI(filter = '') {
-            const list = document.getElementById("suggestion-list");
-            if (!list || currentTab !== 'suggest') return;
-
-            const filtered = suggestedUsers.filter(u => 
-                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
-            );
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<p class="p-8 text-center text-gray-400 italic text-sm">No suggested users found.</p>';
-                return;
-            }
-
-            list.innerHTML = filtered.map((user) => {
-                const req = userRequests.find(r => (r.fromId === currentUser?.uid && r.toId === user.id));
-                const isSent = !!req;
-
-                return `
-                    <div class="p-4 border-b hover:bg-slate-50 transition-colors flex items-center justify-between">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <div class="w-12 h-12 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-slate-400 font-bold">
-                                ${(user.fullName || 'U').charAt(0)}
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
-                                <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Member"}</p>
-                            </div>
-                        </div>
-                        <div class="ml-2">
-                            ${isSent ? 
-                                `<div class="w-9 h-9 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                </div>` :
-                                `<button onclick="sendRequest('${user.id}', '${user.fullName}')" class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                </button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        function renderNewChatUI(filter = '') {
-            const list = document.getElementById("new-chat-list");
-            if (!list || currentTab !== 'new-chat') return;
-
-            if (!currentUser || currentUser.isAnonymous) {
-                list.innerHTML = `
-                    <div class="p-12 text-center">
-                        <p class="text-slate-400 text-sm">Log in to chat with connections.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const connectedUids = userRequests
-                .filter(r => r.status === 'accepted' && (r.fromId === currentUser.uid || r.toId === currentUser.uid))
-                .map(r => r.fromId === currentUser.uid ? r.toId : r.fromId);
-
-            const connectedUsers = suggestedUsers.filter(u => connectedUids.includes(u.id));
-
-            const filtered = connectedUsers.filter(u => 
-                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
-            );
-
-            if (filtered.length === 0) {
-                list.innerHTML = `
-                    <div class="p-12 text-center">
-                        <p class="text-slate-400 text-sm italic">No connected people found.</p>
-                        <button onclick="switchTab('suggest')" class="mt-4 text-xs font-bold text-indigo-600 uppercase tracking-widest hover:underline">Find People to Connect</button>
-                    </div>
-                `;
-                return;
-            }
-
-            list.innerHTML = filtered.map((user) => `
-                <div onclick="startChat('${user.id}')" class="p-4 border-b hover:bg-indigo-50 cursor-pointer transition-colors flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                        ${(user.fullName || 'U').charAt(0)}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <h4 class="text-[15px] font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
-                        <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Contact"}</p>
-                    </div>
-                    <div class="text-indigo-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    </div>
-                </div>
-            `).join("");
-        }
-
-        function showToast(msg) {
-            const toast = document.createElement('div');
-            toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl z-[100] animate-bounce";
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        window.handleSearch = (e) => {
-            const val = e.target.value;
-            if (currentTab === 'chats') renderConversations(val);
-            else if (currentTab === 'suggest') renderSuggestedUI(val);
-            else if (currentTab === 'new-chat') renderNewChatUI(val);
+                input.value = '';
+                
+                await db.collection('artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages').add(msgData);
+                
+                await db.collection('artifacts', appId, 'public', 'data', 'conversations').doc(activeChatId).update({
+                    lastMessage: text,
+                    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (err) { console.error(err); }
         };
 
-        window.startChat = startChat;
-        window.loadSuggestions = loadSuggestions;
-        window.sendRequest = sendRequest;
-        window.switchTab = switchTab;
-
-        window.addEventListener('input', (e) => {
-            if (e.target.id === 'chat-input') {
-                e.target.style.height = 'auto';
-                e.target.style.height = (e.target.scrollHeight) + 'px';
-            }
-        });
-    </script>
-
-    <style>
-        :root {
-            --vh: 1vh;
-        }
-        body, html {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .main-container {
-            height: 100%;
-            height: calc(var(--vh, 1vh) * 100);
-            display: flex;
-            flex-direction: column;
-        }
-        .app-content {
-            flex: 1;
-            overflow: hidden;
-            display: flex;
-            width: 100%;
-        }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .fab-btn {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            z-index: 40;
-        }
-        @media (max-width: 768px) {
-            .app-content {
-                padding: 0 !important;
-            }
-            .chat-box-rounded {
-                border-radius: 0 !important;
-                border: none !important;
-            }
-            #messages-container {
-                padding-bottom: 20px;
-            }
-        }
-    </style>
-    <script>
-        const updateVH = () => {
-            let vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-        };
-        window.addEventListener('resize', updateVH);
-        updateVH();
-    </script>
-</head>
-<body class="bg-slate-50 font-sans text-slate-900 main-container">
-
-<div id="navbar-placeholder"></div>
-
-<main class="app-content max-w-7xl mx-auto w-full md:p-4 lg:p-6">
-    <div class="flex-1 flex bg-white md:rounded-3xl chat-box-rounded shadow-2xl md:border border-slate-200 overflow-hidden relative">
-        
-        <!-- Sidebar -->
-        <aside id="sidebar-panel" class="w-full md:w-80 lg:w-96 border-r flex flex-col bg-white overflow-hidden">
-            <div class="p-4 border-b">
-                <div class="relative">
-                    <input id="sidebar-search" type="text" oninput="handleSearch(event)" placeholder="Search messages..." class="w-full bg-slate-100 border-none rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
-                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="flex border-b bg-slate-50/50">
-                <button id="tab-chats" onclick="switchTab('chats')" class="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-indigo-600 border-b-2 border-indigo-600 transition-all">
-                    Chats
-                </button>
-                <button id="tab-suggest" onclick="switchTab('suggest')" class="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">
-                    Discover
-                </button>
-            </div>
+        // --- View Controls ---
+        function switchSidebarTab(tab) {
+            const isChats = tab === 'chats';
+            document.getElementById('sidebar-chats').classList.toggle('hidden', !isChats);
+            document.getElementById('sidebar-requests').classList.toggle('hidden', isChats);
             
-            <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
-            
-            <div id="suggest-tab-content" class="flex-1 flex flex-col overflow-hidden hidden">
-                <div class="px-4 py-3 bg-slate-50 flex justify-between items-center border-b">
-                    <span class="text-[10px] font-black uppercase text-slate-500">Find New Makers</span>
-                    <button onclick="loadSuggestions()" class="text-[10px] text-indigo-600 font-bold hover:underline uppercase">Shuffle</button>
-                </div>
-                <div id="suggestion-list" class="flex-1 overflow-y-auto"></div>
-            </div>
+            document.getElementById('tab-chats').className = isChats ? "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm" : "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500";
+            document.getElementById('tab-requests').className = !isChats ? "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm" : "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500";
+        }
 
-            <div id="new-chat-content" class="flex-1 flex flex-col overflow-hidden hidden">
-                <div class="px-4 py-3 bg-indigo-50 flex justify-between items-center border-b">
-                    <span class="text-[10px] font-black uppercase text-indigo-600">New Conversation</span>
-                    <button onclick="switchTab('chats')" class="text-slate-400 hover:text-slate-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
-                <div id="new-chat-list" class="flex-1 overflow-y-auto"></div>
-            </div>
+        function toggleSection(id) {
+            const modal = document.getElementById(`modal-${id}`);
+            const isHidden = modal.classList.toggle('hidden');
+            if (!isHidden && id === 'discover') loadUsers();
+        }
 
-            <button onclick="switchTab('new-chat')" class="fab-btn w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-indigo-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            </button>
-        </aside>
+        function closeChatMobile() {
+            document.getElementById('sidebar').classList.remove('mobile-hidden');
+            activeChatId = null;
+        }
 
-        <!-- Chat Area -->
-        <section id="chat-panel" class="hidden md:flex flex-1 flex-col relative bg-slate-50/30 overflow-hidden">
-            <div id="chat-placeholder" class="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                <div class="w-20 h-20 bg-indigo-50 text-indigo-200 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                    </svg>
-                </div>
-                <h3 class="text-xl font-black text-slate-800">BooterSpace Chat</h3>
-                <p class="text-slate-500 max-w-xs mx-auto mt-2 text-sm">Select a recent chat or click the <span class="text-indigo-600 font-bold">+</span> button to start a new one with your connections.</p>
-                <button onclick="switchTab('suggest')" class="mt-4 px-6 py-2 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-md hover:bg-indigo-700 transition-all">Find New People</button>
-            </div>
+        function showToast(text) {
+            const t = document.createElement('div');
+            t.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl z-[100] animate-bounce";
+            t.innerText = text;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
 
-            <div id="chat-window" class="hidden flex-1 flex flex-col h-full bg-white">
-                <header class="px-4 py-3 md:px-6 md:py-4 bg-white border-b flex items-center gap-3 shadow-sm z-10">
-                    <button onclick="closeChatMobile()" class="md:hidden p-2 -ml-2 text-slate-400 hover:text-slate-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    <div id="recipient-avatar" class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">?</div>
-                    <div class="flex-1 min-w-0">
-                        <h3 id="recipient-name" class="font-bold text-slate-800 leading-tight truncate">User</h3>
-                        <p class="text-[10px] text-green-500 font-bold uppercase tracking-wider">Online</p>
-                    </div>
-                </header>
-
-                <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col bg-slate-50/50"></div>
-
-                <footer class="p-3 md:p-4 bg-white border-t">
-                    <div class="flex items-end gap-2 bg-slate-100/80 rounded-2xl border border-slate-200 p-1.5 md:p-2">
-                        <textarea id="chat-input" rows="1" placeholder="Type a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-2 py-2 text-[15px] resize-none overflow-hidden max-h-32" onkeydown="if(event.key === 'Enter' && !event.shiftKey && window.innerWidth > 768){ event.preventDefault(); sendMessage(); }"></textarea>
-                        <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2.5 rounded-xl transition-all active:scale-90 shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
-                        </button>
-                    </div>
-                    <div class="h-1 md:hidden"></div>
-                </footer>
-            </div>
-        </section>
-    </div>
-</main>
-
+        init();
+    </script>
 </body>
 </html>
