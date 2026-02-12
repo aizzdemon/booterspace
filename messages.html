@@ -7,610 +7,195 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-        import {
-            getFirestore,
-            collection,
-            doc,
-            setDoc,
-            addDoc,
-            updateDoc,
-            getDoc,
-            getDocs,
-            query,
-            where,
-            onSnapshot,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-
-        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I","authDomain": "kar-kardan.firebaseapp.com","projectId": "kar-kardan","storageBucket": "kar-kardan.firebasestorage.app","messagingSenderId": "554147696994","appId": "1:554147696994:web:221dcb883e3b65dcea5c3b"}');
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Share Firebase instances globally so navbar.js can attach to the same app/auth state.
-        window.app = app;
-        window.auth = auth;
-        window.db = db;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-chat';
-
-        let currentUser = null;
-        let activeChatId = null;
-        let activeRecipient = null;
-        let chatUnsubscribe = null;
-        let currentTab = 'chats'; 
-        let userRequests = []; 
-        let allConversations = [];
-        let suggestedUsers = [];
-
-        // Dynamic Navbar Fetch & Auth Sync
-        async function loadNavbar() {
-            try {
-                const response = await fetch('navbar.html');
-                if (response.ok) {
-                    const html = await response.text();
-                    document.getElementById('navbar-placeholder').innerHTML = html;
-
-                    const navbarScript = document.createElement('script');
-                    navbarScript.type = 'module';
-                    navbarScript.src = 'navbar.js';
-                    document.body.appendChild(navbarScript);
-                }
-            } catch (error) {
-                console.error("Error loading navbar:", error);
-            }
-        }
-
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                    return;
-                }
-
-                await new Promise((resolve) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        unsubscribe();
-                        if (!user) {
-                            try {
-                                await signInAnonymously(auth);
-                            } catch (error) {
-                                console.warn("Anonymous auth failed", error);
-                            }
-                        }
-                        resolve();
-                    });
-                });
-            } catch (error) {
-                console.warn("Auth failed", error);
-            }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user && !user.isAnonymous) {
-                // Fully logged in user
-                setupRequestsListener();
-                loadConversations();
-                loadSuggestions();
-                checkQueryString();
-                updateAuthUI(true);
-            } else if (user && user.isAnonymous) {
-                // Guest user
-                loadSuggestions();
-                updateAuthUI(false, true);
-            } else {
-                // Logged out
-                const list = document.getElementById('conversation-list');
-                if(list) list.innerHTML = '<div class="p-8 text-center"><p class="text-sm text-gray-400 italic">Please login to start chatting</p></div>';
-                updateAuthUI(false);
-            }
-        });
-
-        function updateAuthUI(isLoggedIn, isAnonymous = false) {
-            const sidebar = document.getElementById('sidebar-panel');
-            const chatPlaceholder = document.getElementById('chat-placeholder');
-            
-            if (!isLoggedIn && !isAnonymous) {
-                // Optional: Show a login overlay or message
-                console.log("User is logged out");
-            }
-        }
-
-        // Initialize components
-        window.addEventListener('DOMContentLoaded', () => {
-            loadNavbar();
-            initAuth();
-        });
-
-        function getRequestsCollection() {
-            return collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
-        }
-
-        function getUserNotificationsCollection(uid) {
-            return collection(db, 'users', uid, 'notifications');
-        }
-
-        async function createNotification(uid, text, meta = {}) {
-            if (!uid || !text) return;
-            await addDoc(getUserNotificationsCollection(uid), {
-                toUid: uid,
-                text,
-                read: false,
-                createdAt: serverTimestamp(),
-                ...meta
-            });
-        }
-
-        function getConversationDoc(chatId) {
-            return doc(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId);
-        }
-
-        function getMessagesCollection(chatId) {
-            return collection(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId, 'messages');
-        }
-
-        function setupRequestsListener() {
-            if (!currentUser || currentUser.isAnonymous) return;
-
-            const requestsByFrom = query(getRequestsCollection(), where('fromId', '==', currentUser.uid));
-            const requestsByTo = query(getRequestsCollection(), where('toId', '==', currentUser.uid));
-
-            const requestDocsMap = new Map();
-            const rerenderRequests = () => {
-                userRequests = Array.from(requestDocsMap.values());
-                if (currentTab === 'new-chat') renderNewChatUI();
-                else renderSuggestedUI();
-            };
-
-            const syncRequestDocs = (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'removed') requestDocsMap.delete(change.doc.id);
-                    else requestDocsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
-                });
-                rerenderRequests();
-            };
-
-            onSnapshot(requestsByFrom, syncRequestDocs, (err) => console.error("Request listener error:", err));
-            onSnapshot(requestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
-        }
-
-        async function sendRequest(targetUid, fullName, ev) {
-            if (ev) ev.stopPropagation();
-            if (!currentUser || currentUser.isAnonymous) {
-                showToast("Please log in to connect with makers");
-                return;
-            }
-
-            const requestId = `${currentUser.uid}_${targetUid}`;
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
-                    fromId: currentUser.uid,
-                    toId: targetUid,
-                    status: 'pending',
-                    createdAt: serverTimestamp()
-                });
-
-                await createNotification(targetUid, `${currentUser.displayName || "Someone"} sent you a connection request.`, {
-                    type: 'connection_request',
-                    fromId: currentUser.uid,
-                    requestId
-                });
-
-                showToast('Connection request sent');
-            } catch (err) {
-                console.error("Failed to send request:", err);
-            }
-        }
-
-        async function acceptRequest(requestId, fromId, fromName, ev) {
-            if (ev) ev.stopPropagation();
-            if (!currentUser || currentUser.isAnonymous) {
-                showToast("Please log in to accept requests");
-                return;
-            }
-
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
-                    status: 'accepted'
-                });
-
-                await createNotification(fromId, `${currentUser.displayName || "A user"} accepted your connection request.`, {
-                    type: 'connection_accepted',
-                    toId: currentUser.uid,
-                    requestId
-                });
-
-                await createNotification(currentUser.uid, `You accepted ${fromName || "a maker"}'s connection request.`, {
-                    type: 'connection_accepted',
-                    fromId,
-                    requestId
-                });
-
-                showToast('Connection request accepted');
-            } catch (err) {
-                console.error('Failed to accept request:', err);
-            }
-        }
-
-        function getChatId(uid1, uid2) {
-            return [uid1, uid2].sort().join('_');
-        }
-
-        async function checkQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            const targetUid = params.get("composeTo");
-            const chatId = params.get("chatId");
-
-            if (chatId && currentUser) {
-                const [uidA, uidB] = chatId.split('_');
-                const targetUidFromChat = uidA === currentUser.uid ? uidB : uidA;
-                if (targetUidFromChat && targetUidFromChat !== currentUser.uid) {
-                    startChat(targetUidFromChat);
-                    return;
-                }
-            }
-
-            if (targetUid && currentUser && targetUid !== currentUser.uid) {
-                startChat(targetUid);
-            }
-        }
-
-        async function startChat(targetUid) {
-            if (!currentUser) return;
-            if (currentUser.isAnonymous) {
-                showToast("Login to start a conversation");
-                return;
-            }
-            if (chatUnsubscribe) chatUnsubscribe();
-            
-            const targetSnap = await getDoc(doc(db, 'users', targetUid));
-            if (!targetSnap.exists()) return;
-            
-            activeRecipient = { id: targetUid, ...targetSnap.data() };
-            activeChatId = getChatId(currentUser.uid, targetUid);
-
-            const chatRef = getConversationDoc(activeChatId);
-            const chatSnap = await getDoc(chatRef);
-            if (!chatSnap.exists()) {
-                await setDoc(chatRef, {
-                    participants: [currentUser.uid, targetUid],
-                    createdAt: serverTimestamp()
-                });
-            }
-            
-            document.getElementById('sidebar-panel').classList.add('hidden', 'md:flex');
-            document.getElementById('chat-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('flex');
-
-            document.getElementById('chat-placeholder').classList.add('hidden');
-            document.getElementById('chat-window').classList.remove('hidden');
-            document.getElementById('recipient-name').textContent = activeRecipient.fullName || "User";
-            document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
-            document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
-            
-            chatUnsubscribe = onSnapshot(getMessagesCollection(activeChatId), (snapshot) => {
-                renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-            }, (error) => {
-                console.error("Chat error:", error);
-            });
-        }
-
-        window.closeChatMobile = () => {
-            document.getElementById('sidebar-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('hidden');
-            document.getElementById('chat-panel').classList.remove('flex');
-            activeChatId = null;
-            if (chatUnsubscribe) chatUnsubscribe();
-        };
-
-        window.switchTab = (tab) => {
-            currentTab = tab;
-            const chatList = document.getElementById('conversation-list');
-            const suggestContainer = document.getElementById('suggest-tab-content');
-            const newChatContainer = document.getElementById('new-chat-content');
-            const chatTabBtn = document.getElementById('tab-chats');
-            const suggestTabBtn = document.getElementById('tab-suggest');
-            const searchInput = document.getElementById('sidebar-search');
-
-            if (searchInput) searchInput.value = '';
-            
-            chatList.classList.add('hidden');
-            suggestContainer.classList.add('hidden');
-            newChatContainer.classList.add('hidden');
-            chatTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
-            suggestTabBtn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
-
-            if (tab === 'chats') {
-                chatList.classList.remove('hidden');
-                chatTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                if (searchInput) searchInput.placeholder = "Search messages...";
-                renderConversations();
-            } else if (tab === 'suggest') {
-                suggestContainer.classList.remove('hidden');
-                suggestTabBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
-                if (searchInput) searchInput.placeholder = "Search new people...";
-                renderSuggestedUI();
-            } else if (tab === 'new-chat') {
-                newChatContainer.classList.remove('hidden');
-                if (searchInput) searchInput.placeholder = "Search connected people...";
-                renderNewChatUI();
-            }
-
-            document.getElementById('sidebar-panel').classList.remove('hidden');
-            document.getElementById('chat-panel').classList.add('hidden');
-            document.getElementById('chat-panel').classList.remove('flex');
-        };
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            const sortedMessages = [...messages].sort((a, b) => {
-                const aDate = a.createdAt?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
-                const bDate = b.createdAt?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
-                return aDate - bDate;
-            });
-            if (sortedMessages.length === 0) {
-                container.innerHTML = '<div class="p-8 text-center text-gray-400 italic text-sm">No messages yet. Say hello!</div>';
-                return;
-            }
-
-            container.innerHTML = sortedMessages.map(msg => {
-                const isMine = msg.senderId === currentUser.uid;
-                const time = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...';
-                
-                return `
-                    <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-4 px-2">
-                        <div class="max-w-[90%] md:max-w-[75%]">
-                            <div class="${isMine ? 'bg-indigo-600 text-white rounded-l-2xl rounded-tr-2xl' : 'bg-white text-slate-800 border rounded-r-2xl rounded-tl-2xl'} p-3 shadow-sm">
-                                <p class="text-[15px] font-medium leading-relaxed break-words">${msg.text}</p>
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-1 px-1 ${isMine ? 'text-right' : 'text-left'}">${time}</p>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-            container.scrollTop = container.scrollHeight;
-        }
-
-        window.sendMessage = async () => {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text || !activeChatId || !currentUser || currentUser.isAnonymous) return;
-
-            const msgData = {
-                text,
-                senderId: currentUser.uid,
-                createdAt: serverTimestamp()
-            };
-
-            input.value = '';
-            input.style.height = 'auto';
-            
-            try {
-                await addDoc(getMessagesCollection(activeChatId), msgData);
-                
-                const meta = {
-                    lastMessage: text,
-                    lastMessageAt: serverTimestamp()
-                };
-
-                await setDoc(getConversationDoc(activeChatId), meta, { merge: true });
-
-                await createNotification(activeRecipient.id, `${currentUser.displayName || "Someone"} sent you a new message.`, {
-                    type: 'message',
-                    senderId: currentUser.uid,
-                    fromId: currentUser.uid,
-                    recipientId: activeRecipient.id,
-                    chatId: activeChatId,
-                    messageText: text,
-                    link: `messages.html?chatId=${encodeURIComponent(activeChatId)}`
-                });
-            } catch (err) {
-                console.error("Failed to send:", err);
-            }
-        };
-
-        async function loadConversations() {
-            if (!currentUser || currentUser.isAnonymous) return;
-            const q = query(
-                collection(db, 'artifacts', appId, 'public', 'data', 'conversations'),
-                where('participants', 'array-contains', currentUser.uid)
-            );
-            onSnapshot(q, (snapshot) => {
-                allConversations = snapshot.docs
-                    .map(d => ({ id: d.id, ...d.data() }));
-                renderConversations();
-            });
-        }
-
-        function renderConversations(filter = '') {
-            const list = document.getElementById('conversation-list');
-            if (currentTab !== 'chats') return;
-
-            if (currentUser?.isAnonymous) {
-                list.innerHTML = `<div class="p-8 text-center text-gray-400"><p class="text-sm">Sign in to see your conversations.</p></div>`;
-                return;
-            }
-
-            const filtered = allConversations.filter(c => {
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
-                return (displayName || '').toLowerCase().includes(filter.toLowerCase()) || 
-                       (c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
-            });
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="p-8 text-center text-gray-400"><p class="text-sm">${filter ? 'No results found.' : 'No chats yet.'}</p></div>`;
-                return;
-            }
-
-            list.innerHTML = filtered.map(c => {
-                const otherId = c.participants.find(p => p !== currentUser.uid);
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
-                const isActive = activeChatId === c.id;
-
-                return `
-                    <div onclick="startChat('${otherId}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 text-lg">
-                                ${(displayName || '?').charAt(0)}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
-                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessage}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        async function loadSuggestions() {
-            try {
-                const usersSnap = await getDocs(collection(db, "users"));
-                let totalUsers = usersSnap.docs
-                    .map((d) => ({ id: d.id, ...d.data() }))
-                    .filter((u) => currentUser ? u.id !== currentUser.uid : true);
-                
-                suggestedUsers = totalUsers.sort(() => 0.5 - Math.random());
-                renderSuggestedUI();
-                if (currentTab === 'new-chat') renderNewChatUI();
-            } catch (err) {
-                console.error("Suggestions failed", err);
-            }
-        }
-
-        function renderSuggestedUI(filter = '') {
-            const list = document.getElementById("suggestion-list");
-            if (!list || currentTab !== 'suggest') return;
-
-            const filtered = suggestedUsers.filter(u => 
-                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
-            );
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<p class="p-8 text-center text-gray-400 italic text-sm">No suggested users found.</p>';
-                return;
-            }
-
-            list.innerHTML = filtered.map((user) => {
-                const sentReq = userRequests.find(r => r.fromId === currentUser?.uid && r.toId === user.id);
-                const incomingReq = userRequests.find(r => r.fromId === user.id && r.toId === currentUser?.uid);
-                const acceptedReq = userRequests.find(r =>
-                    r.status === 'accepted' &&
-                    ((r.fromId === currentUser?.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === currentUser?.uid))
-                );
-
-                return `
-                    <div class="p-4 border-b hover:bg-slate-50 transition-colors flex items-center justify-between">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <div class="w-12 h-12 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-slate-400 font-bold">
-                                ${(user.fullName || 'U').charAt(0)}
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
-                                <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Member"}</p>
-                            </div>
-                        </div>
-                        <div class="ml-2">
-                            ${acceptedReq ?
-                                `<div class="w-9 h-9 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                </div>` :
-                            incomingReq?.status === 'pending' ?
-                                `<button onclick="acceptRequest('${incomingReq.id}', '${user.id}', '${(user.fullName || 'Maker').replace(/'/g, "\\'")}', event)" class="px-3 h-9 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 text-xs font-bold">
-                                    Accept
-                                </button>` :
-                            sentReq?.status === 'pending' ?
-                                `<div class="px-3 h-9 bg-amber-50 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
-                                    Sent
-                                </div>` :
-                                `<button onclick="sendRequest('${user.id}', '${(user.fullName || 'Maker').replace(/'/g, "\\'")}', event)" class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                </button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        function renderNewChatUI(filter = '') {
-            const list = document.getElementById("new-chat-list");
-            if (!list || currentTab !== 'new-chat') return;
-
-            if (!currentUser || currentUser.isAnonymous) {
-                list.innerHTML = `
-                    <div class="p-12 text-center">
-                        <p class="text-slate-400 text-sm">Log in to chat with connections.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const connectedUids = userRequests
-                .filter(r => r.status === 'accepted' && (r.fromId === currentUser.uid || r.toId === currentUser.uid))
-                .map(r => r.fromId === currentUser.uid ? r.toId : r.fromId);
-
-            const connectedUsers = suggestedUsers.filter(u => connectedUids.includes(u.id));
-
-            const filtered = connectedUsers.filter(u => 
-                (u.fullName || '').toLowerCase().includes(filter.toLowerCase())
-            );
-
-            if (filtered.length === 0) {
-                list.innerHTML = `
-                    <div class="p-12 text-center">
-                        <p class="text-slate-400 text-sm italic">No connected people found.</p>
-                        <button onclick="switchTab('suggest')" class="mt-4 text-xs font-bold text-indigo-600 uppercase tracking-widest hover:underline">Find People to Connect</button>
-                    </div>
-                `;
-                return;
-            }
-
-            list.innerHTML = filtered.map((user) => `
-                <div onclick="startChat('${user.id}')" class="p-4 border-b hover:bg-indigo-50 cursor-pointer transition-colors flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                        ${(user.fullName || 'U').charAt(0)}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <h4 class="text-[15px] font-bold text-slate-800 truncate">${user.fullName || "Maker"}</h4>
-                        <p class="text-[11px] text-slate-400 truncate">${user.bio || "BooterSpace Contact"}</p>
-                    </div>
-                    <div class="text-indigo-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    </div>
-                </div>
-            `).join("");
-        }
-
-        function showToast(msg) {
-            const toast = document.createElement('div');
-            toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl z-[100] animate-bounce";
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        window.handleSearch = (e) => {
-            const val = e.target.value;
-            if (currentTab === 'chats') renderConversations(val);
-            else if (currentTab === 'suggest') renderSuggestedUI(val);
-            else if (currentTab === 'new-chat') renderNewChatUI(val);
-        };
-
-        window.startChat = startChat;
-        window.loadSuggestions = loadSuggestions;
-        window.sendRequest = sendRequest;
-        window.acceptRequest = acceptRequest;
-
-        window.addEventListener('input', (e) => {
-            if (e.target.id === 'chat-input') {
-                e.target.style.height = 'auto';
-                e.target.style.height = (e.target.scrollHeight) + 'px';
-            }
-        });
-    </script>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  onSnapshot,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I","authDomain":"kar-kardan.firebaseapp.com","projectId":"kar-kardan","storageBucket":"kar-kardan.appspot.com","messagingSenderId":"554147696994","appId":"1:554147696994:web:221dcb883e3b65dcea5c3b"}');
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.db = db;
+window.auth = auth;
+
+let currentUser = null;
+let activeChatId = null;
+let activeRecipient = null;
+let chatUnsubscribe = null;
+let currentTab = 'chats';
+let userRequests = [];
+let allConversations = [];
+let suggestedUsers = [];
+
+/* ------------------ HELPERS ------------------ */
+
+const chatIdFor = (a,b)=>[a,b].sort().join('_');
+const connectionsCol = ()=>collection(db,'connections');
+const chatsCol = ()=>collection(db,'chats');
+const messagesCol = id=>collection(db,'chats',id,'messages');
+const notificationsCol = uid=>collection(db,'notifications',uid,'items');
+
+/* ------------------ AUTH ------------------ */
+
+onAuthStateChanged(auth, async user=>{
+  currentUser=user;
+  if(!user) await signInAnonymously(auth);
+  if(user && !user.isAnonymous){
+    setupRequestsListener();
+    loadConversations();
+    loadSuggestions();
+  } else loadSuggestions();
+});
+
+/* ------------------ CONNECTIONS ------------------ */
+
+function setupRequestsListener(){
+  const q1=query(connectionsCol(),where('from','==',currentUser.uid));
+  const q2=query(connectionsCol(),where('to','==',currentUser.uid));
+  const map=new Map();
+  const sync=s=>{
+    s.docChanges().forEach(c=>{
+      if(c.type==='removed') map.delete(c.doc.id);
+      else map.set(c.doc.id,{id:c.doc.id,...c.doc.data()});
+    });
+    userRequests=[...map.values()];
+    if(currentTab==='suggest') renderSuggestedUI();
+    if(currentTab==='new-chat') renderNewChatUI();
+  };
+  onSnapshot(q1,sync); onSnapshot(q2,sync);
+}
+
+async function sendRequest(uid,name){
+  const id=chatIdFor(currentUser.uid,uid);
+  await setDoc(doc(db,'connections',id),{
+    from:currentUser.uid,
+    to:uid,
+    status:'pending',
+    createdAt:serverTimestamp()
+  });
+}
+
+async function acceptRequest(id){
+  await updateDoc(doc(db,'connections',id),{status:'accepted'});
+}
+
+/* ------------------ CHAT ------------------ */
+
+async function startChat(uid){
+  const snap=await getDoc(doc(db,'users',uid));
+  activeRecipient={id:uid,...snap.data()};
+  activeChatId=chatIdFor(currentUser.uid,uid);
+
+  await setDoc(doc(db,'chats',activeChatId),{
+    participants:[currentUser.uid,uid],
+    createdAt:serverTimestamp()
+  },{merge:true});
+
+  chatUnsubscribe?.();
+  chatUnsubscribe=onSnapshot(messagesCol(activeChatId),s=>{
+    renderMessages(s.docs.map(d=>d.data()));
+  });
+}
+
+window.sendMessage=async()=>{
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  await addDoc(messagesCol(activeChatId),{
+    text,
+    senderId:currentUser.uid,
+    createdAt:serverTimestamp()
+  });
+  await updateDoc(doc(db,'chats',activeChatId),{
+    lastMessage:text,
+    lastMessageAt:serverTimestamp()
+  });
+};
+
+/* ------------------ LISTENERS ------------------ */
+
+function loadConversations(){
+  const q=query(chatsCol(),where('participants','array-contains',currentUser.uid));
+  onSnapshot(q,s=>{
+    allConversations=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderConversations();
+  });
+}
+
+/* ------------------ USERS ------------------ */
+
+async function loadSuggestions(){
+  const snap=await getDocs(collection(db,'users'));
+  suggestedUsers=snap.docs.map(d=>({id:d.id,...d.data()}))
+    .filter(u=>!currentUser || u.id!==currentUser.uid);
+  renderSuggestedUI();
+}
+
+/* ------------------ UI ------------------ */
+
+function renderMessages(msgs){
+  const box=document.getElementById('messages-container');
+  box.innerHTML=msgs.map(m=>{
+    const mine=m.senderId===currentUser.uid;
+    return `<div class="flex ${mine?'justify-end':'justify-start'} mb-2">
+      <div class="px-3 py-2 rounded-xl ${mine?'bg-indigo-600 text-white':'bg-white border'}">
+        ${m.text}
+      </div>
+    </div>`;
+  }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+
+function renderConversations(){
+  const list=document.getElementById('conversation-list');
+  list.innerHTML=allConversations.map(c=>{
+    const other=c.participants.find(p=>p!==currentUser.uid);
+    return `<div onclick="startChat('${other}')" class="p-4 border-b cursor-pointer">
+      Chat with ${other}
+    </div>`;
+  }).join('');
+}
+
+function renderSuggestedUI(){
+  const list=document.getElementById('suggestion-list');
+  list.innerHTML=suggestedUsers.map(u=>{
+    return `<div class="p-4 border-b flex justify-between">
+      ${u.fullName||'User'}
+      <button onclick="sendRequest('${u.id}')">+</button>
+    </div>`;
+  }).join('');
+}
+
+function renderNewChatUI(){
+  const list=document.getElementById('new-chat-list');
+  const connected=userRequests.filter(r=>r.status==='accepted')
+    .map(r=>r.from===currentUser.uid?r.to:r.from);
+  const users=suggestedUsers.filter(u=>connected.includes(u.id));
+  list.innerHTML=users.map(u=>`
+    <div onclick="startChat('${u.id}')" class="p-4 border-b">
+      ${u.fullName||'User'}
+    </div>`).join('');
+}
+
+window.startChat=startChat;
+window.switchTab=(t)=>currentTab=t;
+</script>
 
     <style>
         :root {
