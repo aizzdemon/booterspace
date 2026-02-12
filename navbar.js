@@ -65,6 +65,8 @@ const messageBtn = document.getElementById("messageBtn");
 const messageCount = document.getElementById("messageCount");
 const mMessageBtn = document.getElementById("mMessageBtn");
 const mMessageCount = document.getElementById("mMessageCount");
+const menuBtn = document.getElementById("menuBtn");
+const mobileMenu = document.getElementById("mobileMenu");
 
 const notificationPermissionBanner = document.getElementById("notificationPermissionBanner");
 const enableNotificationsBtn = document.getElementById("enableNotificationsBtn");
@@ -356,4 +358,22 @@ window.location.href = "login.html";
 mLogoutBtn?.addEventListener("click", async () => {
 await signOut(auth);
 window.location.href = "login.html";
+});
+
+menuBtn?.addEventListener("click", () => {
+mobileMenu?.classList.toggle("hidden");
+menuBtn.setAttribute("aria-expanded", String(!mobileMenu?.classList.contains("hidden")));
+});
+
+document.addEventListener("click", (event) => {
+if (!mobileMenu || !menuBtn) return;
+if (mobileMenu.classList.contains("hidden")) return;
+
+const target = event.target;
+if (!(target instanceof Node)) return;
+
+if (!mobileMenu.contains(target) && !menuBtn.contains(target)) {
+  mobileMenu.classList.add("hidden");
+  menuBtn.setAttribute("aria-expanded", "false");
+}
 });
