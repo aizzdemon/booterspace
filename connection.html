@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConnectionSpace - BooterSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-shadow { box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08); }
+    .soft-border { border: 1px solid rgba(148, 163, 184, 0.2); }
+    
+    /* Custom scrollbar */
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    
+    /* Active Link Styling for dynamically loaded navbar */
+    .nav-link-active { @apply text-blue-600 !important; }
+    .nav-link-active::after { content: ''; @apply absolute -bottom-[13px] left-0 w-full h-0.5 bg-blue-600; }
+
+    .tab-active { @apply border-blue-600 text-blue-600 bg-blue-50/50; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <!-- Dynamic Navbar Container -->
+  <div id="navbar-placeholder"></div>
+
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left Sidebar -->
+      <aside class="lg:col-span-1 space-y-5">
+        <div class="bg-white rounded-2xl p-5 card-shadow soft-border">
+          <h1 class="text-2xl font-extrabold text-slate-900 leading-tight">ConnectionSpace</h1>
+          <p class="text-slate-500 text-sm mt-2">Manage your professional circle and discover new makers in the ecosystem.</p>
+        </div>
+
+        <!-- Network Stats & Navigation -->
+        <div class="bg-white rounded-2xl p-2 card-shadow soft-border space-y-1">
+          <!-- Connection Space Button -->
+          <button id="showSuggestionsBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition tab-active group" data-tab="suggestions">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-[.tab-active]:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span class="font-semibold text-sm">Connection Space</span>
+            </div>
+          </button>
+          
+          <!-- Connection Requests Button -->
+          <button id="showPendingBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition group" data-tab="pending">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-[.tab-active]:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span class="font-semibold text-sm">Connection Requests</span>
+            </div>
+            <span id="pendingBadge" class="hidden bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+          </button>
+
+          <div class="h-[1px] bg-slate-100 my-1 mx-4"></div>
+
+          <!-- My Connections Button -->
+          <button id="connectionsBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition group">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span class="text-sm font-medium">My Connections</span>
+            </div>
+            <span id="connectionsCount" class="text-slate-400 text-xs">0</span>
+          </button>
+        </div>
+
+        <!-- Quick Discover -->
+        <div class="bg-white rounded-2xl card-shadow soft-border overflow-hidden max-h-[400px] flex flex-col">
+            <div class="px-4 py-3 bg-slate-50 flex justify-between items-center border-b">
+                <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Fast Search</span>
+                <button id="shuffleBtn" class="text-[10px] text-blue-600 font-bold hover:underline">SHUFFLE</button>
+            </div>
+            <div class="p-3 border-b">
+                <input type="text" id="makerSearch" placeholder="Search by name or bio..." class="w-full bg-slate-100 rounded-lg py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            </div>
+            <div id="suggestion-list" class="flex-1 overflow-y-auto custom-scroll p-2 space-y-1">
+                <!-- Makers render here -->
+            </div>
+        </div>
+      </aside>
+
+      <!-- Main Section -->
+      <section class="lg:col-span-2 space-y-6">
+        
+        <!-- Suggestions View (Default) -->
+        <div id="suggestionsView" class="bg-white rounded-2xl p-6 card-shadow soft-border">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">People you may know</h2>
+              <p class="text-slate-500 text-sm">Based on your shared interests and BooterSpace activity.</p>
+            </div>
+            <button id="viewAllBtn" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition">View all</button>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4" id="suggestionGrid">
+             <div class="col-span-full py-20 text-center animate-pulse text-slate-300 italic">Syncing network...</div>
+          </div>
+        </div>
+
+        <!-- Pending Connection Requests View (Hidden by default) -->
+        <div id="pendingView" class="hidden bg-white rounded-2xl p-6 card-shadow soft-border min-h-[400px]">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900">Connection Requests</h2>
+                <span id="pendingCountHeader" class="text-sm text-slate-500">No requests</span>
+            </div>
+            <div id="pendingList" class="space-y-4">
+                <!-- Pending requests render here -->
+            </div>
+        </div>
+
+        <!-- Details/Connections Panel -->
+        <div id="detailsPanel" class="hidden bg-white rounded-2xl p-6 card-shadow soft-border">
+          <h3 id="networkPanelTitle" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Your Connections</h3>
+          <div id="networkPanelList" class="grid sm:grid-cols-2 gap-4">
+            <!-- List items -->
+          </div>
+          <button id="closeDetails" class="mt-6 text-sm text-slate-400 hover:text-slate-600 underline">Back to suggestions</button>
+        </div>
+
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      getDoc,
+      doc,
+      addDoc,
+      setDoc,
+      updateDoc,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = "booterspace-chat";
+
+    const suggestionGrid = document.getElementById("suggestionGrid");
+    const suggestionList = document.getElementById("suggestion-list");
+    const pendingList = document.getElementById("pendingList");
+    const connectionsCount = document.getElementById("connectionsCount");
+    const pendingBadge = document.getElementById("pendingBadge");
+    const pendingCountHeader = document.getElementById("pendingCountHeader");
+
+    const suggestionsView = document.getElementById("suggestionsView");
+    const pendingView = document.getElementById("pendingView");
+    const detailsPanel = document.getElementById("detailsPanel");
+
+    let currentUser = null;
+    let suggestionsCache = [];
+    let pendingCache = [];
+    let showAll = false;
+    const palette = ["3b82f6", "10b981", "f59e0b", "8b5cf6", "ef4444", "06b6d4"];
+
+    function switchTab(viewId) {
+        [suggestionsView, pendingView, detailsPanel].forEach(v => v.classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+        
+        const tabMap = { 'suggestionsView': 'suggestions', 'pendingView': 'pending' };
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+            if (btn.dataset.tab === tabMap[viewId]) btn.classList.add('tab-active');
+            else btn.classList.remove('tab-active');
+        });
+    }
+
+    async function loadNavbar() {
+        const placeholder = document.getElementById('navbar-placeholder');
+        try {
+            const response = await fetch('navbar.html');
+            const html = await response.text();
+            placeholder.innerHTML = html;
+        } catch (err) { console.error("Navbar failed", err); }
+    }
+
+    function getAvatar(name, bg) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=fff&bold=true`;
+    }
+
+    function renderSuggestions() {
+      const list = showAll ? suggestionsCache : suggestionsCache.slice(0, 8);
+      if (list.length === 0) {
+        suggestionGrid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">No new suggestions found.</div>`;
+        return;
+      }
+
+      suggestionGrid.innerHTML = list.map((user, i) => {
+        const name = user.fullName || user.name || "User";
+        const title = user.bio || user.headline || "BooterSpace member";
+        const bg = palette[i % palette.length];
+        const photo = user.photoURL || getAvatar(name, bg);
+        
+        const isPending = user._status === "Pending";
+        const isConnected = user._status === "Connected";
+        const isAccept = user._status === "Accept";
+
+        return `
+          <div class="bg-white rounded-xl border border-slate-200 p-4 hover:border-blue-200 hover:shadow-sm transition">
+            <div class="flex items-center gap-4">
+              <img src="${photo}" class="w-14 h-14 rounded-full border-2 border-slate-50 object-cover">
+              <div class="min-w-0">
+                <h4 class="font-bold text-slate-900 truncate">${name}</h4>
+                <p class="text-xs text-slate-500 truncate">${title}</p>
+              </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button data-action="connect" data-id="${user.id}" data-status="${user._status}" 
+                class="flex-1 py-1.5 rounded-lg text-xs font-bold transition ${isConnected ? 'bg-slate-100 text-slate-500' : isPending ? 'bg-blue-50 text-blue-400' : 'bg-blue-600 text-white hover:bg-blue-700'}">
+                ${isConnected ? 'Connected' : isPending ? 'Request Sent' : isAccept ? 'Accept' : 'Connect'}
+              </button>
+              <button data-action="message" data-id="${user.id}" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-xs text-slate-600 font-medium">Message</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function renderPending() {
+        if (pendingCache.length === 0) {
+            pendingList.innerHTML = `
+                <div class="text-center py-20">
+                    <div class="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                    </div>
+                    <p class="text-slate-500 font-medium">No connection requests</p>
+                    <p class="text-slate-400 text-sm">When someone wants to connect, they'll show up here.</p>
+                </div>`;
+            pendingCountHeader.textContent = "0 requests";
+            pendingBadge.classList.add('hidden');
+            return;
+        }
+
+        pendingCountHeader.textContent = `${pendingCache.length} request${pendingCache.length > 1 ? 's' : ''}`;
+        pendingBadge.textContent = pendingCache.length;
+        pendingBadge.classList.remove('hidden');
+
+        const items = await Promise.all(pendingCache.map(async req => {
+            const uDoc = await getDoc(doc(db, "users", req.fromId));
+            const data = uDoc.data() || { name: 'User' };
+            const name = data.fullName || data.name || "Unknown User";
+            const photo = data.photoURL || getAvatar(name, '3b82f6');
+            
+            return `
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex items-center gap-4">
+                        <img src="${photo}" class="w-12 h-12 rounded-full border border-white">
+                        <div>
+                            <p class="font-bold text-slate-900">${name}</p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-tighter">${data.bio || 'New Booter'}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.handleRequest('${req.id}', '${req.fromId}', 'accepted')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition">Accept</button>
+                        <button onclick="window.handleRequest('${req.id}', '${req.fromId}', 'rejected')" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition">Ignore</button>
+                    </div>
+                </div>
+            `;
+        }));
+        pendingList.innerHTML = items.join('');
+    }
+
+    async function handleRequest(reqDocId, fromId, status) {
+        if (!currentUser) return;
+        try {
+            const reqRef = doc(db, "artifacts", appId, "public", "data", "connection_requests", reqDocId);
+            await updateDoc(reqRef, { status: status });
+            
+            if (status === "accepted") {
+                await setDoc(doc(db, "users", currentUser.uid, "connections", fromId), { connectedAt: serverTimestamp() });
+                await setDoc(doc(db, "users", fromId, "connections", currentUser.uid), { connectedAt: serverTimestamp() });
+            }
+        } catch (err) { console.error("Action failed", err); }
+    }
+    window.handleRequest = handleRequest;
+
+    async function sendRequest(targetId) {
+      if (!currentUser) return;
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      try {
+        await addDoc(reqRef, { fromId: currentUser.uid, toId: targetId, status: "pending", createdAt: serverTimestamp() });
+        await addDoc(collection(db, "users", targetId, "notifications"), {
+          toUid: targetId, fromId: currentUser.uid, text: "sent you a connection request", type: "connection_request", read: false, createdAt: serverTimestamp()
+        });
+      } catch (err) { console.error("Send failed", err); }
+    }
+
+    async function syncNetworkState() {
+        if (!currentUser) return;
+        
+        const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+        const qPending = query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"));
+        
+        onSnapshot(qPending, (snap) => {
+            pendingCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderPending();
+            fetchStaticData();
+        });
+
+        fetchStaticData();
+    }
+
+    async function fetchStaticData() {
+        const usersSnap = await getDocs(collection(db, "users"));
+        const connSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
+        
+        const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+        const outSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "pending")));
+        const inSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+
+        const connectedIds = new Set(connSnap.docs.map(d => d.id));
+        const outgoingIds = new Set(outSnap.docs.map(d => d.data().toId));
+        const incomingIds = new Set(inSnap.docs.map(d => d.data().fromId));
+
+        suggestionsCache = usersSnap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(u => u.id !== currentUser.uid)
+            .map(u => {
+                if (connectedIds.has(u.id)) return { ...u, _status: "Connected" };
+                if (incomingIds.has(u.id)) return { ...u, _status: "Accept" };
+                if (outgoingIds.has(u.id)) return { ...u, _status: "Pending" };
+                return { ...u, _status: "Connect" };
+            });
+
+        connectionsCount.textContent = connectedIds.size;
+        renderSuggestions();
+        renderQuickDiscover();
+    }
+
+    function renderQuickDiscover(filter = "") {
+        const filtered = suggestionsCache.filter(u => 
+            `${u.fullName || ''} ${u.bio || ''}`.toLowerCase().includes(filter.toLowerCase())
+        );
+        suggestionList.innerHTML = filtered.map((user, i) => {
+            const name = user.fullName || user.name || "User";
+            const photo = user.photoURL || getAvatar(name, palette[i % palette.length]);
+            return `
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg group">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <img src="${photo}" class="w-7 h-7 rounded-full">
+                        <div class="truncate"><p class="text-[11px] font-bold text-slate-800 truncate">${name}</p></div>
+                    </div>
+                    ${user._status === 'Connect' ? `<button data-action="connect" data-id="${user.id}" data-status="Connect" class="opacity-0 group-hover:opacity-100 text-[9px] font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded">Add</button>` : ''}
+                </div>`;
+        }).join('');
+    }
+
+    document.getElementById('showPendingBtn').addEventListener('click', () => switchTab('pendingView'));
+    document.getElementById('showSuggestionsBtn').addEventListener('click', () => switchTab('suggestionsView'));
+    document.getElementById('closeDetails').addEventListener('click', () => switchTab('suggestionsView'));
+    
+    document.getElementById('connectionsBtn').addEventListener('click', async () => {
+        switchTab('detailsPanel');
+        networkPanelTitle.textContent = "Your Connections";
+        networkPanelList.innerHTML = '<div class="col-span-full py-10 text-center animate-pulse text-slate-300">Fetching circle...</div>';
+        
+        const snap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
+        if (snap.empty) { networkPanelList.innerHTML = '<p class="col-span-full text-center text-slate-400 py-10">No connections yet.</p>'; return; }
+        
+        const items = await Promise.all(snap.docs.map(async d => {
+            const u = await getDoc(doc(db, "users", d.id));
+            const data = u.data() || { name: 'User' };
+            const name = data.fullName || data.name || "User";
+            return `
+                <div class="flex items-center gap-3 p-3 border border-slate-100 rounded-xl">
+                    <img src="${data.photoURL || getAvatar(name, '64748b')}" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-bold text-sm text-slate-900">${name}</p>
+                        <button onclick="window.location.href='messages.html?to=${u.id}'" class="text-[10px] text-blue-600 hover:underline">Message</button>
+                    </div>
+                </div>`;
+        }));
+        networkPanelList.innerHTML = items.join('');
+    });
+
+    suggestionGrid.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const { action, id, status } = btn.dataset;
+      if (action === 'connect') {
+        if (status === 'Connect') await sendRequest(id);
+        else if (status === 'Accept') {
+            const req = pendingCache.find(r => r.fromId === id);
+            if (req) await handleRequest(req.id, id, 'accepted');
+        }
+        fetchStaticData();
+      } else if (action === 'message') window.location.href = `messages.html?to=${id}`;
+    });
+
+    makerSearch.addEventListener('input', (e) => renderQuickDiscover(e.target.value));
+    shuffleBtn.addEventListener('click', () => { suggestionsCache.sort(() => Math.random() - 0.5); renderSuggestions(); renderQuickDiscover(); });
+    viewAllBtn.addEventListener('click', () => { showAll = !showAll; viewAllBtn.textContent = showAll ? "Show less" : "View all"; renderSuggestions(); });
+
+    loadNavbar();
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      if (user) {
+        syncNetworkState();
+        setTimeout(async () => {
+            const navImg = document.getElementById("navProfileImg");
+            if (navImg) {
+                const uDoc = await getDoc(doc(db, "users", user.uid));
+                const data = uDoc.data();
+                if (data) navImg.src = data.photoURL || getAvatar(data.name || 'U', '6366f1');
+            }
+        }, 1000);
+      } else {
+        signInAnonymously(auth);
+      }
+    });
+  </script>
+</body>
+</html>
