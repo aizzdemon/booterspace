@@ -67,6 +67,8 @@ const mMessageBtn = document.getElementById("mMessageBtn");
 const mMessageCount = document.getElementById("mMessageCount");
 const menuBtn = document.getElementById("menuBtn");
 const mobileMenu = document.getElementById("mobileMenu");
+const dashboardLink = document.getElementById("dashboardLink");
+const mDashboardLink = document.getElementById("mDashboardLink");
 
 const notificationPermissionBanner = document.getElementById("notificationPermissionBanner");
 const enableNotificationsBtn = document.getElementById("enableNotificationsBtn");
@@ -100,12 +102,17 @@ mProfileBtn?.classList.remove("hidden");
 const snap = await getDoc(doc(db, "users", user.uid));
 let name = "User";
 let photo = "https://api.dicebear.com/7.x/thumbs/svg?seed=" + user.uid;
+let hasPostJobAccess = false;
 
 if (snap.exists()) {
   const data = snap.data();
   name = data.name || data.fullName || name;
   photo = data.photoURL || photo;
+  hasPostJobAccess = data.canPostJobs === true;
 }
+
+dashboardLink?.classList.toggle("hidden", !hasPostJobAccess);
+mDashboardLink?.classList.toggle("hidden", !hasPostJobAccess);
 
 if (profileName) profileName.textContent = name;
 if (profilePic) profilePic.src = photo;
@@ -125,6 +132,8 @@ profileBtn?.classList.add("hidden");
 mLoginBtn?.classList.remove("hidden");
 mLogoutBtn?.classList.add("hidden");
 mProfileBtn?.classList.add("hidden");
+dashboardLink?.classList.add("hidden");
+mDashboardLink?.classList.add("hidden");
 
 notificationCount?.classList.add("hidden");
 mNotificationCount?.classList.add("hidden");
