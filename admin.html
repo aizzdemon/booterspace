@@ -11,20 +11,26 @@
         .nav-btn.active { border-color: #4f46e5; background-color: #eef2ff; color: #4f46e5; }
         .user-card.new-user { border-left: 4px solid #10b981; background-color: #f0fdf4; }
         
-        /* Modal Styles */
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
         .modal.active { display: flex; }
 
-        /* Dropdown Styles */
         .dropdown-content { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 40; margin-top: 0.5rem; overflow: hidden; }
         .dropdown:hover .dropdown-content { display: block; }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .role-badge-seeker { background-color: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+        .role-badge-provider { background-color: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; }
         
-        .filter-btn-active { background-color: white; border-color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); color: #4f46e5; font-weight: 700; }
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #4f46e5; }
+        input:checked + .slider:before { transform: translateX(14px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -33,7 +39,7 @@
 <div id="editModal" class="modal">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
         <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-            <h3 id="modalTitle" class="font-black text-slate-800">Edit Details</h3>
+            <h3 id="modalTitle" class="font-black text-slate-800">Edit Record</h3>
             <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
         </div>
         <div class="p-6 max-h-[70vh] overflow-y-auto">
@@ -45,7 +51,7 @@
         </div>
         <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
             <button onclick="closeModal('editModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button id="saveBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Save Changes</button>
+            <button id="saveBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Save to Firebase</button>
         </div>
     </div>
 </div>
@@ -56,7 +62,7 @@
         <div class="p-6 border-b flex justify-between items-center bg-slate-50">
             <div>
                 <h3 class="font-black text-slate-800">Create New Job Posting</h3>
-                <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Manual entry from Admin</p>
+                <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Admin Entry</p>
             </div>
             <button onclick="closeModal('createJobModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
         </div>
@@ -76,19 +82,13 @@
                         <input id="jobPlace" type="text" placeholder="Remote / Kabul" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Salary</label>
-                        <input id="salary" type="text" placeholder="e.g. $50k - $70k" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Application Link</label>
-                        <input id="jobLink" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Application Link</label>
+                    <input id="jobLink" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Description</label>
-                    <textarea id="jobDescription" rows="4" placeholder="Briefly describe the role..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    <textarea id="jobDescription" rows="4" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
                 </div>
             </form>
         </div>
@@ -99,7 +99,7 @@
     </div>
 </div>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
 <div id="loginDiv" class="flex items-center justify-center min-h-screen p-4">
     <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
         <div class="text-center mb-8">
@@ -107,87 +107,82 @@
             <p class="text-slate-500 font-medium">Administrative Gateway</p>
         </div>
         <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-semibold mb-1">Admin Email</label>
-                <input id="email" type="email" placeholder="admin@kardan.com" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold mb-1">Password</label>
-                <input id="password" type="password" placeholder="••••••••" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
-            </div>
+            <input id="email" type="email" placeholder="admin@kardan.com" class="w-full p-3 border border-slate-300 rounded-lg outline-none"/>
+            <input id="password" type="password" placeholder="••••••••" class="w-full p-3 border border-slate-300 rounded-lg outline-none"/>
             <button id="loginBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Authorize Access</button>
             <p id="loginError" class="text-red-500 text-sm text-center mt-2 font-medium"></p>
         </div>
     </div>
 </div>
 
-<!-- ADMIN INTERFACE -->
+<!-- DASHBOARD -->
 <div id="adminDiv" class="hidden pb-20">
     <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="text-2xl font-black text-indigo-600">KARDAN</span>
-                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">ADMIN</span>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold uppercase">Admin Console</span>
             </div>
             <button id="logoutBtn" class="text-sm font-bold text-slate-500 hover:text-red-600 transition">Logout</button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Quick Stats Banner -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl">👥</div>
-                <div><p class="text-xs font-bold text-slate-400 uppercase">Users</p><h3 id="stat-totalUsers" class="text-2xl font-black text-slate-800">--</h3></div>
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Members</p>
+                <h3 id="stat-totalUsers" class="text-3xl font-black text-slate-800">--</h3>
             </div>
-            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl">💼</div>
-                <div><p class="text-xs font-bold text-slate-400 uppercase">Active</p><h3 id="stat-totalJobs" class="text-2xl font-black text-slate-800">--</h3></div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Jobs</p>
+                <h3 id="stat-totalJobs" class="text-3xl font-black text-slate-800">--</h3>
             </div>
-            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl">⏳</div>
-                <div><p class="text-xs font-bold text-slate-400 uppercase">Review</p><h3 id="stat-pendingJobs" class="text-2xl font-black text-slate-800">--</h3></div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Approval</p>
+                <h3 id="stat-pendingJobs" class="text-3xl font-black text-slate-800">--</h3>
             </div>
         </div>
 
-        <!-- Navigation Tab Selection -->
+        <!-- Consolidated Nav -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <!-- CONSOLIDATED JOBS DROPDOWN -->
             <div class="relative dropdown">
                 <button class="w-full bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
-                    <span class="text-2xl group-hover:scale-110 transition">💼</span>
+                    <span class="text-2xl">💼</span>
                     <span class="text-sm font-bold mt-2">Jobs Management</span>
-                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Click to view options</span>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Active / Pending / Add</span>
                 </button>
                 <div class="dropdown-content border border-slate-200 shadow-xl">
-                    <button data-tab="jobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center transition">
-                        <span class="font-bold text-slate-700">Approved (Active)</span>
-                        <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-black">LIVE</span>
+                    <button data-tab="jobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Approved Jobs</span>
+                        <span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black">ACTIVE</span>
                     </button>
-                    <button data-tab="pendingJobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center transition">
-                        <span class="font-bold text-slate-700">Pending Review</span>
-                        <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded font-black">QUEUED</span>
+                    <button data-tab="pendingJobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Review Queue</span>
+                        <span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black">PENDING</span>
                     </button>
-                    <button id="addJobDirect" class="w-full text-left px-6 py-4 hover:bg-indigo-50 text-indigo-600 font-bold transition">
-                        + Create New Posting
+                    <button id="addJobDirect" class="w-full text-left px-6 py-4 hover:bg-indigo-50 text-indigo-600 font-black">
+                        + Post New Job
                     </button>
                 </div>
             </div>
 
-            <button data-tab="users" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
-                <span class="text-2xl group-hover:scale-110 transition">👥</span>
-                <span class="text-sm font-bold mt-2">Manage Users</span>
+            <button data-tab="users" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">👥</span>
+                <span class="text-sm font-bold mt-2">Community Members</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Seekers & Providers</span>
             </button>
-            <button data-tab="posts" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
-                <span class="text-2xl group-hover:scale-110 transition">💬</span>
+            <button data-tab="posts" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">💬</span>
                 <span class="text-sm font-bold mt-2">Community Posts</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Moderation</span>
             </button>
         </div>
 
         <div id="content" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[400px]">
-            <div class="flex flex-col items-center justify-center h-64 text-slate-400">
-                <span class="text-5xl mb-4">🖥️</span>
-                <p class="font-medium">Welcome to the Kardan HQ Command Center.</p>
+            <div class="flex flex-col items-center justify-center h-64 text-slate-300">
+                <span class="text-5xl mb-4 opacity-50">📡</span>
+                <p class="font-bold uppercase tracking-widest text-xs">Awaiting Selection</p>
             </div>
         </div>
     </main>
@@ -205,7 +200,6 @@ const firebaseConfig = {
     storageBucket: "kar-kardan.firebasestorage.app",
     messagingSenderId: "554147696994",
     appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
-    measurementId: "G-RRC3X485KQ"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -213,208 +207,277 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
-let currentListUnsubscribe = null;
-let userFilterMode = 'all';
+let currentUnsub = null;
+let currentJobData = [];
 
 /* ============================
    Helper Functions
 ============================ */
 function downloadCSV(data, filename) {
-    if (!data.length) return alert("No data to export");
+    if (!data.length) return alert("No data");
     const headers = Object.keys(data[0]);
-    const csvContent = [
-        headers.join(','),
-        ...data.map(row => headers.map(h => {
-            const val = row[h] instanceof Timestamp ? row[h].toDate().toISOString() : (row[h] || '');
-            return `"${('' + val).replace(/"/g, '""')}"`;
-        }).join(','))
-    ].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const csv = [headers.join(','), ...data.map(r => headers.map(h => `"${('' + (r[h] instanceof Timestamp ? r[h].toDate().toISOString() : (r[h]||''))).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const b = new Blob([csv], {type:'text/csv'});
     const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
+    a.href = URL.createObjectURL(b); a.download = filename; a.click();
 }
 
-function formatDate(timestamp) {
-    if (!timestamp) return 'No Date';
-    return (timestamp.toDate ? timestamp.toDate() : new Date(timestamp)).toLocaleDateString();
-}
-
-/* ============================
-   Auth Logic
-============================ */
-onAuthStateChanged(auth, user => {
-    if (user && user.uid === ADMIN_UID) {
+onAuthStateChanged(auth, u => {
+    if (u && u.uid === ADMIN_UID) {
         document.getElementById("loginDiv").classList.add("hidden");
         document.getElementById("adminDiv").classList.remove("hidden");
-        initGlobalStats();
+        initStats();
     } else {
         document.getElementById("loginDiv").classList.remove("hidden");
         document.getElementById("adminDiv").classList.add("hidden");
     }
 });
 
-function initGlobalStats() {
+function initStats() {
     onSnapshot(collection(db, "jobs"), snap => {
-        const docs = snap.docs.map(d => d.data());
-        document.getElementById("stat-totalJobs").innerText = docs.filter(j => j.status === 'approved').length;
-        document.getElementById("stat-pendingJobs").innerText = docs.filter(j => j.status === 'pending').length;
+        const d = snap.docs.map(x => x.data());
+        document.getElementById("stat-totalJobs").innerText = d.filter(j => j.status === 'approved').length;
+        document.getElementById("stat-pendingJobs").innerText = d.filter(j => j.status === 'pending').length;
     });
     onSnapshot(collection(db, "users"), snap => document.getElementById("stat-totalUsers").innerText = snap.size);
 }
 
 /* ============================
-   Tabs Logic
+   Tabs & Views
 ============================ */
-function showJobsTab() {
-    const content = document.getElementById("content");
-    content.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">Approved Job Listings</h2>
-            <button id="dlJobs" class="text-xs bg-slate-100 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200">Export CSV</button>
-        </div>
-        <div id="list" class="space-y-3">Loading...</div>
-    `;
-    if (currentListUnsubscribe) currentListUnsubscribe();
-    const q = query(collection(db, "jobs"), where("status", "==", "approved"), orderBy("timestamp", "desc"));
-    currentListUnsubscribe = onSnapshot(q, snap => {
-        const container = document.getElementById("list");
-        container.innerHTML = snap.empty ? `<p class="text-center py-10 text-slate-400">No active jobs.</p>` : "";
-        const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        document.getElementById("dlJobs").onclick = () => downloadCSV(raw, "active_jobs.csv");
-        
-        snap.forEach(d => {
-            const j = d.data();
-            const div = document.createElement('div');
-            div.className = "p-4 border rounded-xl flex justify-between items-center hover:bg-slate-50 transition";
-            div.innerHTML = `
-                <div>
-                    <h4 class="font-bold text-sm">${j.title}</h4>
-                    <p class="text-xs text-slate-500">${j.company} • ${j.jobPlace || 'Remote'}</p>
-                    <p class="text-[10px] text-indigo-600 font-bold mt-1">Posted By: ${j.userEmail || 'Admin'}</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="editDoc('jobs', '${d.id}')" class="text-xs font-bold text-slate-400 hover:text-indigo-600">Edit</button>
-                    <button onclick="deleteDocById('jobs', '${d.id}')" class="text-xs font-bold text-red-400">Delete</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    });
-}
-
-function showPendingJobsTab() {
-    const content = document.getElementById("content");
-    content.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-amber-600">Jobs Awaiting Review</h2>
-            <button id="dlPending" class="text-xs bg-amber-50 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-100">Export CSV</button>
-        </div>
-        <div id="list" class="space-y-3">Loading...</div>
-    `;
-    if (currentListUnsubscribe) currentListUnsubscribe();
-    const q = query(collection(db, "jobs"), where("status", "==", "pending"), orderBy("timestamp", "desc"));
-    currentListUnsubscribe = onSnapshot(q, snap => {
-        const container = document.getElementById("list");
-        container.innerHTML = snap.empty ? `<p class="text-center py-10 text-slate-400">No pending reviews.</p>` : "";
-        const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        document.getElementById("dlPending").onclick = () => downloadCSV(raw, "pending_jobs.csv");
-
-        snap.forEach(d => {
-            const j = d.data();
-            const div = document.createElement('div');
-            div.className = "p-4 border border-amber-100 bg-amber-50 rounded-xl flex justify-between items-center";
-            div.innerHTML = `
-                <div>
-                    <h4 class="font-bold text-sm">${j.title}</h4>
-                    <p class="text-xs text-slate-600 font-medium">${j.company} • Posted By: ${j.userEmail || 'User'}</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="updateStatus('${d.id}', 'approved')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Approve</button>
-                    <button onclick="deleteDocById('jobs', '${d.id}')" class="text-xs font-bold text-red-500 px-3">Reject</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    });
-}
-
 function showUsersTab() {
     const content = document.getElementById("content");
     content.innerHTML = `
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">Community Members</h2>
-            <button id="dlUsers" class="text-xs bg-slate-100 px-3 py-1.5 rounded-lg font-bold">Export Users</button>
+            <h2 class="text-xl font-black text-slate-800">Community Members</h2>
+            <button id="dlUsers" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider hover:bg-slate-200">Export Community CSV</button>
         </div>
-        <div id="list" class="grid grid-cols-1 md:grid-cols-2 gap-3">Loading...</div>
+        <div id="uList" class="grid grid-cols-1 md:grid-cols-2 gap-4">Loading members...</div>
     `;
-    if (currentListUnsubscribe) currentListUnsubscribe();
-    currentListUnsubscribe = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), snap => {
-        const container = document.getElementById("list");
-        container.innerHTML = "";
+    if (currentUnsub) currentUnsub();
+    currentUnsub = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), snap => {
+        const list = document.getElementById("uList");
+        list.innerHTML = "";
         const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        document.getElementById("dlUsers").onclick = () => downloadCSV(raw, "kardan_users.csv");
+        document.getElementById("dlUsers").onclick = () => downloadCSV(raw, "community_members.csv");
 
-        snap.forEach(d => {
-            const u = d.data();
+        snap.forEach(docSnap => {
+            const u = docSnap.data();
+            const role = u.role || 'jobSeeker';
+            const roleLabel = role === 'jobProvider' ? 'Job Provider' : 'Job Seeker';
+            const roleClass = role === 'jobProvider' ? 'role-badge-provider' : 'role-badge-seeker';
+            const canPost = u.canPostJobs === true;
+
             const div = document.createElement('div');
-            div.className = "p-4 border rounded-xl bg-white flex items-center justify-between";
+            div.className = "p-4 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition";
             div.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">${(u.name || 'U').charAt(0)}</div>
-                    <div><h4 class="font-bold text-sm">${u.name || 'User'}</h4><p class="text-[10px] text-slate-500">${u.email || 'No Email'}</p></div>
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-indigo-600">${(u.name || u.fullName || 'U').charAt(0)}</div>
+                        <div>
+                            <h4 class="font-black text-sm text-slate-800">${u.name || u.fullName || 'Anonymous Member'}</h4>
+                            <p class="text-[10px] text-slate-500 font-medium">${u.email || 'No email associated'}</p>
+                        </div>
+                    </div>
+                    <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${roleClass}">${roleLabel}</span>
                 </div>
-                <button onclick="editDoc('users', '${d.id}')" class="text-[10px] font-bold text-indigo-600">Profile</button>
+                
+                <div class="border-t border-slate-50 pt-3 mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <label class="switch">
+                            <input type="checkbox" ${canPost ? 'checked' : ''} onchange="toggleJobAllowance('${docSnap.id}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="text-[10px] font-black uppercase text-slate-400">Post Jobs Allowance</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openEditModal('users', '${docSnap.id}')" class="text-[10px] font-black text-indigo-600 uppercase hover:underline">Edit Profile</button>
+                    </div>
+                </div>
             `;
-            container.appendChild(div);
+            list.appendChild(div);
         });
     });
 }
 
+function showJobsTab(status = 'approved') {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h2 class="text-xl font-black text-slate-800">${status === 'approved' ? 'Active Listings' : 'Review Queue'}</h2>
+                <button id="dlJobs" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider">Export List</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div class="relative">
+                    <input type="text" id="jobTitleSearch" placeholder="Search job title..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+                </div>
+                <div class="relative">
+                    <input type="date" id="jobDateFilter" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="absolute left-3 top-2.5 text-slate-400">📅</span>
+                </div>
+                <div class="flex items-center">
+                    <button id="clearFilters" class="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800 ml-2">Clear Filters</button>
+                </div>
+            </div>
+
+            <div id="jList" class="space-y-3">Loading jobs...</div>
+        </div>
+    `;
+
+    currentJobData = [];
+    if (currentUnsub) currentUnsub();
+    const q = query(collection(db, "jobs"), where("status", "==", status), orderBy("timestamp", "desc"));
+    
+    currentUnsub = onSnapshot(q, snap => {
+        currentJobData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        applyJobFilters(status);
+    });
+
+    document.getElementById('jobTitleSearch').addEventListener('input', () => applyJobFilters(status));
+    document.getElementById('jobDateFilter').addEventListener('change', () => applyJobFilters(status));
+    document.getElementById('clearFilters').addEventListener('click', () => {
+        document.getElementById('jobTitleSearch').value = '';
+        document.getElementById('jobDateFilter').value = '';
+        applyJobFilters(status);
+    });
+}
+
+function applyJobFilters(status) {
+    const list = document.getElementById("jList");
+    const searchTerm = document.getElementById('jobTitleSearch').value.toLowerCase();
+    const filterDate = document.getElementById('jobDateFilter').value;
+
+    let filtered = currentJobData;
+    if (searchTerm) {
+        filtered = filtered.filter(j => (j.title || '').toLowerCase().includes(searchTerm) || (j.company || '').toLowerCase().includes(searchTerm));
+    }
+    if (filterDate) {
+        filtered = filtered.filter(j => {
+            if (!j.timestamp) return false;
+            return j.timestamp.toDate().toISOString().split('T')[0] === filterDate;
+        });
+    }
+
+    list.innerHTML = filtered.length === 0 ? `<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No matches found</p>` : "";
+
+    filtered.forEach(j => {
+        const dateStr = j.timestamp ? j.timestamp.toDate().toLocaleDateString() : 'N/A';
+        const div = document.createElement('div');
+        div.className = `p-4 border rounded-2xl flex justify-between items-center ${status === 'pending' ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'} hover:border-indigo-300 transition-colors`;
+        div.innerHTML = `
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <h4 class="font-black text-sm text-slate-800">${j.title}</h4>
+                    <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">${dateStr}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-bold">${j.company} • ${j.jobPlace || 'Remote'}</p>
+                <p class="text-[9px] text-indigo-500 font-black mt-1 uppercase">Posted By: ${j.userName || 'Admin'}</p>
+            </div>
+            <div class="flex gap-2">
+                ${status === 'pending' ? `<button onclick="updateJobStatus('${j.id}', 'approved')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Approve</button>` : ''}
+                <button onclick="openEditModal('jobs', '${j.id}')" class="text-[10px] font-black text-slate-400 uppercase px-2">Edit</button>
+                <button onclick="deleteJob('${j.id}')" class="text-[10px] font-black text-red-500 uppercase px-2">Delete</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
 /* ============================
-   Actions
+   FIREBASE EDIT & SAVE SYSTEM
 ============================ */
-async function editDoc(col, id) {
+async function openEditModal(col, id) {
     const modal = document.getElementById("editModal");
     const container = document.getElementById("dynamicFields");
     document.getElementById("editDocId").value = id;
     document.getElementById("editCollectionName").value = col;
-    modal.classList.add("active");
-    container.innerHTML = "Fetching...";
     
-    const snap = await getDoc(doc(db, col, id));
-    if (snap.exists()) {
-        const data = snap.data();
-        container.innerHTML = "";
-        Object.keys(data).forEach(k => {
-            if (typeof data[k] === 'object' && !(data[k] instanceof Timestamp)) return;
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${k}</label>
-                <input type="text" data-key="${k}" value="${data[k] instanceof Timestamp ? data[k].toDate().toLocaleString() : (data[k] || '')}" class="w-full p-2 border rounded-lg text-sm bg-slate-50">
-            `;
-            container.appendChild(div);
-        });
+    modal.classList.add("active");
+    container.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-bold animate-pulse">CONNECTING TO FIREBASE...</div>`;
+    
+    try {
+        const snap = await getDoc(doc(db, col, id));
+        if (snap.exists()) {
+            const data = snap.data();
+            container.innerHTML = "";
+            
+            // Generate inputs for all editable fields
+            Object.keys(data).forEach(key => {
+                const val = data[key];
+                
+                // Skip non-editable or complex objects (except Timestamps)
+                if (typeof val === 'object' && !(val instanceof Timestamp)) return;
+
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = "space-y-1";
+                
+                let inputHtml = "";
+                if (val instanceof Timestamp) {
+                    // For timestamps, show as read-only or handle carefully
+                    inputHtml = `<input type="text" data-key="${key}" value="${val.toDate().toLocaleString()}" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-100 text-slate-500 outline-none" readonly>`;
+                } else {
+                    inputHtml = `<input type="text" data-key="${key}" value="${val || ''}" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">`;
+                }
+
+                fieldDiv.innerHTML = `
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">${key}</label>
+                    ${inputHtml}
+                `;
+                container.appendChild(fieldDiv);
+            });
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="text-red-500 text-xs font-bold">Failed to load data: ${e.message}</div>`;
     }
 }
 
-async function updateStatus(id, status) {
-    await updateDoc(doc(db, "jobs", id), { status });
-}
+// THE SAVE FUNCTION - Writing back to Firebase
+document.getElementById("saveBtn").onclick = async () => {
+    const id = document.getElementById("editDocId").value;
+    const col = document.getElementById("editCollectionName").value;
+    const saveBtn = document.getElementById("saveBtn");
+    
+    const originalText = saveBtn.innerText;
+    saveBtn.innerText = "Saving...";
+    saveBtn.disabled = true;
 
-async function deleteDocById(col, id) {
-    if (confirm("Delete permanently?")) await deleteDoc(doc(db, col, id));
-}
+    const updates = {};
+    const inputs = document.querySelectorAll("#dynamicFields input:not([readonly])");
+    
+    inputs.forEach(input => {
+        const key = input.dataset.key;
+        let value = input.value;
+        
+        // Basic type conversion
+        if (value.toLowerCase() === 'true') value = true;
+        if (value.toLowerCase() === 'false') value = false;
+        if (!isNaN(value) && value.trim() !== '') value = Number(value);
+        
+        updates[key] = value;
+    });
+
+    try {
+        await updateDoc(doc(db, col, id), updates);
+        closeModal('editModal');
+    } catch (e) {
+        alert("Firebase Save Error: " + e.message);
+    } finally {
+        saveBtn.innerText = originalText;
+        saveBtn.disabled = false;
+    }
+};
 
 /* ============================
-   Event Handlers
+   Init & Event Bindings
 ============================ */
 document.getElementById("loginBtn").onclick = () => {
     const e = document.getElementById("email").value;
     const p = document.getElementById("password").value;
     signInWithEmailAndPassword(auth, e, p).catch(err => document.getElementById("loginError").innerText = err.message);
 };
-
 document.getElementById("logoutBtn").onclick = () => signOut(auth);
 document.getElementById("addJobDirect").onclick = () => document.getElementById("createJobModal").classList.add("active");
 
@@ -423,7 +486,6 @@ document.getElementById("publishJobBtn").onclick = async () => {
         title: document.getElementById("jobTitle").value,
         company: document.getElementById("companyName").value,
         jobPlace: document.getElementById("jobPlace").value,
-        salary: document.getElementById("salary").value,
         jobLink: document.getElementById("jobLink").value,
         description: document.getElementById("jobDescription").value,
         status: 'approved',
@@ -433,33 +495,24 @@ document.getElementById("publishJobBtn").onclick = async () => {
     };
     await addDoc(collection(db, "jobs"), payload);
     document.getElementById("createJobModal").classList.remove("active");
-    alert("Published!");
-};
-
-document.getElementById("saveBtn").onclick = async () => {
-    const id = document.getElementById("editDocId").value;
-    const col = document.getElementById("editCollectionName").value;
-    const inputs = document.querySelectorAll("#dynamicFields input");
-    const updates = {};
-    inputs.forEach(i => updates[i.dataset.key] = i.value);
-    await updateDoc(doc(db, col, id), updates);
-    document.getElementById("editModal").classList.remove("active");
+    document.getElementById("jobForm").reset();
 };
 
 document.querySelectorAll('.nav-btn-tab').forEach(btn => {
     btn.onclick = () => {
         const tab = btn.dataset.tab;
-        if (tab === 'jobs') showJobsTab();
-        else if (tab === 'pendingJobs') showPendingJobsTab();
+        if (tab === 'jobs') showJobsTab('approved');
+        else if (tab === 'pendingJobs') showJobsTab('pending');
         else if (tab === 'users') showUsersTab();
-        else document.getElementById("content").innerHTML = `<p class="text-center py-20 text-slate-400">Section in development.</p>`;
     };
 });
 
 window.closeModal = (id) => document.getElementById(id).classList.remove("active");
-window.editDoc = editDoc;
-window.updateStatus = updateStatus;
-window.deleteDocById = deleteDocById;
+window.deleteJob = async (id) => { if(confirm("Delete permanently?")) await deleteDoc(doc(db, "jobs", id)); };
+window.updateJobStatus = async (id, status) => await updateDoc(doc(db, "jobs", id), { status });
+window.toggleJobAllowance = async (uid, allowed) => { await updateDoc(doc(db, "users", uid), { canPostJobs: allowed }); };
+window.openEditModal = openEditModal;
+
 </script>
 </body>
 </html>
