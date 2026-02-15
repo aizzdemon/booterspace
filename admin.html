@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard – KARDAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .nav-btn.active { border-color: #4f46e5; background-color: #eef2ff; color: #4f46e5; }
+        .user-card.new-user { border-left: 4px solid #10b981; background-color: #f0fdf4; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
+        .modal.active { display: flex; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .stats-card { transition: all 0.2s ease; }
+        .stats-card:hover { transform: translateY(-2px); }
+
+        .filter-btn-active { background-color: white; border-color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); color: #4f46e5; font-weight: 700; }
+        
+        .status-badge-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .status-badge-approved { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+<!-- UNIVERSAL EDIT MODAL -->
+<div id="editModal" class="modal">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <h3 id="modalTitle" class="font-black text-slate-800">Edit Details</h3>
+            <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editDocId">
+                <input type="hidden" id="editCollectionName">
+                <div id="dynamicFields" class="space-y-4"></div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('editModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="saveBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE JOB MODAL -->
+<div id="createJobModal" class="modal">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <div>
+                <h3 class="font-black text-slate-800">Create New Job Posting</h3>
+                <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Requires Admin Approval after Submission</p>
+            </div>
+            <button onclick="closeModal('createJobModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="jobForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Title</label>
+                    <input id="jobTitle" type="text" placeholder="e.g. Senior Developer" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
+                        <input id="companyName" type="text" placeholder="Kardan Inc" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
+                        <input id="jobPlace" type="text" placeholder="Remote / Kabul" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company Logo URL (Optional)</label>
+                    <input id="companyLogo" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Salary (Optional)</label>
+                        <input id="salary" type="text" placeholder="e.g. $50k - $70k" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Application Link</label>
+                        <input id="jobLink" type="url" placeholder="https://careers.com/..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Description</label>
+                    <textarea id="jobDescription" rows="4" placeholder="Briefly describe the role..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('createJobModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="publishJobBtn" class="bg-amber-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-amber-100 hover:bg-amber-700 transition">Submit for Review</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginDiv" class="flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-indigo-600">KARDAN</h1>
+            <p class="text-slate-500 font-medium">Administrative Gateway</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1">Admin Email</label>
+                <input id="email" type="email" placeholder="admin@kardan.com" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Password</label>
+                <input id="password" type="password" placeholder="••••••••" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
+            </div>
+            <button id="loginBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-200">Authorize Access</button>
+            <p id="loginError" class="text-red-500 text-sm text-center mt-2 font-medium"></p>
+        </div>
+    </div>
+</div>
+
+<!-- ADMIN INTERFACE -->
+<div id="adminDiv" class="hidden pb-20">
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-black text-indigo-600">KARDAN</span>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">ADMIN</span>
+            </div>
+            <button id="logoutBtn" class="text-sm font-bold text-slate-500 hover:text-red-600 transition flex items-center gap-1">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">👥</div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Users</p>
+                    <h3 id="stat-totalUsers" class="text-2xl font-black text-slate-800">--</h3>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">💼</div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Jobs</p>
+                    <h3 id="stat-totalJobs" class="text-2xl font-black text-slate-800">--</h3>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">⏳</div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Review</p>
+                    <h3 id="stat-pendingJobs" class="text-2xl font-black text-slate-800">--</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <button data-tab="jobs" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">💼</span>
+                <span class="text-sm font-bold mt-2">Approved Jobs</span>
+            </button>
+            <button data-tab="pendingJobs" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">⏳</span>
+                <span class="text-sm font-bold mt-2">Pending Jobs</span>
+            </button>
+            <button data-tab="users" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">👥</span>
+                <span class="text-sm font-bold mt-2">Manage Users</span>
+            </button>
+            <button data-tab="posts" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">💬</span>
+                <span class="text-sm font-bold mt-2">Community Posts</span>
+            </button>
+        </div>
+
+        <div id="content" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[400px]">
+            <div class="flex flex-col items-center justify-center h-64 text-slate-400">
+                <span class="text-5xl mb-4">🖥️</span>
+                <p>Welcome, Admin. Select a tab to manage KARDAN data.</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, orderBy, onSnapshot, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+    measurementId: "G-RRC3X485KQ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+let currentListUnsubscribe = null;
+let userFilterMode = 'all'; 
+
+/* ============================
+   UI & Auth Logic
+============================ */
+async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const errorDiv = document.getElementById("loginError");
+    try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        if (userCred.user.uid !== ADMIN_UID) {
+            errorDiv.textContent = "Access Denied.";
+            await signOut(auth);
+        }
+    } catch (err) {
+        errorDiv.textContent = "Error: " + err.message;
+    }
+}
+
+async function logout() { 
+    if (currentListUnsubscribe) currentListUnsubscribe();
+    await signOut(auth); 
+}
+
+onAuthStateChanged(auth, user => {
+    if (user && user.uid === ADMIN_UID) {
+        document.getElementById("loginDiv").classList.add("hidden");
+        document.getElementById("adminDiv").classList.remove("hidden");
+        initGlobalStats();
+    } else {
+        document.getElementById("loginDiv").classList.remove("hidden");
+        document.getElementById("adminDiv").classList.add("hidden");
+    }
+});
+
+function initGlobalStats() {
+    onSnapshot(collection(db, "jobs"), (snapshot) => {
+        const docs = snapshot.docs.map(d => d.data());
+        document.getElementById("stat-totalJobs").innerText = docs.filter(j => j.status === 'approved').length;
+        document.getElementById("stat-pendingJobs").innerText = docs.filter(j => j.status === 'pending').length;
+    });
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        document.getElementById("stat-totalUsers").innerText = snapshot.size;
+    });
+}
+
+/* ============================
+   Modal & Utility Functions
+============================ */
+function closeModal(id) {
+    document.getElementById(id).classList.remove("active");
+}
+
+async function openEditModal(collectionName, docId) {
+    const modal = document.getElementById("editModal");
+    const container = document.getElementById("dynamicFields");
+    const title = document.getElementById("modalTitle");
+    
+    document.getElementById("editDocId").value = docId;
+    document.getElementById("editCollectionName").value = collectionName;
+    
+    modal.classList.add("active");
+    container.innerHTML = "Loading...";
+    title.innerText = `Edit ${collectionName === 'users' ? 'User' : 'Job'}`;
+
+    try {
+        const docSnap = await getDoc(doc(db, collectionName, docId));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            container.innerHTML = "";
+            const skipKeys = ['id', 'uid', 'timestamp', 'createdAt', 'updatedAt'];
+
+            Object.keys(data).forEach(key => {
+                if (typeof data[key] === 'object' && !(data[key] instanceof Timestamp)) return;
+                const isImmutable = skipKeys.includes(key.toLowerCase());
+                const val = data[key] instanceof Timestamp ? data[key].toDate().toLocaleString() : data[key];
+
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">${key}</label>
+                    <input type="text" data-key="${key}" value="${val || ''}" 
+                        class="w-full p-3 border rounded-lg text-sm ${isImmutable ? 'bg-slate-100' : 'bg-slate-50'}" 
+                        ${isImmutable ? 'disabled' : ''}>
+                `;
+                container.appendChild(div);
+            });
+        }
+    } catch (e) { container.innerHTML = "Error."; }
+}
+
+async function saveModalDetails() {
+    const docId = document.getElementById("editDocId").value;
+    const collectionName = document.getElementById("editCollectionName").value;
+    const inputs = document.querySelectorAll("#dynamicFields input:not([disabled])");
+    const updatedData = {};
+    inputs.forEach(i => updatedData[i.dataset.key] = i.value);
+
+    try {
+        await updateDoc(doc(db, collectionName, docId), updatedData);
+        closeModal("editModal");
+    } catch (e) { alert(e.message); }
+}
+
+/* ============================
+   Jobs Module
+============================ */
+function showJobsTab() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Approved Jobs</h2>
+        <button id="addJobBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-indigo-700 transition flex items-center gap-2">
+            <span>+</span> Create Job Listing
+        </button>
+      </div>
+      <div id="jobsList" class="space-y-3">Loading...</div>
+    `;
+
+    document.getElementById('addJobBtn').onclick = () => document.getElementById('createJobModal').classList.add('active');
+
+    if (currentListUnsubscribe) currentListUnsubscribe();
+    const q = query(collection(db, "jobs"), where("status", "==", "approved"), orderBy("timestamp", "desc"));
+    
+    currentListUnsubscribe = onSnapshot(q, (snapshot) => {
+        const list = document.getElementById("jobsList");
+        list.innerHTML = snapshot.empty ? `<p class="text-center py-10 text-slate-400 italic">No approved jobs in public view.</p>` : "";
+        snapshot.forEach(docSnap => {
+            const j = docSnap.data();
+            const div = document.createElement('div');
+            div.className = "p-4 border border-slate-200 rounded-xl bg-white flex justify-between items-center hover:bg-slate-50 transition-colors shadow-sm";
+            div.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center font-bold">✓</div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">${j.title || 'Untitled'}</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">${j.company || 'Unknown'} • ${j.location || j.jobPlace || 'Remote'}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openEditModal('jobs', '${docSnap.id}')" class="bg-white border border-slate-200 text-indigo-600 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-indigo-50">Edit</button>
+                    <button onclick="deleteJob('${docSnap.id}')" class="bg-white border border-slate-200 text-red-600 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-red-50">Delete</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    });
+}
+
+/**
+ * UPDATED: Every job is now created with status: "pending"
+ * This forces an admin to go to the Pending tab to approve it,
+ * satisfying the requirement that all jobs must be reviewed.
+ */
+async function publishNewJob() {
+    const title = document.getElementById('jobTitle').value;
+    const company = document.getElementById('companyName').value;
+    const place = document.getElementById('jobPlace').value;
+    const logo = document.getElementById('companyLogo').value;
+    const sal = document.getElementById('salary').value;
+    const link = document.getElementById('jobLink').value;
+    const desc = document.getElementById('jobDescription').value;
+
+    if (!title || !company || !place || !link || !desc) {
+        alert("Required fields missing.");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "jobs"), {
+            title,
+            company,
+            jobPlace: place,
+            companyLogo: logo,
+            salary: sal,
+            jobLink: link,
+            description: desc,
+            status: 'pending', // ALL jobs start as pending for review
+            timestamp: serverTimestamp(),
+            source: 'admin_panel'
+        });
+        document.getElementById('jobForm').reset();
+        closeModal('createJobModal');
+        // Notify admin to check the pending tab
+        alert("Job submitted successfully. Please go to 'Pending Jobs' to approve and publish it.");
+    } catch (e) {
+        alert("Submission Error: " + e.message);
+    }
+}
+
+async function deleteJob(id) {
+    if (confirm("Delete this record permanently?")) {
+        try { await deleteDoc(doc(db, "jobs", id)); } catch (e) { alert(e.message); }
+    }
+}
+
+/* ============================
+   Users & Pending Modules
+============================ */
+function showUsersTab() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">User Management</h2>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button id="f-all" class="px-3 py-1.5 text-xs font-bold rounded-lg ${userFilterMode==='all'?'filter-btn-active':''}">All</button>
+            <button id="f-new" class="px-3 py-1.5 text-xs font-bold rounded-lg ${userFilterMode==='recent'?'filter-btn-active':''}">New (5d)</button>
+        </div>
+      </div>
+      <div id="usersList" class="grid grid-cols-1 gap-3">Loading...</div>
+    `;
+
+    document.getElementById('f-all').onclick = () => { userFilterMode = 'all'; showUsersTab(); };
+    document.getElementById('f-new').onclick = () => { userFilterMode = 'recent'; showUsersTab(); };
+
+    if (currentListUnsubscribe) currentListUnsubscribe();
+    currentListUnsubscribe = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), (snap) => {
+        const list = document.getElementById("usersList");
+        list.innerHTML = "";
+        const now = new Date();
+        const cutoff = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000));
+
+        snap.forEach(docSnap => {
+            const u = docSnap.data();
+            const regDate = u.createdAt?.toDate ? u.createdAt.toDate() : (u.timestamp?.toDate ? u.timestamp.toDate() : null);
+            const isRecent = regDate && regDate >= cutoff;
+            if (userFilterMode === 'recent' && !isRecent) return;
+
+            const div = document.createElement('div');
+            div.className = `user-card p-4 border rounded-xl bg-white flex justify-between items-center ${isRecent ? 'new-user' : 'border-slate-200'}`;
+            div.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold">${(u.name||'U').charAt(0)}</div>
+                    <div><h4 class="font-bold text-sm">${u.name||u.fullName||'User'}</h4><p class="text-xs text-slate-500">${u.email||''}</p></div>
+                </div>
+                <button onclick="openEditModal('users', '${docSnap.id}')" class="text-xs font-bold text-indigo-600 hover:underline">View Profile</button>
+            `;
+            list.appendChild(div);
+        });
+    });
+}
+
+function showPendingJobsTab() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-amber-600">Review Queue</h2>
+            <span class="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-1 rounded">PENDING APPROVAL</span>
+        </div>
+        <div id="pList" class="space-y-3">Loading...</div>
+    `;
+    if (currentListUnsubscribe) currentListUnsubscribe();
+    const q = query(collection(db, "jobs"), where("status", "==", "pending"), orderBy("timestamp", "desc"));
+    
+    currentListUnsubscribe = onSnapshot(q, snap => {
+        const list = document.getElementById("pList");
+        list.innerHTML = snap.empty ? `<p class="text-center py-10 text-slate-400 italic">Review queue is empty.</p>` : "";
+        snap.forEach(docSnap => {
+            const j = docSnap.data();
+            const div = document.createElement('div');
+            div.className = "p-4 border border-amber-200 bg-amber-50 rounded-xl flex justify-between items-center shadow-sm";
+            div.innerHTML = `
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                         <h3 class="font-bold text-sm text-slate-800">${j.title}</h3>
+                         <span class="text-[9px] bg-slate-200 text-slate-600 px-1.5 rounded">${j.source || 'external'}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium">${j.company} • ${j.jobPlace || 'N/A'}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="updateJobStatus('${docSnap.id}', 'approved')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-indigo-700">Approve</button>
+                    <button onclick="deleteJob('${docSnap.id}')" class="bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-50">Reject</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    });
+}
+
+async function updateJobStatus(id, status) {
+    try { 
+        await updateDoc(doc(db, "jobs", id), { status }); 
+        if (status === 'approved') {
+            // Option to trigger a local UI swap or rely on Firestore listeners
+        }
+    } catch (e) { alert(e.message); }
+}
+
+/* ============================
+   Event Setup
+============================ */
+document.getElementById("loginBtn").onclick = login;
+document.getElementById("logoutBtn").onclick = logout;
+document.getElementById("saveBtn").onclick = saveModalDetails;
+document.getElementById("publishJobBtn").onclick = publishNewJob;
+
+document.querySelectorAll('.nav-btn-tab').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.nav-btn-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        if (tab === 'jobs') showJobsTab();
+        else if (tab === 'pendingJobs') showPendingJobsTab();
+        else if (tab === 'users') showUsersTab();
+        else document.getElementById("content").innerHTML = `<div class="text-center py-20 text-slate-400 italic">Community Posts Review coming soon.</div>`;
+    };
+});
+
+window.openEditModal = openEditModal;
+window.closeModal = closeModal;
+window.deleteJob = deleteJob;
+window.updateJobStatus = updateJobStatus;
+</script>
+</body>
+</html>
