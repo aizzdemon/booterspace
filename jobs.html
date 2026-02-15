@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Jobs – BooterSpace</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- ================= FIREBASE INIT ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.db = db;
+window.auth = auth;
+
+signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+});
+</script>
+
+<style>
+.latest-badge { animation: pulse 1s infinite; }
+@keyframes pulse { 0% { opacity: 1 } 50% { opacity: .4 } 100% { opacity: 1 } }
+.skeleton { background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+@keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* Hide default datalist arrow in some browsers for cleaner UI */
+input::-webkit-calendar-picker-indicator { display: none !important; }
+</style>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex flex-col font-sans">
+
+<header class="bg-white border-b sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="font-black text-2xl tracking-tighter text-blue-600">BOOTER<span class="text-slate-900">SPACE</span></div>
+    <div class="text-sm font-medium text-slate-500">Find Your Next Move</div>
+  </div>
+</header>
+
+<div class="bg-blue-600 py-12 px-4">
+  <div class="max-w-5xl mx-auto text-center">
+    <h1 class="text-4xl font-extrabold text-white mb-4">Discover Your Dream Job</h1>
+    <p class="text-blue-100 text-lg mb-8">Browse thousands of high-quality job listings updated daily.</p>
+    
+    <!-- Multi-Column Search Bar -->
+    <div class="bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
+      <!-- Keyword/Title Search with Datalist -->
+      <div class="relative flex-grow md:w-1/3">
+        <input id="searchInput" list="titleSuggestions" placeholder="Job title or company" class="w-full p-4 pl-12 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <datalist id="titleSuggestions"></datalist>
+      </div>
+
+      <!-- Location Search with Datalist -->
+      <div class="relative flex-grow md:w-1/4">
+        <input id="locationInput" list="locationSuggestions" placeholder="City or remote" class="w-full p-4 pl-12 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <datalist id="locationSuggestions"></datalist>
+      </div>
+
+      <!-- Date Filter -->
+      <div class="relative w-full md:w-40">
+        <select id="dateFilter" class="w-full p-4 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
+          <option value="all">Any time</option>
+          <option value="1">Last 24h</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+      </div>
+
+      <button id="mainSearchBtn" class="bg-blue-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-blue-700 transition transform active:scale-95">Search</button>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto px-4 py-10 flex-grow w-full">
+  <div class="flex justify-between items-end mb-8 border-b pb-4">
+    <div>
+      <h2 id="jobCount" class="text-slate-900 font-bold text-xl">Latest Opportunities</h2>
+      <p id="filterSummary" class="text-slate-500 text-sm mt-1">Showing all verified job postings</p>
+    </div>
+    <div class="text-right">
+       <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Active</span>
+       <div id="totalJobs" class="text-2xl font-black text-blue-600">...</div>
+    </div>
+  </div>
+
+  <div id="jobsList" class="grid gap-4">
+    <!-- Skeletons -->
+    <div class="skeleton h-32 rounded-2xl"></div>
+    <div class="skeleton h-32 rounded-2xl"></div>
+    <div class="skeleton h-32 rounded-2xl"></div>
+  </div>
+
+  <div id="emptyState" class="hidden text-center py-20">
+    <div class="text-slate-300 mb-4"><svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+    <h3 class="text-xl font-bold text-slate-800">No matches found</h3>
+    <p class="text-slate-500">We couldn't find any jobs matching your criteria. Try widening your search.</p>
+  </div>
+
+  <div class="mt-12 flex justify-center">
+    <button id="loadMoreBtn" class="hidden bg-white border-2 border-slate-100 text-slate-700 px-10 py-3 rounded-full hover:border-blue-200 hover:text-blue-600 transition-all font-bold shadow-sm hover:shadow-md flex items-center gap-2">
+      <span>Show More Jobs</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    </button>
+  </div>
+</main>
+
+<script type="module">
+import { 
+  collection, query, where, orderBy, limit, 
+  getDocs, startAfter, getCountFromServer, doc, updateDoc, increment 
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const db = window.db;
+const jobsList = document.getElementById("jobsList");
+const loadMoreBtn = document.getElementById("loadMoreBtn");
+const jobCount = document.getElementById("jobCount");
+const totalJobsEl = document.getElementById("totalJobs");
+const emptyState = document.getElementById("emptyState");
+const locationSuggestions = document.getElementById("locationSuggestions");
+const titleSuggestions = document.getElementById("titleSuggestions");
+const filterSummary = document.getElementById("filterSummary");
+
+const searchInput = document.getElementById("searchInput");
+const locationInput = document.getElementById("locationInput");
+const dateFilter = document.getElementById("dateFilter");
+const mainSearchBtn = document.getElementById("mainSearchBtn");
+
+let lastDoc = null; 
+const PAGE_SIZE = 20;
+let loadedJobs = []; // Maintain local list for filtering
+const uniqueLocations = new Set();
+const uniqueTitles = new Set();
+
+const formatSalary = (val) => val ? val : "Salary Undisclosed";
+
+function updateSuggestions(job) {
+  // Update Location Suggestions
+  if (job.location && !uniqueLocations.has(job.location)) {
+    uniqueLocations.add(job.location);
+    const option = document.createElement("option");
+    option.value = job.location;
+    locationSuggestions.appendChild(option);
+  }
+  // Update Title Suggestions
+  if (job.title && !uniqueTitles.has(job.title)) {
+    uniqueTitles.add(job.title);
+    const option = document.createElement("option");
+    option.value = job.title;
+    titleSuggestions.appendChild(option);
+  }
+}
+
+function renderJobCard(job) {
+  const logo = job.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company)}&background=random`;
+  const isNew = job.timestamp && (Date.now() - job.timestamp.toMillis() < 3 * 24 * 60 * 60 * 1000);
+  
+  const div = document.createElement("div");
+  div.className = "group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start sm:items-center";
+  
+  div.innerHTML = `
+    <div class="relative shrink-0">
+      <img src="${logo}" class="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
+      ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
+    </div>
+    <div class="flex-grow">
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <h3 class="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">${job.title}</h3>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 font-medium">
+        <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${job.company}</span>
+        <span class="flex items-center gap-1.5 text-blue-600/80"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${job.location || 'Remote'}</span>
+      </div>
+      <div class="mt-3 font-bold text-slate-900 text-sm">${formatSalary(job.salary)}</div>
+    </div>
+    <div class="flex sm:flex-col gap-2 w-full sm:w-auto shrink-0">
+      <button onclick="window.location.href='job-detail.html?id=${job.id}'" class="flex-grow bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">View Details</button>
+    </div>
+  `;
+  return div;
+}
+
+// Client-side Filter Logic
+function applyFilters() {
+  const keyword = searchInput.value.toLowerCase().trim();
+  const location = locationInput.value.toLowerCase().trim();
+  const dateVal = dateFilter.value;
+
+  const filtered = loadedJobs.filter(job => {
+    const matchKeyword = !keyword || 
+      job.title?.toLowerCase().includes(keyword) || 
+      job.company?.toLowerCase().includes(keyword);
+    
+    const matchLocation = !location || 
+      (job.location || "remote").toLowerCase().includes(location);
+
+    let matchDate = true;
+    if (dateVal !== "all") {
+      const hours = parseInt(dateVal) * 24;
+      const diff = (Date.now() - job.timestamp?.toMillis()) / (1000 * 60 * 60);
+      matchDate = diff <= hours;
+    }
+
+    return matchKeyword && matchLocation && matchDate;
+  });
+
+  renderList(filtered);
+}
+
+function renderList(jobs) {
+  jobsList.innerHTML = "";
+  if (jobs.length === 0) {
+    emptyState.classList.remove("hidden");
+    loadMoreBtn.classList.add("hidden");
+  } else {
+    emptyState.classList.add("hidden");
+    const fragment = document.createDocumentFragment();
+    jobs.forEach(job => fragment.appendChild(renderJobCard(job)));
+    jobsList.appendChild(fragment);
+    
+    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+    if (isSearching) {
+       loadMoreBtn.classList.add("hidden");
+       filterSummary.innerText = `Found ${jobs.length} results for your search`;
+    } else {
+       filterSummary.innerText = "Showing all verified job postings";
+    }
+  }
+}
+
+async function fetchJobs(isLoadMore = false) {
+  try {
+    if (!isLoadMore) {
+      jobsList.innerHTML = '<div class="skeleton h-32 rounded-2xl"></div>'.repeat(3);
+      lastDoc = null;
+      loadedJobs = [];
+      emptyState.classList.add("hidden");
+    } else {
+      loadMoreBtn.innerHTML = '<span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span> Loading...';
+      loadMoreBtn.disabled = true;
+    }
+
+    let q = query(
+      collection(db, "jobs"),
+      where("status", "==", "approved"),
+      orderBy("timestamp", "desc"),
+      limit(PAGE_SIZE)
+    );
+
+    if (isLoadMore && lastDoc) {
+      q = query(q, startAfter(lastDoc));
+    }
+
+    const snap = await getDocs(q);
+
+    if (snap.empty && !isLoadMore) {
+      emptyState.classList.remove("hidden");
+      jobsList.innerHTML = "";
+      loadMoreBtn.classList.add("hidden");
+      return;
+    }
+
+    const newJobs = snap.docs.map(d => {
+      const data = { id: d.id, ...d.data() };
+      updateSuggestions(data); // Populate both title and location suggestions
+      return data;
+    });
+
+    loadedJobs = [...loadedJobs, ...newJobs];
+    lastDoc = snap.docs[snap.docs.length - 1];
+
+    applyFilters();
+
+    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+    if (snap.docs.length < PAGE_SIZE || isSearching) {
+      loadMoreBtn.classList.add("hidden");
+    } else {
+      loadMoreBtn.classList.remove("hidden");
+      loadMoreBtn.innerHTML = '<span>Show More Jobs</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+      loadMoreBtn.disabled = false;
+    }
+
+  } catch (err) {
+    console.error("Firestore Error:", err);
+    jobCount.innerText = "Error loading jobs";
+  }
+}
+
+async function loadTotalCount() {
+  try {
+    const q = query(collection(db, "jobs"), where("status", "==", "approved"));
+    const snap = await getCountFromServer(q);
+    totalJobsEl.innerText = snap.data().count.toLocaleString();
+  } catch (e) {
+    totalJobsEl.innerText = "0";
+  }
+}
+
+// Events
+loadMoreBtn.addEventListener("click", () => fetchJobs(true));
+mainSearchBtn.addEventListener("click", applyFilters);
+searchInput.addEventListener("input", applyFilters);
+locationInput.addEventListener("input", applyFilters);
+dateFilter.addEventListener("change", applyFilters);
+
+// Initial Load
+window.onload = () => {
+  fetchJobs();
+  loadTotalCount();
+};
+
+</script>
+</body>
+</html>
