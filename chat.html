@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BooterSpace Chat</title>
+<link rel="stylesheet" href="chat.css">
+</head>
+<body>
+
+<div class="app">
+
+  <div id="loginScreen" class="center">
+    <h2>BooterSpace Chat</h2>
+    <button id="loginBtn">Login with Google</button>
+  </div>
+
+  <div id="chatScreen" class="chat" hidden>
+    <div class="header">
+      <span>Global Chat</span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+    <div class="inputBar">
+      <input id="msgInput" placeholder="Message..." />
+      <button id="sendBtn">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="chat.js"></script>
+</body>
+</html>
