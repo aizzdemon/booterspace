@@ -145,7 +145,8 @@ const dateFilter = document.getElementById("dateFilter");
 const mainSearchBtn = document.getElementById("mainSearchBtn");
 
 let lastDoc = null; 
-const PAGE_SIZE = 20;
+const INITIAL_PAGE_SIZE = 10;
+const SUBSEQUENT_PAGE_SIZE = 20;
 let loadedJobs = []; // Maintain local list for filtering
 const uniqueLocations = new Set();
 const uniqueTitles = new Set();
@@ -248,6 +249,8 @@ function renderList(jobs) {
 
 async function fetchJobs(isLoadMore = false) {
   try {
+    const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
+
     if (!isLoadMore) {
       jobsList.innerHTML = '<div class="skeleton h-32 rounded-2xl"></div>'.repeat(3);
       lastDoc = null;
@@ -262,7 +265,7 @@ async function fetchJobs(isLoadMore = false) {
       collection(db, "jobs"),
       where("status", "==", "approved"),
       orderBy("timestamp", "desc"),
-      limit(PAGE_SIZE)
+      limit(currentLimit)
     );
 
     if (isLoadMore && lastDoc) {
@@ -290,7 +293,7 @@ async function fetchJobs(isLoadMore = false) {
     applyFilters();
 
     const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
-    if (snap.docs.length < PAGE_SIZE || isSearching) {
+    if (snap.docs.length < currentLimit || isSearching) {
       loadMoreBtn.classList.add("hidden");
     } else {
       loadMoreBtn.classList.remove("hidden");
