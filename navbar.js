@@ -320,10 +320,9 @@ if (Notification.permission !== "granted") return;
 const supported = await isSupported();
 if (!supported) return;
 
-// 🔥 MANUAL SERVICE WORKER REGISTRATION (REQUIRED FOR GITHUB PAGES)
-const registration = await navigator.serviceWorker.register(
-  "/firebase-messaging-sw.js"
-);
+// Use a module-relative path so this works for both root domains and GitHub Pages project paths.
+const serviceWorkerUrl = new URL("./firebase-messaging-sw.js", import.meta.url);
+const registration = await navigator.serviceWorker.register(serviceWorkerUrl.href);
 
 const messaging = getMessaging(firebaseApp);
 
