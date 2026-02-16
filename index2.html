@@ -10,8 +10,8 @@
         appId: "ed502dbc-48ba-4e0e-9a22-f9965a27767a",
 
         /* ✅ GitHub Pages FIX */
-        serviceWorkerPath: "OneSignalSDKWorker.js",
-        serviceWorkerUpdaterPath: "OneSignalSDKUpdaterWorker.js",
+        serviceWorkerPath: "/js/OneSignalSDKWorker.js",
+        serviceWorkerUpdaterPath: "/js/OneSignalSDKUpdaterWorker.js",
         serviceWorkerParam: { scope: "/booterspace/" },
 
         /* ✅ Clean notify button */
@@ -55,7 +55,7 @@ fetch("navbar.html")
     document.getElementById("navbar").innerHTML = html;
     const s = document.createElement("script");
     s.type = "module";
-    s.src = "navbar.js";
+    s.src = "/js/navbar.js";
     document.body.appendChild(s);
   });
 </script>

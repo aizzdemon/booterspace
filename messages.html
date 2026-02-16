@@ -54,7 +54,7 @@
 
                     const navbarScript = document.createElement('script');
                     navbarScript.type = 'module';
-                    navbarScript.src = 'navbar.js';
+                    navbarScript.src = '/js/navbar.js';
                     document.body.appendChild(navbarScript);
                 }
             } catch (error) {
@@ -761,5 +761,9 @@
     </div>
 </main>
 
+
+<script src="/js/firebase.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/navbar.js"></script>
 </body>
 </html>
