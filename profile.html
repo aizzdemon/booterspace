@@ -412,6 +412,7 @@ window.sendConnectionRequest = async function(userId, event) {
   const requestPayload = {
     fromId: state.currentUser.uid,
     toId: userId,
+    fromName: state.currentUser.displayName || "User",
     status: "pending",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };

@@ -331,6 +331,7 @@ window.connectUser = async (targetUid) => {
     await addDoc(collection(db, "artifacts", appId, "public", "data", "connection_requests"), {
       fromId: currentUser.uid,
       toId: targetUid,
+      fromName: currentUser.displayName || "User",
       status: "pending",
       createdAt: serverTimestamp()
     });

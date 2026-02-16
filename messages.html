@@ -188,6 +188,7 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
                     fromId: currentUser.uid,
                     toId: targetUid,
+                    fromName: currentUser.displayName || "User",
                     status: 'pending',
                     createdAt: serverTimestamp()
                 });
