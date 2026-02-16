@@ -1,484 +1,426 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInAnonymously, 
-  signInWithCustomToken 
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  onSnapshot, 
-  updateDoc, 
-  deleteDoc,
-  query
-} from 'firebase/firestore';
-import { 
-  UserPlus, 
-  UserCheck, 
-  UserMinus, 
-  Users, 
-  Clock, 
-  Search, 
-  MoreHorizontal,
-  User,
-  ShieldCheck,
-  Mail,
-  Menu,
-  X
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booterspace | Professional Network</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .tab-active { color: #4f46e5; }
+        .tab-active::after { content: ''; position: absolute; bottom: 0; left: 25%; right: 25%; height: 3px; background: #4f46e5; border-radius: 99px 99px 0 0; }
+        .shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
 
-// --- Firebase Configuration ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'connections-app';
+    <!-- Loading Overlay -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-opacity duration-500">
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Launching Booterspace...</p>
+        </div>
+    </div>
 
-const App = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [allUsers, setAllUsers] = useState([]);
-  const [connections, setConnections] = useState([]);
-  const [activeTab, setActiveTab] = useState('suggestions'); // suggestions, requests, list
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    <!-- Header & Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <button id="menu-toggle" class="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="bg-indigo-600 p-2 rounded-xl shadow-indigo-100 shadow-lg">
+                    <svg class="text-white" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <span class="font-extrabold text-xl tracking-tight hidden xs:block">booterspace</span>
+            </div>
+            
+            <div class="flex items-center gap-3" id="profile-trigger">
+                <div class="hidden lg:block text-right">
+                    <p id="user-name" class="text-sm font-bold text-slate-800">User</p>
+                    <p class="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1 justify-end">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online
+                    </p>
+                </div>
+                <img id="user-avatar" src="" class="w-10 h-10 rounded-full border-2 border-indigo-50 shadow-sm" alt="Me">
+            </div>
+        </div>
 
-  // 1. Authentication Setup
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
+        <!-- Top Mobile Navigation (Tablet & Mobile only) -->
+        <nav class="md:hidden bg-white border-b border-slate-100 flex items-center justify-around px-2 overflow-x-auto">
+            <button onclick="setActiveTab('suggestions')" class="nav-btn-mobile flex-1 py-3 flex flex-col items-center gap-1 relative" data-tab="suggestions">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+                <span class="text-[10px] font-black uppercase">Discover</span>
+            </button>
+            <button onclick="setActiveTab('requests')" class="nav-btn-mobile flex-1 py-3 flex flex-col items-center gap-1 relative" data-tab="requests">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span class="text-[10px] font-black uppercase">Pending</span>
+                <span id="badge-requests" class="hidden absolute top-2 right-1/4 translate-x-1/2 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full border border-white flex items-center justify-center">0</span>
+            </button>
+            <button onclick="setActiveTab('list')" class="nav-btn-mobile flex-1 py-3 flex flex-col items-center gap-1 relative" data-tab="list">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span class="text-[10px] font-black uppercase">Network</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Side Drawer (Mobile Only) -->
+    <div id="drawer" class="fixed inset-0 z-50 pointer-events-none md:hidden">
+        <div id="drawer-overlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none"></div>
+        <div id="drawer-content" class="absolute left-0 top-0 bottom-0 w-72 bg-white -translate-x-full transition-transform duration-300 pointer-events-auto shadow-2xl flex flex-col">
+            <div class="h-24 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center px-6 justify-between">
+                <span class="text-white font-bold text-lg">Booterspace Profile</span>
+                <button id="drawer-close" class="text-white/80 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div class="p-6 -mt-10 flex flex-col items-center text-center">
+                <img id="drawer-avatar" src="" class="w-20 h-20 rounded-full border-4 border-white bg-slate-100 shadow-lg mb-3">
+                <h2 id="drawer-name" class="font-bold text-xl text-slate-800">...</h2>
+                <p id="drawer-email" class="text-sm text-slate-500 mb-6">...</p>
+                <div class="w-full h-px bg-slate-100 mb-6"></div>
+                <div class="w-full text-left space-y-4">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Navigation</p>
+                    <button onclick="setActiveTab('suggestions'); closeDrawer()" class="flex items-center gap-3 text-slate-600 font-bold hover:text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg> Discover People</button>
+                    <button onclick="setActiveTab('list'); closeDrawer()" class="flex items-center gap-3 text-slate-600 font-bold hover:text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> My Connections</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 pt-6 md:pt-10 grid grid-cols-1 md:grid-cols-12 gap-8 mb-20">
+        
+        <!-- Sidebar Navigation (Desktop Only) -->
+        <aside class="hidden md:block col-span-4 lg:col-span-3 space-y-6">
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div class="h-20 bg-gradient-to-br from-indigo-600 to-purple-600"></div>
+                <div class="p-6 -mt-12 flex flex-col items-center">
+                    <img id="side-avatar" src="" class="w-20 h-20 rounded-full border-4 border-white bg-white shadow-lg mb-3">
+                    <h2 id="side-name" class="font-bold text-lg text-slate-800">...</h2>
+                    <p id="side-email" class="text-xs text-slate-500 mb-4 truncate w-full text-center">...</p>
+                    <div class="w-full grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+                        <div class="text-center">
+                            <p id="stat-network" class="text-lg font-black text-indigo-600">0</p>
+                            <p class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Network</p>
+                        </div>
+                        <div class="text-center border-l border-slate-100">
+                            <p id="stat-pending" class="text-lg font-black text-indigo-600">0</p>
+                            <p class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Requests</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm space-y-1">
+                <button onclick="setActiveTab('suggestions')" class="desktop-nav-btn w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold transition-all text-slate-600 hover:bg-slate-50" data-tab="suggestions">
+                    <div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg> Discover</div>
+                </button>
+                <button onclick="setActiveTab('requests')" class="desktop-nav-btn w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold transition-all text-slate-600 hover:bg-slate-50" data-tab="requests">
+                    <div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Invitations</div>
+                    <span id="side-badge-requests" class="hidden px-2 py-0.5 rounded-lg bg-red-500 text-white text-[10px] font-black">0</span>
+                </button>
+                <button onclick="setActiveTab('list')" class="desktop-nav-btn w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold transition-all text-slate-600 hover:bg-slate-50" data-tab="list">
+                    <div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> My Network</div>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Dynamic Content -->
+        <div class="md:col-span-8 lg:col-span-9 space-y-6">
+            
+            <div id="hero-banner" class="bg-indigo-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden min-h-[160px] flex flex-col justify-center">
+                <div class="relative z-10">
+                    <h1 id="tab-title" class="text-2xl md:text-3xl font-black mb-2 tracking-tight">Discover</h1>
+                    <p id="tab-desc" class="text-indigo-200 text-sm md:text-base max-w-md opacity-90 italic">Welcome to Booterspace. Find and connect with professional peers globally.</p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+            </div>
+
+            <div id="grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- User cards injected here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden col-span-full py-20 px-6 text-center bg-white border border-dashed border-slate-300 rounded-3xl">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="text-slate-300" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No members found</h3>
+                <p class="text-slate-500 text-sm">Explore other parts of Booterspace or check back later.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="max-w-7xl mx-auto px-4 pb-10 text-center text-slate-400 text-[10px] uppercase tracking-widest font-bold">
+        <p>&copy; 2024 booterspace network</p>
+    </footer>
+
+    <script>
+        // --- Firebase Core Initialization ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-network';
+
+        // --- State ---
+        let currentUser = null;
+        let activeTab = 'suggestions';
+        let allUsers = [];
+        let connections = [];
+
+        // --- App Logic ---
+        async function init() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
+            } catch (err) { console.error("Auth error:", err); }
+
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await syncProfile(user);
+                    setupListeners();
+                }
+            });
         }
-      } catch (err) {
-        console.error("Auth error:", err);
-      }
-    };
 
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currUser) => {
-      if (currUser) {
-        setUser(currUser);
-        ensureUserProfile(currUser);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+        async function syncProfile(user) {
+            const userRef = db.doc(`artifacts/${appId}/public/data/users/${user.uid}`);
+            const snap = await userRef.get();
+            const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
+            
+            if (!snap.exists) {
+                await userRef.set({
+                    displayName: user.displayName || `Member_${user.uid.slice(0, 4)}`,
+                    email: user.email || 'user@booterspace.io',
+                    avatar: avatar,
+                    headline: 'Visionary Networker',
+                    joinedAt: Date.now()
+                });
+            }
 
-  // 2. Data Fetching
-  useEffect(() => {
-    if (!user) return;
+            // Update Header UI
+            document.getElementById('user-name').innerText = user.displayName || 'Member';
+            document.getElementById('user-avatar').src = avatar;
+            document.getElementById('side-avatar').src = avatar;
+            document.getElementById('drawer-avatar').src = avatar;
+            document.getElementById('side-name').innerText = user.displayName || 'Member';
+            document.getElementById('drawer-name').innerText = user.displayName || 'Member';
+            document.getElementById('side-email').innerText = user.email || 'Welcome to Booterspace';
+            document.getElementById('drawer-email').innerText = user.email || 'Welcome to Booterspace';
+        }
 
-    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-    const unsubUsers = onSnapshot(usersRef, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAllUsers(usersData);
-    }, (err) => console.error("Users fetch error:", err));
+        function setupListeners() {
+            if (!currentUser) return;
 
-    const connRef = collection(db, 'artifacts', appId, 'public', 'data', 'connections');
-    const unsubConn = onSnapshot(connRef, (snapshot) => {
-      const connData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const userConnections = connData.filter(c => c.senderId === user.uid || c.receiverId === user.uid);
-      setConnections(userConnections);
-    }, (err) => console.error("Connections fetch error:", err));
+            // Listen for all users
+            db.collection(`artifacts/${appId}/public/data/users`).onSnapshot(snap => {
+                allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
+            }, err => console.error("Users error:", err));
 
-    return () => {
-      unsubUsers();
-      unsubConn();
-    };
-  }, [user]);
+            // Listen for connections
+            db.collection(`artifacts/${appId}/public/data/connections`).onSnapshot(snap => {
+                connections = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(c => c.senderId === currentUser.uid || c.receiverId === currentUser.uid);
+                
+                updateBadges();
+                render();
+            }, err => console.error("Conn error:", err));
 
-  const ensureUserProfile = async (u) => {
-    const userDoc = doc(db, 'artifacts', appId, 'public', 'data', 'users', u.uid);
-    const snap = await getDoc(userDoc);
-    if (!snap.exists()) {
-      await setDoc(userDoc, {
-        displayName: u.displayName || `User_${u.uid.slice(0, 5)}`,
-        email: u.email || 'anonymous@app.com',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`,
-        headline: "Professional Network Member",
-        location: "Remote"
-      });
-    }
-  };
+            // Done loading
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('loading-screen').remove(), 500);
+            }, 800);
+        }
 
-  // --- Logic Helpers ---
-  const sendRequest = async (targetUserId) => {
-    const requestId = `${user.uid}_${targetUserId}`;
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connections', requestId), {
-      senderId: user.uid,
-      receiverId: targetUserId,
-      status: 'pending',
-      timestamp: Date.now()
-    });
-  };
+        function updateBadges() {
+            const incoming = connections.filter(c => c.receiverId === currentUser.uid && c.status === 'pending').length;
+            const myCount = connections.filter(c => c.status === 'accepted').length;
 
-  const acceptRequest = async (connId) => {
-    const connRef = doc(db, 'artifacts', appId, 'public', 'data', 'connections', connId);
-    await updateDoc(connRef, { status: 'accepted' });
-  };
+            const badgeTop = document.getElementById('badge-requests');
+            const badgeSide = document.getElementById('side-badge-requests');
+            
+            if (incoming > 0) {
+                badgeTop.innerText = incoming;
+                badgeSide.innerText = incoming;
+                badgeTop.classList.remove('hidden');
+                badgeSide.classList.remove('hidden');
+            } else {
+                badgeTop.classList.add('hidden');
+                badgeSide.classList.add('hidden');
+            }
 
-  const removeConnection = async (connId) => {
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connections', connId));
-  };
+            document.getElementById('stat-network').innerText = myCount;
+            document.getElementById('stat-pending').innerText = incoming;
+        }
 
-  // --- Derived State ---
-  const currentUserProfile = allUsers.find(u => u.id === user?.uid);
-  const myAcceptedIds = connections
-    .filter(c => c.status === 'accepted')
-    .map(c => c.senderId === user.uid ? c.receiverId : c.senderId);
+        function setActiveTab(tab) {
+            activeTab = tab;
+            
+            // Update UI Active States
+            document.querySelectorAll('[data-tab]').forEach(el => {
+                const isMatch = el.getAttribute('data-tab') === tab;
+                if (isMatch) {
+                    el.classList.add('tab-active', 'bg-indigo-600', 'text-white', 'shadow-md');
+                    el.classList.remove('text-slate-600', 'hover:bg-slate-50');
+                } else {
+                    el.classList.remove('tab-active', 'bg-indigo-600', 'text-white', 'shadow-md');
+                    el.classList.add('text-slate-600', 'hover:bg-slate-50');
+                }
+            });
 
-  const pendingIncoming = connections.filter(c => c.receiverId === user.uid && c.status === 'pending');
-  const pendingOutgoing = connections.filter(c => c.senderId === user.uid && c.status === 'pending');
+            // Update Hero
+            const titles = { suggestions: 'Discover People', requests: 'Invitations', list: 'My Network' };
+            const descs = { 
+                suggestions: 'Grow your reach on Booterspace by connecting with industry experts.', 
+                requests: 'Manage incoming and outgoing connection requests.', 
+                list: 'Keep track of your established professional relationships.'
+            };
+            document.getElementById('tab-title').innerText = titles[tab];
+            document.getElementById('tab-desc').innerText = descs[tab];
 
-  const suggestions = allUsers.filter(u => 
-    u.id !== user?.uid && 
-    !myAcceptedIds.includes(u.id) &&
-    !connections.some(c => (c.senderId === u.id || c.receiverId === u.id))
-  );
+            render();
+        }
 
-  const connectionList = allUsers.filter(u => myAcceptedIds.includes(u.id));
+        function render() {
+            const container = document.getElementById('grid-container');
+            const empty = document.getElementById('empty-state');
+            container.innerHTML = '';
+            
+            const acceptedIds = connections.filter(c => c.status === 'accepted')
+                .map(c => c.senderId === currentUser.uid ? c.receiverId : c.senderId);
 
-  // --- Components ---
-  const UserCard = ({ targetUser, type, connId }) => (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-      <div className="relative mb-4">
-        <img src={targetUser.avatar} alt="avatar" className="w-24 h-24 rounded-full bg-slate-100 border-2 border-indigo-50" />
-        {type === 'connected' && (
-          <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
-        )}
-      </div>
-      <h3 className="font-bold text-slate-800 text-lg line-clamp-1">{targetUser.displayName}</h3>
-      <p className="text-sm text-slate-500 mb-5 line-clamp-1 h-5">{targetUser.headline}</p>
-      
-      <div className="w-full mt-auto pt-4 border-t border-slate-50">
-        {type === 'suggestion' && (
-          <button 
-            onClick={() => sendRequest(targetUser.id)}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
-          >
-            <UserPlus size={18} /> Connect
-          </button>
-        )}
-        {type === 'incoming' && (
-          <div className="flex gap-2">
-            <button 
-              onClick={() => acceptRequest(connId)}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-semibold"
-            >
-              Accept
-            </button>
-            <button 
-              onClick={() => removeConnection(connId)}
-              className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl text-sm font-semibold"
-            >
-              Ignore
-            </button>
-          </div>
-        )}
-        {type === 'outgoing' && (
-          <button 
-            disabled
-            className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl text-sm font-semibold cursor-not-allowed"
-          >
-            <Clock size={18} /> Sent
-          </button>
-        )}
-        {type === 'connected' && (
-          <button 
-            onClick={() => {
-              const cid = connections.find(c => (c.senderId === targetUser.id || c.receiverId === targetUser.id))?.id;
-              if (cid) removeConnection(cid);
-            }}
-            className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 text-slate-600 py-3 rounded-xl text-sm font-semibold transition-all"
-          >
-            <UserMinus size={18} /> Remove
-          </button>
-        )}
-      </div>
-    </div>
-  );
+            let displayList = [];
 
-  if (loading) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-    </div>
-  );
+            if (activeTab === 'suggestions') {
+                displayList = allUsers.filter(u => 
+                    u.id !== currentUser.uid && 
+                    !acceptedIds.includes(u.id) &&
+                    !connections.some(c => c.senderId === u.id || c.receiverId === u.id)
+                ).map(u => ({ ...u, type: 'suggestion' }));
+            } 
+            else if (activeTab === 'list') {
+                displayList = allUsers.filter(u => acceptedIds.includes(u.id))
+                    .map(u => ({ ...u, type: 'connected' }));
+            }
+            else if (activeTab === 'requests') {
+                const incoming = connections.filter(c => c.receiverId === currentUser.uid && c.status === 'pending');
+                const outgoing = connections.filter(c => c.senderId === currentUser.uid && c.status === 'pending');
+                
+                incoming.forEach(c => {
+                    const u = allUsers.find(usr => usr.id === c.senderId);
+                    if (u) displayList.push({ ...u, type: 'incoming', connId: c.id });
+                });
+                outgoing.forEach(c => {
+                    const u = allUsers.find(usr => usr.id === c.receiverId);
+                    if (u) displayList.push({ ...u, type: 'outgoing', connId: c.id });
+                });
+            }
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-10">
-      {/* Header */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <div className="bg-indigo-600 p-2 rounded-xl shadow-indigo-100 shadow-lg">
-              <Users className="text-white" size={20} />
-            </div>
-            <span className="font-extrabold text-xl tracking-tight hidden xs:block">Nexus</span>
-          </div>
-          
-          <div className="relative flex-1 max-w-md hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search people..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-100 border-transparent focus:bg-white border-2 focus:border-indigo-500 rounded-2xl py-2 pl-10 pr-4 transition-all text-sm outline-none"
-            />
-          </div>
+            if (displayList.length === 0) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                displayList.forEach(u => container.appendChild(createUserCard(u)));
+            }
+        }
 
-          <div className="flex items-center gap-3">
-            <div className="hidden lg:block text-right">
-              <p className="text-sm font-bold text-slate-800">{currentUserProfile?.displayName || user?.displayName || 'User'}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1 justify-end">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
-              </p>
-            </div>
-            <img 
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} 
-              className="w-10 h-10 rounded-full border-2 border-indigo-50 ring-2 ring-indigo-600/5 shadow-sm"
-              alt="profile"
-            />
-          </div>
-        </div>
+        function createUserCard(u) {
+            const div = document.createElement('div');
+            div.className = "bg-white border border-slate-200 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all";
+            
+            const actionBtn = getActionButton(u);
+
+            div.innerHTML = `
+                <div class="relative mb-4">
+                    <img src="${u.avatar}" class="w-20 h-20 rounded-full bg-slate-50 border-2 border-slate-100">
+                    ${u.type === 'connected' ? '<div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
+                </div>
+                <h4 class="font-bold text-slate-800 truncate w-full">${u.displayName}</h4>
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">${u.headline || 'Booterspace Pro'}</p>
+                <div class="w-full mt-6 pt-4 border-t border-slate-50">
+                    ${actionBtn}
+                </div>
+            `;
+            return div;
+        }
+
+        function getActionButton(u) {
+            if (u.type === 'suggestion') {
+                return `<button onclick="handleAction('connect', '${u.id}')" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors">Connect</button>`;
+            }
+            if (u.type === 'incoming') {
+                return `
+                    <div class="flex gap-2">
+                        <button onclick="handleAction('accept', '${u.connId}')" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold">Accept</button>
+                        <button onclick="handleAction('remove', '${u.connId}')" class="px-3 bg-slate-100 text-slate-500 py-2.5 rounded-xl text-xs font-bold">Ignore</button>
+                    </div>
+                `;
+            }
+            if (u.type === 'outgoing') {
+                return `<button disabled class="w-full bg-slate-100 text-slate-400 py-2.5 rounded-xl text-xs font-bold cursor-not-allowed">Request Sent</button>`;
+            }
+            if (u.type === 'connected') {
+                const conn = connections.find(c => c.senderId === u.id || c.receiverId === u.id);
+                return `<button onclick="handleAction('remove', '${conn.id}')" class="w-full border border-slate-200 text-slate-500 py-2.5 rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">Remove</button>`;
+            }
+            return '';
+        }
+
+        async function handleAction(type, id) {
+            if (!currentUser) return;
+            
+            if (type === 'connect') {
+                await db.doc(`artifacts/${appId}/public/data/connections/${currentUser.uid}_${id}`).set({
+                    senderId: currentUser.uid,
+                    receiverId: id,
+                    status: 'pending',
+                    timestamp: Date.now()
+                });
+            } else if (type === 'accept') {
+                await db.doc(`artifacts/${appId}/public/data/connections/${id}`).update({ status: 'accepted' });
+            } else if (type === 'remove') {
+                await db.doc(`artifacts/${appId}/public/data/connections/${id}`).delete();
+            }
+        }
+
+        // --- Drawer Logic ---
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('drawer-overlay');
+        const content = document.getElementById('drawer-content');
         
-        {/* Mobile Sub-Header Navigation */}
-        <div className="md:hidden bg-white border-b border-slate-100 flex items-center justify-around px-2 py-1">
-          {[
-            { id: 'suggestions', icon: <Search size={20} />, label: 'Discover' },
-            { id: 'requests', icon: <Clock size={20} />, label: 'Invitations', count: pendingIncoming.length },
-            { id: 'list', icon: <Users size={20} />, label: 'Network' }
-          ].map(tab => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 flex flex-col items-center gap-1 relative transition-colors ${activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}`}
-            >
-              <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-50 scale-110' : ''}`}>
-                {tab.icon}
-              </div>
-              <span className={`text-[10px] font-black uppercase tracking-tighter ${activeTab === tab.id ? 'opacity-100' : 'opacity-60'}`}>
-                {tab.label}
-              </span>
-              {tab.count > 0 && (
-                <span className="absolute top-2 right-1/4 translate-x-1/2 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full border border-white flex items-center justify-center">
-                  {tab.count}
-                </span>
-              )}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-indigo-600 rounded-t-full"></div>
-              )}
-            </button>
-          ))}
-        </div>
-      </nav>
+        function openDrawer() {
+            drawer.classList.remove('pointer-events-none');
+            overlay.classList.remove('pointer-events-none');
+            overlay.classList.add('opacity-100');
+            content.classList.remove('-translate-x-full');
+        }
 
-      {/* Mobile Drawer Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-      )}
+        function closeDrawer() {
+            overlay.classList.add('pointer-events-none');
+            overlay.classList.remove('opacity-100');
+            content.classList.add('-translate-x-full');
+            setTimeout(() => drawer.classList.add('pointer-events-none'), 300);
+        }
 
-      <main className="max-w-7xl mx-auto px-4 pt-6 md:pt-8 grid grid-cols-1 md:grid-cols-12 gap-6 relative">
-        
-        {/* Sidebar / Desktop Navigation */}
-        <div className={`
-          md:col-span-4 lg:col-span-3 space-y-4 
-          fixed md:sticky top-[4.5rem] left-0 h-[calc(100vh-4.5rem)] md:h-auto
-          w-72 md:w-full bg-slate-50 md:bg-transparent z-50 md:z-auto
-          transition-transform duration-300 ease-in-out px-4 md:px-0 border-r md:border-r-0 border-slate-200 md:border-none
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}>
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mt-4 md:mt-0">
-            <div className="h-20 bg-gradient-to-br from-indigo-600 to-purple-600"></div>
-            <div className="p-5 -mt-12 flex flex-col items-center">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} className="w-24 h-24 rounded-full border-4 border-white bg-white shadow-lg mb-3" alt="" />
-              <h2 className="font-bold text-xl text-slate-800 text-center">{currentUserProfile?.displayName || user?.displayName || 'Connecting...'}</h2>
-              <p className="text-sm text-slate-500 text-center mb-6 line-clamp-1">
-                {currentUserProfile?.email || 'user@nexus.network'}
-              </p>
-              
-              <div className="w-full grid grid-cols-2 gap-2 border-t border-slate-100 pt-5">
-                <div className="text-center">
-                  <p className="text-lg font-black text-indigo-600">{connectionList.length}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Network</p>
-                </div>
-                <div className="text-center border-l border-slate-100">
-                  <p className="text-lg font-black text-indigo-600">{pendingIncoming.length}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Pending</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        document.getElementById('menu-toggle').addEventListener('click', openDrawer);
+        document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+        overlay.addEventListener('click', closeDrawer);
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm hidden md:block">
-            {[
-              { id: 'suggestions', label: 'Discover', icon: <UserPlus size={20} />, count: suggestions.length },
-              { id: 'requests', label: 'Invitations', icon: <Clock size={20} />, count: pendingIncoming.length, alert: true },
-              { id: 'list', label: 'My Network', icon: <UserCheck size={20} />, count: connectionList.length }
-            ].map((item) => (
-              <button 
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold transition-all mb-1 last:mb-0 active:scale-[0.98] ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-50'}`}
-              >
-                <div className="flex items-center gap-4">
-                  {item.icon}
-                  {item.label}
-                </div>
-                {item.count > 0 && (
-                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${activeTab === item.id ? 'bg-white/20 text-white' : (item.alert ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500')}`}>
-                    {item.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="md:col-span-8 lg:col-span-9 space-y-6">
-          
-          {/* Section Header */}
-          <div className="bg-indigo-900 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-            <div className="relative z-10">
-              <h1 className="text-2xl md:text-3xl font-black mb-2 leading-tight">
-                {activeTab === 'suggestions' ? 'Make connection to new people' : 
-                 activeTab === 'list' ? 'Your professional network' : 
-                 'Manage your invitations'}
-              </h1>
-              <p className="text-indigo-200 text-sm md:text-base max-w-md opacity-90">
-                {activeTab === 'suggestions' ? 'Expand your horizons and discover potential collaborators near you.' : 
-                 activeTab === 'list' ? 'Stay in touch with your colleagues and foster long-term partnerships.' : 
-                 'Review incoming requests and track your outgoing connection status.'}
-              </p>
-            </div>
-            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute right-20 top-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
-          </div>
-
-          {/* Quick Stats Grid for Mobile */}
-          <div className="grid grid-cols-2 gap-4 md:hidden">
-             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Users size={18} /></div>
-                <div>
-                   <p className="text-xs text-slate-400 font-bold uppercase">Network</p>
-                   <p className="text-xl font-black">{connectionList.length}</p>
-                </div>
-             </div>
-             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
-                <div className="p-2 bg-red-50 text-red-600 rounded-lg"><Clock size={18} /></div>
-                <div>
-                   <p className="text-xs text-slate-400 font-bold uppercase">Pending</p>
-                   <p className="text-xl font-black">{pendingIncoming.length}</p>
-                </div>
-             </div>
-          </div>
-
-          {/* Pending Invitations Banner */}
-          {activeTab !== 'requests' && pendingIncoming.length > 0 && (
-            <button 
-              onClick={() => setActiveTab('requests')}
-              className="w-full flex items-center justify-between bg-white border-2 border-indigo-100 hover:border-indigo-200 p-4 rounded-2xl transition-all shadow-sm active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner">
-                  <Mail size={20} />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-800 text-sm">You have {pendingIncoming.length} new connection requests</p>
-                  <p className="text-xs text-slate-500">Tap to review and accept</p>
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                <MoreHorizontal size={18} />
-              </div>
-            </button>
-          )}
-
-          {/* Dynamic Grid */}
-          <div className="min-h-[400px]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {activeTab === 'suggestions' && suggestions.map(u => (
-                <UserCard key={u.id} targetUser={u} type="suggestion" />
-              ))}
-
-              {activeTab === 'list' && connectionList.map(u => (
-                <UserCard key={u.id} targetUser={u} type="connected" />
-              ))}
-
-              {activeTab === 'requests' && (
-                <>
-                  {pendingIncoming.map(req => {
-                    const sender = allUsers.find(u => u.id === req.senderId);
-                    if (!sender) return null;
-                    return <UserCard key={req.id} targetUser={sender} type="incoming" connId={req.id} />;
-                  })}
-                  {pendingOutgoing.map(req => {
-                    const receiver = allUsers.find(u => u.id === req.receiverId);
-                    if (!receiver) return null;
-                    return <UserCard key={req.id} targetUser={receiver} type="outgoing" connId={req.id} />;
-                  })}
-                </>
-              )}
-
-              {/* Empty States */}
-              {((activeTab === 'suggestions' && suggestions.length === 0) ||
-                (activeTab === 'list' && connectionList.length === 0) ||
-                (activeTab === 'requests' && pendingIncoming.length === 0 && pendingOutgoing.length === 0)) && (
-                <div className="col-span-full bg-white border border-dashed border-slate-300 rounded-3xl py-20 px-6 text-center">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    {activeTab === 'suggestions' ? <Search className="text-slate-300" size={32} /> : 
-                     activeTab === 'list' ? <Users className="text-slate-300" size={32} /> : 
-                     <Clock className="text-slate-300" size={32} />}
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">No results found</h3>
-                  <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8">
-                    {activeTab === 'suggestions' ? "We've looked everywhere but couldn't find new suggestions for you right now." : 
-                     activeTab === 'list' ? "Your network is empty. Start connecting with people to build your professional circle." : 
-                     "You don't have any pending requests or invitations waiting for action."}
-                  </p>
-                  {activeTab !== 'suggestions' && (
-                    <button 
-                      onClick={() => setActiveTab('suggestions')}
-                      className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
-                    >
-                      <UserPlus size={18} /> Discover People
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <footer className="text-center text-slate-400 text-[10px] md:text-xs py-10 uppercase tracking-widest font-bold opacity-60">
-            <p>Nexus Professional Network • Secure Fullstack Framework</p>
-            <p className="mt-2">Distributed Cloud Sync Active</p>
-          </footer>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default App;
+        // Start App
+        init();
+        setActiveTab('suggestions');
+    </script>
+</body>
+</html>
