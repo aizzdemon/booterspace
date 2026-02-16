@@ -312,15 +312,25 @@ mMessageCount?.classList.add("hidden");
 // =======================
 
 async function setupRealPushNotifications(user) {
-if (!firebaseApp || !("Notification" in window) || !("serviceWorker" in navigator)) return;
+try {
+if (!firebaseApp) return;
+if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
 if (Notification.permission !== "granted") return;
 
-try {
-const messagingSupported = await isSupported();
-if (!messagingSupported) return;
+const supported = await isSupported();
+if (!supported) return;
+
+// 🔥 MANUAL SERVICE WORKER REGISTRATION (REQUIRED FOR GITHUB PAGES)
+const registration = await navigator.serviceWorker.register(
+  "/firebase-messaging-sw.js"
+);
 
 const messaging = getMessaging(firebaseApp);
-const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+
+const token = await getToken(messaging, {
+  vapidKey: FCM_VAPID_KEY,
+  serviceWorkerRegistration: registration
+});
 
 if (token) {
   await updateDoc(doc(db, "users", user.uid), {
@@ -328,7 +338,6 @@ if (token) {
     fcmUpdatedAt: serverTimestamp()
   });
 }
-
 
 } catch (err) {
 console.warn("FCM Setup failed", err);
