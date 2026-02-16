@@ -241,17 +241,34 @@ window.applyJob=(link)=>{
   window.open(link,"_blank");
 };
 
+const LOCAL_SAVED_JOBS_KEY = "booterspace_saved_jobs";
+
+function getSavedJobs() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_SAVED_JOBS_KEY) || "[]");
+  } catch (_) {
+    return [];
+  }
+}
+
+function setSavedJobs(items) {
+  localStorage.setItem(LOCAL_SAVED_JOBS_KEY, JSON.stringify(items));
+}
+
 window.toggleSaveJob=async()=>{
   if(!currentUser) return showLoginPopup();
-  const ref=doc(db,"users",currentUser.uid,"savedJobs",currentJobId);
-  const snap=await getDoc(ref);
-  if(snap.exists()){
-    await deleteDoc(ref);
+
+  const saved = new Set(getSavedJobs());
+  if (saved.has(currentJobId)) {
+    saved.delete(currentJobId);
+    setSavedJobs([...saved]);
     showAlert("Removed","Job removed from your saved list");
-  } else {
-    await setDoc(ref,{savedAt:window.serverTimestamp()});
-    showAlert("Saved! ❤️","Job added to your saved list");
+    return;
   }
+
+  saved.add(currentJobId);
+  setSavedJobs([...saved]);
+  showAlert("Saved! ❤️","Job added to your browser saved list");
 };
 
 window.shareJob=(title)=>{
@@ -271,14 +288,19 @@ window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
 
 window.submitFeedback=async()=>{
   if(!feedbackTextEl.value.trim()) return;
-  await addDoc(collection(db,"feedbacks"),{
-    email:feedbackEmailEl.value,
-    message:feedbackTextEl.value,
-    jobId:currentJobId,
-    createdAt:window.serverTimestamp()
-  });
+
+  const mailbox = "support@booterspace.app";
+  const subject = encodeURIComponent(`Feedback for job ${currentJob?.title || currentJobId}`);
+  const body = encodeURIComponent([
+    `Job ID: ${currentJobId}`,
+    `Email: ${feedbackEmailEl.value || "Not provided"}`,
+    "",
+    feedbackTextEl.value
+  ].join("\n"));
+
+  window.location.href = `mailto:${mailbox}?subject=${subject}&body=${body}`;
   feedbackTextEl.value = "";
-  showAlert("Thank You ❤️","Your feedback has been submitted");
+  showAlert("Thank You ❤️","Your feedback draft was opened in your email app.");
 };
 
 function showLoginPopup(){

@@ -86,7 +86,6 @@
       getDoc,
       doc,
       addDoc,
-      setDoc,
       updateDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
@@ -173,12 +172,16 @@
     async function fetchNetworkState() {
       if (!currentUser) return { connected: new Set(), incoming: new Map(), outgoing: new Set() };
 
-      const connectedSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-      const connected = new Set(connectedSnap.docs.map(d => d.id));
-
       const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const acceptedFromSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted")));
+      const acceptedToSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted")));
       const outgoingSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "pending")));
       const incomingSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+
+      const connected = new Set([
+        ...acceptedFromSnap.docs.map(d => d.data().toId),
+        ...acceptedToSnap.docs.map(d => d.data().fromId)
+      ]);
 
       const outgoing = new Set(outgoingSnap.docs.map(d => d.data().toId));
       const incoming = new Map(incomingSnap.docs.map(d => [d.data().fromId, d.id]));
@@ -210,13 +213,14 @@
 
       const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
 
-      const [connectedSnap, pendingSnap, followerSnap] = await Promise.all([
-        getDocs(collection(db, "users", currentUser.uid, "connections")),
+      const [acceptedFromSnap, acceptedToSnap, pendingSnap, followerSnap] = await Promise.all([
+        getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted"))),
+        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted"))),
         getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"))),
         getDocs(collection(db, "users", currentUser.uid, "followers"))
       ]);
 
-      connectionsCount.textContent = connectedSnap.size;
+      connectionsCount.textContent = acceptedFromSnap.size + acceptedToSnap.size;
       pendingCount.textContent = pendingSnap.size;
       followersCount.textContent = followerSnap.size;
     }
@@ -235,6 +239,7 @@
       });
 
       await addDoc(collection(db, "users", targetId, "notifications"), {
+        toUid: targetId,
         text: "You received a connection request.",
         fromId: currentUser.uid,
         createdAt: serverTimestamp(),
@@ -250,12 +255,7 @@
       if (incoming.empty) return;
 
       const requestDoc = incoming.docs[0];
-      await updateDoc(requestDoc.ref, { status: "accepted", respondedAt: serverTimestamp() });
-
-      await Promise.all([
-        setDoc(doc(db, "users", currentUser.uid, "connections", fromId), { connectedAt: serverTimestamp() }),
-        setDoc(doc(db, "users", fromId, "connections", currentUser.uid), { connectedAt: serverTimestamp() })
-      ]);
+      await updateDoc(requestDoc.ref, { status: "accepted" });
     }
 
     async function rejectIncomingRequest(fromId) {
@@ -263,10 +263,7 @@
       const incoming = await getDocs(query(reqRef, where("fromId", "==", fromId), where("toId", "==", currentUser.uid), where("status", "==", "pending")));
       if (incoming.empty) return;
 
-      await updateDoc(incoming.docs[0].ref, {
-        status: "rejected",
-        respondedAt: serverTimestamp()
-      });
+      await updateDoc(incoming.docs[0].ref, { status: "rejected" });
     }
 
     function openProfile(targetId) {
@@ -318,14 +315,24 @@
       if (!requireLogin()) return;
       networkPanelTitle.textContent = "Connections";
 
-      const snap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-      if (snap.empty) {
+      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const [acceptedFrom, acceptedTo] = await Promise.all([
+        getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted"))),
+        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted")))
+      ]);
+
+      const connectedIds = [
+        ...acceptedFrom.docs.map((d) => d.data().toId),
+        ...acceptedTo.docs.map((d) => d.data().fromId)
+      ];
+
+      if (!connectedIds.length) {
         networkPanelList.innerHTML = '<p class="text-slate-500">No connections yet.</p>';
         return;
       }
 
-      const rows = await Promise.all(snap.docs.map(async (d) => {
-        const userSnap = await getDoc(doc(db, "users", d.id));
+      const rows = await Promise.all(connectedIds.map(async (uid) => {
+        const userSnap = await getDoc(doc(db, "users", uid));
         const u = userSnap.exists() ? userSnap.data() : {};
         return `<div class="p-3 border rounded-lg bg-slate-50">${u.fullName || u.name || "User"}</div>`;
       }));
@@ -424,12 +431,7 @@
       viewAllBtn.textContent = showAll ? "Show less" : "View all";
       renderSuggestionCards();
 
-      if (currentUser && !currentUser.isAnonymous) {
-        await setDoc(doc(db, "users", currentUser.uid, "networkPreferences", "connectionsapce"), {
-          showAll,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      }
+      if (currentUser && !currentUser.isAnonymous) localStorage.setItem("connectionspace_show_all", String(showAll));
     });
 
     inviteContactsBtn.addEventListener("click", inviteContact);
@@ -481,8 +483,7 @@
       }
 
       try {
-        const prefSnap = await getDoc(doc(db, "users", user.uid, "networkPreferences", "connectionsapce"));
-        showAll = prefSnap.exists() ? !!prefSnap.data().showAll : false;
+        showAll = localStorage.getItem("connectionspace_show_all") === "true";
         viewAllBtn.textContent = showAll ? "Show less" : "View all";
 
         await Promise.all([loadSuggestions(), updateCounters()]);
