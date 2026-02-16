@@ -51,7 +51,7 @@ fetch("navbar.html")
   document.getElementById("navbar").innerHTML=html;
   const s=document.createElement("script");
   s.type="module";
-  s.src="/js/navbar.js";
+  s.src="/public/js/navbar.js";
   document.body.appendChild(s);
 });
 </script>
@@ -531,9 +531,9 @@ function showResultsList() {
 </script>
 
 
-<script src="/js/firebase.js"></script>
-<script src="/js/auth-guard.js"></script>
-<script src="/js/navbar.js"></script>
-<script src="/js/profile.js"></script>
+<script src="/public/js/firebase.js"></script>
+<script src="/public/js/auth-guard.js"></script>
+<script src="/public/js/navbar.js"></script>
+<script src="/public/js/profile.js"></script>
 </body>
 </html>

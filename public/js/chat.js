@@ -1,4 +1,8 @@
 (function chatPage() {
+  const loadFirebaseModule =
+    window.loadFirebaseModule ||
+    ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
+
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const sendBtn = document.getElementById("sendBtn");
@@ -7,46 +11,48 @@
   const loginScreen = document.getElementById("loginScreen");
   const chatScreen = document.getElementById("chatScreen");
 
-  let firestoreFns;
-  const getFs = async () => {
-    if (!firestoreFns) {
-      firestoreFns = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js");
-    }
-    return firestoreFns;
-  };
-
   window.authReady.then(async (user) => {
-    loginScreen && (loginScreen.hidden = true);
-    chatScreen && (chatScreen.hidden = false);
+    if (loginScreen) loginScreen.hidden = true;
+    if (chatScreen) chatScreen.hidden = false;
 
-    const { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } = await getFs();
+    const { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } =
+      await loadFirebaseModule("firebase-firestore.js");
 
-    const q = query(collection(window.db, "messages"), orderBy("timestamp", "desc"), limit(50));
-    onSnapshot(q, (snap) => {
+    const messagesQuery = query(
+      collection(window.db, "messages"),
+      orderBy("timestamp", "desc"),
+      limit(50)
+    );
+
+    onSnapshot(messagesQuery, (snap) => {
       if (!messagesDiv) return;
       messagesDiv.innerHTML = "";
+
       snap.forEach((docSnap) => {
-        const m = docSnap.data();
-        const div = document.createElement("div");
-        div.className = "msg " + (m.userId === user.uid ? "me" : "other");
-        div.textContent = m.text;
-        messagesDiv.prepend(div);
+        const message = docSnap.data();
+        const messageEl = document.createElement("div");
+        messageEl.className = `msg ${message.userId === user.uid ? "me" : "other"}`;
+        messageEl.textContent = message.text;
+        messagesDiv.prepend(messageEl);
       });
     });
 
     sendBtn?.addEventListener("click", async () => {
-      if (!msgInput?.value) return;
+      const text = msgInput?.value?.trim();
+      if (!text) return;
+
       await addDoc(collection(window.db, "messages"), {
-        text: msgInput.value,
+        text,
         userId: user.uid,
         timestamp: serverTimestamp()
       });
+
       msgInput.value = "";
     });
   });
 
   logoutBtn?.addEventListener("click", async () => {
-    const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js");
+    const { signOut } = await loadFirebaseModule("firebase-auth.js");
     await signOut(window.auth);
     window.location.href = "/login.html";
   });

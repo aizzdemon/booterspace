@@ -1,4 +1,5 @@
 (function initFirebaseGlobal() {
+  const FIREBASE_VERSION = "10.12.5";
   const firebaseConfig = {
     apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
     authDomain: "kar-kardan.firebaseapp.com",
@@ -9,10 +10,23 @@
     measurementId: "G-RRC3X485KQ"
   };
 
+  const moduleCache = new Map();
+
+  function loadFirebaseModule(moduleName) {
+    if (!moduleCache.has(moduleName)) {
+      const moduleUrl = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/${moduleName}`;
+      moduleCache.set(moduleName, import(moduleUrl));
+    }
+
+    return moduleCache.get(moduleName);
+  }
+
+  window.loadFirebaseModule = loadFirebaseModule;
+
   window.firebaseServicesReady = (async () => {
-    const { initializeApp, getApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
-    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js");
-    const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js");
+    const { initializeApp, getApp, getApps } = await loadFirebaseModule("firebase-app.js");
+    const { getAuth } = await loadFirebaseModule("firebase-auth.js");
+    const { getFirestore } = await loadFirebaseModule("firebase-firestore.js");
 
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 

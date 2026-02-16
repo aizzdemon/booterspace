@@ -1,7 +1,11 @@
 (function setupAuthGuard() {
+  const loadFirebaseModule =
+    window.loadFirebaseModule ||
+    ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
+
   window.authReady = window.firebaseServicesReady
     .then(async ({ auth }) => {
-      const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js");
+      const { onAuthStateChanged } = await loadFirebaseModule("firebase-auth.js");
 
       return new Promise((resolve) => {
         onAuthStateChanged(auth, (user) => {

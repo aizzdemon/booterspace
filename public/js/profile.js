@@ -1,8 +1,12 @@
 (function profilePage() {
+  const loadFirebaseModule =
+    window.loadFirebaseModule ||
+    ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
+
   let currentUser;
 
   async function getFirestoreFns() {
-    return import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js");
+    return loadFirebaseModule("firebase-firestore.js");
   }
 
   async function loadMyProfile() {
@@ -11,7 +15,9 @@
     const snap = await getDoc(ref);
 
     const data = snap.exists() ? snap.data() : {};
-    const avatar = data.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.displayName || currentUser.uid}`;
+    const avatar =
+      data.avatar ||
+      `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.displayName || currentUser.uid}`;
 
     document.getElementById("myProfile").innerHTML = `
     <div class="bg-white p-6 rounded-xl shadow">
@@ -41,18 +47,24 @@
     const college = document.getElementById("college").value;
     const company = document.getElementById("company").value;
 
-    const keywords = `${currentUser.displayName || ""} ${college} ${company} ${skills}`.toLowerCase().split(" ");
+    const keywords = `${currentUser.displayName || ""} ${college} ${company} ${skills}`
+      .toLowerCase()
+      .split(" ");
 
-    await setDoc(doc(window.db, "users", currentUser.uid), {
-      name: currentUser.displayName,
-      email: currentUser.email,
-      avatar,
-      bio,
-      skills,
-      college,
-      company,
-      searchKeywords: keywords
-    }, { merge: true });
+    await setDoc(
+      doc(window.db, "users", currentUser.uid),
+      {
+        name: currentUser.displayName,
+        email: currentUser.email,
+        avatar,
+        bio,
+        skills,
+        college,
+        company,
+        searchKeywords: keywords
+      },
+      { merge: true }
+    );
 
     alert("Profile Updated");
   };
@@ -61,20 +73,24 @@
     const { collection, query, where, getDocs } = await getFirestoreFns();
 
     const text = document.getElementById("searchInput").value.toLowerCase();
-    const q = query(collection(window.db, "users"), where("searchKeywords", "array-contains", text));
-    const snap = await getDocs(q);
+    const searchQuery = query(
+      collection(window.db, "users"),
+      where("searchKeywords", "array-contains", text)
+    );
+    const snap = await getDocs(searchQuery);
 
-    document.getElementById("searchResults").innerHTML = "";
+    const resultsEl = document.getElementById("searchResults");
+    resultsEl.innerHTML = "";
 
     snap.forEach((docSnap) => {
-      const u = docSnap.data();
-      document.getElementById("searchResults").innerHTML += `
+      const user = docSnap.data();
+      resultsEl.innerHTML += `
       <div class="bg-white p-4 rounded shadow flex gap-4">
-        <img src="${u.avatar}" class="w-16 h-16 rounded-full">
+        <img src="${user.avatar}" class="w-16 h-16 rounded-full">
         <div>
-          <h3 class="font-bold">${u.name}</h3>
-          <p class="text-sm">${u.company || ""}</p>
-          <p class="text-xs text-gray-500">${u.college || ""}</p>
+          <h3 class="font-bold">${user.name}</h3>
+          <p class="text-sm">${user.company || ""}</p>
+          <p class="text-xs text-gray-500">${user.college || ""}</p>
         </div>
       </div>`;
     });
