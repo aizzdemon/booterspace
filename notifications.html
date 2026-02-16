@@ -363,7 +363,7 @@ fetch("navbar.html")
     document.getElementById("navbar").innerHTML = html;
     const s = document.createElement("script");
     s.type = "module";
-    s.src = "navbar.js";
+    s.src = "/js/navbar.js";
     document.body.appendChild(s);
   });
 </script>
@@ -414,5 +414,9 @@ fetch("navbar.html")
 
   <aside class="hidden xl:block xl:col-span-2"></aside>
 </main>
+
+<script src="/js/firebase.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/navbar.js"></script>
 </body>
 </html>

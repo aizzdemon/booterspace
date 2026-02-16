@@ -34,7 +34,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   document.getElementById("navbar").innerHTML=html;
   const s=document.createElement("script");
   s.type="module"; 
-  s.src="navbar.js"; 
+  s.src="/js/navbar.js"; 
   document.body.appendChild(s);
 });
 </script>
