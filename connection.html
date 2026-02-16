@@ -1,438 +1,484 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ConnectionSpace - BooterSpace</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .card-shadow { box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08); }
-    .soft-border { border: 1px solid rgba(148, 163, 184, 0.2); }
-    
-    /* Custom scrollbar */
-    .custom-scroll::-webkit-scrollbar { width: 4px; }
-    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-    
-    /* Active Link Styling for dynamically loaded navbar */
-    .nav-link-active { @apply text-blue-600 !important; }
-    .nav-link-active::after { content: ''; @apply absolute -bottom-[13px] left-0 w-full h-0.5 bg-blue-600; }
+import React, { useState, useEffect, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInAnonymously, 
+  signInWithCustomToken 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  onSnapshot, 
+  updateDoc, 
+  deleteDoc,
+  query
+} from 'firebase/firestore';
+import { 
+  UserPlus, 
+  UserCheck, 
+  UserMinus, 
+  Users, 
+  Clock, 
+  Search, 
+  MoreHorizontal,
+  User,
+  ShieldCheck,
+  Mail,
+  Menu,
+  X
+} from 'lucide-react';
 
-    .tab-active { @apply border-blue-600 text-blue-600 bg-blue-50/50; }
-  </style>
-</head>
-<body class="bg-slate-50 min-h-screen">
-  <!-- Dynamic Navbar Container -->
-  <div id="navbar-placeholder"></div>
+// --- Firebase Configuration ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'connections-app';
 
-  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Left Sidebar -->
-      <aside class="lg:col-span-1 space-y-5">
-        <div class="bg-white rounded-2xl p-5 card-shadow soft-border">
-          <h1 class="text-2xl font-extrabold text-slate-900 leading-tight">ConnectionSpace</h1>
-          <p class="text-slate-500 text-sm mt-2">Manage your professional circle and discover new makers in the ecosystem.</p>
-        </div>
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [activeTab, setActiveTab] = useState('suggestions'); // suggestions, requests, list
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-        <!-- Network Stats & Navigation -->
-        <div class="bg-white rounded-2xl p-2 card-shadow soft-border space-y-1">
-          <!-- Connection Space Button -->
-          <button id="showSuggestionsBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition tab-active group" data-tab="suggestions">
-            <div class="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-[.tab-active]:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span class="font-semibold text-sm">Connection Space</span>
-            </div>
-          </button>
-          
-          <!-- Connection Requests Button -->
-          <button id="showPendingBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition group" data-tab="pending">
-            <div class="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-[.tab-active]:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span class="font-semibold text-sm">Connection Requests</span>
-            </div>
-            <span id="pendingBadge" class="hidden bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
-          </button>
-
-          <div class="h-[1px] bg-slate-100 my-1 mx-4"></div>
-
-          <!-- My Connections Button -->
-          <button id="connectionsBtn" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-700 transition group">
-            <div class="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span class="text-sm font-medium">My Connections</span>
-            </div>
-            <span id="connectionsCount" class="text-slate-400 text-xs">0</span>
-          </button>
-        </div>
-
-        <!-- Quick Discover -->
-        <div class="bg-white rounded-2xl card-shadow soft-border overflow-hidden max-h-[400px] flex flex-col">
-            <div class="px-4 py-3 bg-slate-50 flex justify-between items-center border-b">
-                <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Fast Search</span>
-                <button id="shuffleBtn" class="text-[10px] text-blue-600 font-bold hover:underline">SHUFFLE</button>
-            </div>
-            <div class="p-3 border-b">
-                <input type="text" id="makerSearch" placeholder="Search by name or bio..." class="w-full bg-slate-100 rounded-lg py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-            </div>
-            <div id="suggestion-list" class="flex-1 overflow-y-auto custom-scroll p-2 space-y-1">
-                <!-- Makers render here -->
-            </div>
-        </div>
-      </aside>
-
-      <!-- Main Section -->
-      <section class="lg:col-span-2 space-y-6">
-        
-        <!-- Suggestions View (Default) -->
-        <div id="suggestionsView" class="bg-white rounded-2xl p-6 card-shadow soft-border">
-          <div class="flex items-center justify-between mb-6">
-            <div>
-              <h2 class="text-xl font-bold text-slate-900">People you may know</h2>
-              <p class="text-slate-500 text-sm">Based on your shared interests and BooterSpace activity.</p>
-            </div>
-            <button id="viewAllBtn" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition">View all</button>
-          </div>
-          <div class="grid sm:grid-cols-2 gap-4" id="suggestionGrid">
-             <div class="col-span-full py-20 text-center animate-pulse text-slate-300 italic">Syncing network...</div>
-          </div>
-        </div>
-
-        <!-- Pending Connection Requests View (Hidden by default) -->
-        <div id="pendingView" class="hidden bg-white rounded-2xl p-6 card-shadow soft-border min-h-[400px]">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-slate-900">Connection Requests</h2>
-                <span id="pendingCountHeader" class="text-sm text-slate-500">No requests</span>
-            </div>
-            <div id="pendingList" class="space-y-4">
-                <!-- Pending requests render here -->
-            </div>
-        </div>
-
-        <!-- Details/Connections Panel -->
-        <div id="detailsPanel" class="hidden bg-white rounded-2xl p-6 card-shadow soft-border">
-          <h3 id="networkPanelTitle" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Your Connections</h3>
-          <div id="networkPanelList" class="grid sm:grid-cols-2 gap-4">
-            <!-- List items -->
-          </div>
-          <button id="closeDetails" class="mt-6 text-sm text-slate-400 hover:text-slate-600 underline">Back to suggestions</button>
-        </div>
-
-      </section>
-    </section>
-  </main>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      where,
-      getDocs,
-      getDoc,
-      doc,
-      addDoc,
-      setDoc,
-      updateDoc,
-      onSnapshot,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-      authDomain: "kar-kardan.firebaseapp.com",
-      projectId: "kar-kardan",
-      storageBucket: "kar-kardan.firebasestorage.app",
-      messagingSenderId: "554147696994",
-      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+  // 1. Authentication Setup
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+      }
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = "booterspace-chat";
-
-    const suggestionGrid = document.getElementById("suggestionGrid");
-    const suggestionList = document.getElementById("suggestion-list");
-    const pendingList = document.getElementById("pendingList");
-    const connectionsCount = document.getElementById("connectionsCount");
-    const pendingBadge = document.getElementById("pendingBadge");
-    const pendingCountHeader = document.getElementById("pendingCountHeader");
-
-    const suggestionsView = document.getElementById("suggestionsView");
-    const pendingView = document.getElementById("pendingView");
-    const detailsPanel = document.getElementById("detailsPanel");
-
-    let currentUser = null;
-    let suggestionsCache = [];
-    let pendingCache = [];
-    let showAll = false;
-    const palette = ["3b82f6", "10b981", "f59e0b", "8b5cf6", "ef4444", "06b6d4"];
-
-    function switchTab(viewId) {
-        [suggestionsView, pendingView, detailsPanel].forEach(v => v.classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
-        
-        const tabMap = { 'suggestionsView': 'suggestions', 'pendingView': 'pending' };
-        document.querySelectorAll('[data-tab]').forEach(btn => {
-            if (btn.dataset.tab === tabMap[viewId]) btn.classList.add('tab-active');
-            else btn.classList.remove('tab-active');
-        });
-    }
-
-    async function loadNavbar() {
-        const placeholder = document.getElementById('navbar-placeholder');
-        try {
-            const response = await fetch('navbar.html');
-            const html = await response.text();
-            placeholder.innerHTML = html;
-        } catch (err) { console.error("Navbar failed", err); }
-    }
-
-    function getAvatar(name, bg) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=fff&bold=true`;
-    }
-
-    function renderSuggestions() {
-      const list = showAll ? suggestionsCache : suggestionsCache.slice(0, 8);
-      if (list.length === 0) {
-        suggestionGrid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">No new suggestions found.</div>`;
-        return;
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, (currUser) => {
+      if (currUser) {
+        setUser(currUser);
+        ensureUserProfile(currUser);
       }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-      suggestionGrid.innerHTML = list.map((user, i) => {
-        const name = user.fullName || user.name || "User";
-        const title = user.bio || user.headline || "BooterSpace member";
-        const bg = palette[i % palette.length];
-        const photo = user.photoURL || getAvatar(name, bg);
+  // 2. Data Fetching
+  useEffect(() => {
+    if (!user) return;
+
+    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+    const unsubUsers = onSnapshot(usersRef, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllUsers(usersData);
+    }, (err) => console.error("Users fetch error:", err));
+
+    const connRef = collection(db, 'artifacts', appId, 'public', 'data', 'connections');
+    const unsubConn = onSnapshot(connRef, (snapshot) => {
+      const connData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const userConnections = connData.filter(c => c.senderId === user.uid || c.receiverId === user.uid);
+      setConnections(userConnections);
+    }, (err) => console.error("Connections fetch error:", err));
+
+    return () => {
+      unsubUsers();
+      unsubConn();
+    };
+  }, [user]);
+
+  const ensureUserProfile = async (u) => {
+    const userDoc = doc(db, 'artifacts', appId, 'public', 'data', 'users', u.uid);
+    const snap = await getDoc(userDoc);
+    if (!snap.exists()) {
+      await setDoc(userDoc, {
+        displayName: u.displayName || `User_${u.uid.slice(0, 5)}`,
+        email: u.email || 'anonymous@app.com',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`,
+        headline: "Professional Network Member",
+        location: "Remote"
+      });
+    }
+  };
+
+  // --- Logic Helpers ---
+  const sendRequest = async (targetUserId) => {
+    const requestId = `${user.uid}_${targetUserId}`;
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connections', requestId), {
+      senderId: user.uid,
+      receiverId: targetUserId,
+      status: 'pending',
+      timestamp: Date.now()
+    });
+  };
+
+  const acceptRequest = async (connId) => {
+    const connRef = doc(db, 'artifacts', appId, 'public', 'data', 'connections', connId);
+    await updateDoc(connRef, { status: 'accepted' });
+  };
+
+  const removeConnection = async (connId) => {
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connections', connId));
+  };
+
+  // --- Derived State ---
+  const currentUserProfile = allUsers.find(u => u.id === user?.uid);
+  const myAcceptedIds = connections
+    .filter(c => c.status === 'accepted')
+    .map(c => c.senderId === user.uid ? c.receiverId : c.senderId);
+
+  const pendingIncoming = connections.filter(c => c.receiverId === user.uid && c.status === 'pending');
+  const pendingOutgoing = connections.filter(c => c.senderId === user.uid && c.status === 'pending');
+
+  const suggestions = allUsers.filter(u => 
+    u.id !== user?.uid && 
+    !myAcceptedIds.includes(u.id) &&
+    !connections.some(c => (c.senderId === u.id || c.receiverId === u.id))
+  );
+
+  const connectionList = allUsers.filter(u => myAcceptedIds.includes(u.id));
+
+  // --- Components ---
+  const UserCard = ({ targetUser, type, connId }) => (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+      <div className="relative mb-4">
+        <img src={targetUser.avatar} alt="avatar" className="w-24 h-24 rounded-full bg-slate-100 border-2 border-indigo-50" />
+        {type === 'connected' && (
+          <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
+        )}
+      </div>
+      <h3 className="font-bold text-slate-800 text-lg line-clamp-1">{targetUser.displayName}</h3>
+      <p className="text-sm text-slate-500 mb-5 line-clamp-1 h-5">{targetUser.headline}</p>
+      
+      <div className="w-full mt-auto pt-4 border-t border-slate-50">
+        {type === 'suggestion' && (
+          <button 
+            onClick={() => sendRequest(targetUser.id)}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
+          >
+            <UserPlus size={18} /> Connect
+          </button>
+        )}
+        {type === 'incoming' && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => acceptRequest(connId)}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-semibold"
+            >
+              Accept
+            </button>
+            <button 
+              onClick={() => removeConnection(connId)}
+              className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl text-sm font-semibold"
+            >
+              Ignore
+            </button>
+          </div>
+        )}
+        {type === 'outgoing' && (
+          <button 
+            disabled
+            className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl text-sm font-semibold cursor-not-allowed"
+          >
+            <Clock size={18} /> Sent
+          </button>
+        )}
+        {type === 'connected' && (
+          <button 
+            onClick={() => {
+              const cid = connections.find(c => (c.senderId === targetUser.id || c.receiverId === targetUser.id))?.id;
+              if (cid) removeConnection(cid);
+            }}
+            className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 text-slate-600 py-3 rounded-xl text-sm font-semibold transition-all"
+          >
+            <UserMinus size={18} /> Remove
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  if (loading) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-10">
+      {/* Header */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+            <div className="bg-indigo-600 p-2 rounded-xl shadow-indigo-100 shadow-lg">
+              <Users className="text-white" size={20} />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight hidden xs:block">Nexus</span>
+          </div>
+          
+          <div className="relative flex-1 max-w-md hidden sm:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search people..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-100 border-transparent focus:bg-white border-2 focus:border-indigo-500 rounded-2xl py-2 pl-10 pr-4 transition-all text-sm outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden lg:block text-right">
+              <p className="text-sm font-bold text-slate-800">{currentUserProfile?.displayName || user?.displayName || 'User'}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1 justify-end">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
+              </p>
+            </div>
+            <img 
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} 
+              className="w-10 h-10 rounded-full border-2 border-indigo-50 ring-2 ring-indigo-600/5 shadow-sm"
+              alt="profile"
+            />
+          </div>
+        </div>
         
-        const isPending = user._status === "Pending";
-        const isConnected = user._status === "Connected";
-        const isAccept = user._status === "Accept";
+        {/* Mobile Sub-Header Navigation */}
+        <div className="md:hidden bg-white border-b border-slate-100 flex items-center justify-around px-2 py-1">
+          {[
+            { id: 'suggestions', icon: <Search size={20} />, label: 'Discover' },
+            { id: 'requests', icon: <Clock size={20} />, label: 'Invitations', count: pendingIncoming.length },
+            { id: 'list', icon: <Users size={20} />, label: 'Network' }
+          ].map(tab => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 flex flex-col items-center gap-1 relative transition-colors ${activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}`}
+            >
+              <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-50 scale-110' : ''}`}>
+                {tab.icon}
+              </div>
+              <span className={`text-[10px] font-black uppercase tracking-tighter ${activeTab === tab.id ? 'opacity-100' : 'opacity-60'}`}>
+                {tab.label}
+              </span>
+              {tab.count > 0 && (
+                <span className="absolute top-2 right-1/4 translate-x-1/2 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full border border-white flex items-center justify-center">
+                  {tab.count}
+                </span>
+              )}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-indigo-600 rounded-t-full"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
 
-        return `
-          <div class="bg-white rounded-xl border border-slate-200 p-4 hover:border-blue-200 hover:shadow-sm transition">
-            <div class="flex items-center gap-4">
-              <img src="${photo}" class="w-14 h-14 rounded-full border-2 border-slate-50 object-cover">
-              <div class="min-w-0">
-                <h4 class="font-bold text-slate-900 truncate">${name}</h4>
-                <p class="text-xs text-slate-500 truncate">${title}</p>
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
+
+      <main className="max-w-7xl mx-auto px-4 pt-6 md:pt-8 grid grid-cols-1 md:grid-cols-12 gap-6 relative">
+        
+        {/* Sidebar / Desktop Navigation */}
+        <div className={`
+          md:col-span-4 lg:col-span-3 space-y-4 
+          fixed md:sticky top-[4.5rem] left-0 h-[calc(100vh-4.5rem)] md:h-auto
+          w-72 md:w-full bg-slate-50 md:bg-transparent z-50 md:z-auto
+          transition-transform duration-300 ease-in-out px-4 md:px-0 border-r md:border-r-0 border-slate-200 md:border-none
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mt-4 md:mt-0">
+            <div className="h-20 bg-gradient-to-br from-indigo-600 to-purple-600"></div>
+            <div className="p-5 -mt-12 flex flex-col items-center">
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} className="w-24 h-24 rounded-full border-4 border-white bg-white shadow-lg mb-3" alt="" />
+              <h2 className="font-bold text-xl text-slate-800 text-center">{currentUserProfile?.displayName || user?.displayName || 'Connecting...'}</h2>
+              <p className="text-sm text-slate-500 text-center mb-6 line-clamp-1">
+                {currentUserProfile?.email || 'user@nexus.network'}
+              </p>
+              
+              <div className="w-full grid grid-cols-2 gap-2 border-t border-slate-100 pt-5">
+                <div className="text-center">
+                  <p className="text-lg font-black text-indigo-600">{connectionList.length}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Network</p>
+                </div>
+                <div className="text-center border-l border-slate-100">
+                  <p className="text-lg font-black text-indigo-600">{pendingIncoming.length}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Pending</p>
+                </div>
               </div>
             </div>
-            <div class="mt-4 flex gap-2">
-              <button data-action="connect" data-id="${user.id}" data-status="${user._status}" 
-                class="flex-1 py-1.5 rounded-lg text-xs font-bold transition ${isConnected ? 'bg-slate-100 text-slate-500' : isPending ? 'bg-blue-50 text-blue-400' : 'bg-blue-600 text-white hover:bg-blue-700'}">
-                ${isConnected ? 'Connected' : isPending ? 'Request Sent' : isAccept ? 'Accept' : 'Connect'}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm hidden md:block">
+            {[
+              { id: 'suggestions', label: 'Discover', icon: <UserPlus size={20} />, count: suggestions.length },
+              { id: 'requests', label: 'Invitations', icon: <Clock size={20} />, count: pendingIncoming.length, alert: true },
+              { id: 'list', label: 'My Network', icon: <UserCheck size={20} />, count: connectionList.length }
+            ].map((item) => (
+              <button 
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold transition-all mb-1 last:mb-0 active:scale-[0.98] ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  {item.icon}
+                  {item.label}
+                </div>
+                {item.count > 0 && (
+                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${activeTab === item.id ? 'bg-white/20 text-white' : (item.alert ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500')}`}>
+                    {item.count}
+                  </span>
+                )}
               </button>
-              <button data-action="message" data-id="${user.id}" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-xs text-slate-600 font-medium">Message</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="md:col-span-8 lg:col-span-9 space-y-6">
+          
+          {/* Section Header */}
+          <div className="bg-indigo-900 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+            <div className="relative z-10">
+              <h1 className="text-2xl md:text-3xl font-black mb-2 leading-tight">
+                {activeTab === 'suggestions' ? 'Make connection to new people' : 
+                 activeTab === 'list' ? 'Your professional network' : 
+                 'Manage your invitations'}
+              </h1>
+              <p className="text-indigo-200 text-sm md:text-base max-w-md opacity-90">
+                {activeTab === 'suggestions' ? 'Expand your horizons and discover potential collaborators near you.' : 
+                 activeTab === 'list' ? 'Stay in touch with your colleagues and foster long-term partnerships.' : 
+                 'Review incoming requests and track your outgoing connection status.'}
+              </p>
+            </div>
+            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute right-20 top-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
+          </div>
+
+          {/* Quick Stats Grid for Mobile */}
+          <div className="grid grid-cols-2 gap-4 md:hidden">
+             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Users size={18} /></div>
+                <div>
+                   <p className="text-xs text-slate-400 font-bold uppercase">Network</p>
+                   <p className="text-xl font-black">{connectionList.length}</p>
+                </div>
+             </div>
+             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
+                <div className="p-2 bg-red-50 text-red-600 rounded-lg"><Clock size={18} /></div>
+                <div>
+                   <p className="text-xs text-slate-400 font-bold uppercase">Pending</p>
+                   <p className="text-xl font-black">{pendingIncoming.length}</p>
+                </div>
+             </div>
+          </div>
+
+          {/* Pending Invitations Banner */}
+          {activeTab !== 'requests' && pendingIncoming.length > 0 && (
+            <button 
+              onClick={() => setActiveTab('requests')}
+              className="w-full flex items-center justify-between bg-white border-2 border-indigo-100 hover:border-indigo-200 p-4 rounded-2xl transition-all shadow-sm active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner">
+                  <Mail size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-800 text-sm">You have {pendingIncoming.length} new connection requests</p>
+                  <p className="text-xs text-slate-500">Tap to review and accept</p>
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                <MoreHorizontal size={18} />
+              </div>
+            </button>
+          )}
+
+          {/* Dynamic Grid */}
+          <div className="min-h-[400px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {activeTab === 'suggestions' && suggestions.map(u => (
+                <UserCard key={u.id} targetUser={u} type="suggestion" />
+              ))}
+
+              {activeTab === 'list' && connectionList.map(u => (
+                <UserCard key={u.id} targetUser={u} type="connected" />
+              ))}
+
+              {activeTab === 'requests' && (
+                <>
+                  {pendingIncoming.map(req => {
+                    const sender = allUsers.find(u => u.id === req.senderId);
+                    if (!sender) return null;
+                    return <UserCard key={req.id} targetUser={sender} type="incoming" connId={req.id} />;
+                  })}
+                  {pendingOutgoing.map(req => {
+                    const receiver = allUsers.find(u => u.id === req.receiverId);
+                    if (!receiver) return null;
+                    return <UserCard key={req.id} targetUser={receiver} type="outgoing" connId={req.id} />;
+                  })}
+                </>
+              )}
+
+              {/* Empty States */}
+              {((activeTab === 'suggestions' && suggestions.length === 0) ||
+                (activeTab === 'list' && connectionList.length === 0) ||
+                (activeTab === 'requests' && pendingIncoming.length === 0 && pendingOutgoing.length === 0)) && (
+                <div className="col-span-full bg-white border border-dashed border-slate-300 rounded-3xl py-20 px-6 text-center">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    {activeTab === 'suggestions' ? <Search className="text-slate-300" size={32} /> : 
+                     activeTab === 'list' ? <Users className="text-slate-300" size={32} /> : 
+                     <Clock className="text-slate-300" size={32} />}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">No results found</h3>
+                  <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8">
+                    {activeTab === 'suggestions' ? "We've looked everywhere but couldn't find new suggestions for you right now." : 
+                     activeTab === 'list' ? "Your network is empty. Start connecting with people to build your professional circle." : 
+                     "You don't have any pending requests or invitations waiting for action."}
+                  </p>
+                  {activeTab !== 'suggestions' && (
+                    <button 
+                      onClick={() => setActiveTab('suggestions')}
+                      className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+                    >
+                      <UserPlus size={18} /> Discover People
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        `;
-      }).join("");
-    }
 
-    async function renderPending() {
-        if (pendingCache.length === 0) {
-            pendingList.innerHTML = `
-                <div class="text-center py-20">
-                    <div class="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                    </div>
-                    <p class="text-slate-500 font-medium">No connection requests</p>
-                    <p class="text-slate-400 text-sm">When someone wants to connect, they'll show up here.</p>
-                </div>`;
-            pendingCountHeader.textContent = "0 requests";
-            pendingBadge.classList.add('hidden');
-            return;
-        }
+          <footer className="text-center text-slate-400 text-[10px] md:text-xs py-10 uppercase tracking-widest font-bold opacity-60">
+            <p>Nexus Professional Network • Secure Fullstack Framework</p>
+            <p className="mt-2">Distributed Cloud Sync Active</p>
+          </footer>
+        </div>
+      </main>
+    </div>
+  );
+};
 
-        pendingCountHeader.textContent = `${pendingCache.length} request${pendingCache.length > 1 ? 's' : ''}`;
-        pendingBadge.textContent = pendingCache.length;
-        pendingBadge.classList.remove('hidden');
-
-        const items = await Promise.all(pendingCache.map(async req => {
-            const uDoc = await getDoc(doc(db, "users", req.fromId));
-            const data = uDoc.data() || { name: 'User' };
-            const name = data.fullName || data.name || "Unknown User";
-            const photo = data.photoURL || getAvatar(name, '3b82f6');
-            
-            return `
-                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div class="flex items-center gap-4">
-                        <img src="${photo}" class="w-12 h-12 rounded-full border border-white">
-                        <div>
-                            <p class="font-bold text-slate-900">${name}</p>
-                            <p class="text-[10px] text-slate-500 uppercase tracking-tighter">${data.bio || 'New Booter'}</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.handleRequest('${req.id}', '${req.fromId}', 'accepted')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition">Accept</button>
-                        <button onclick="window.handleRequest('${req.id}', '${req.fromId}', 'rejected')" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition">Ignore</button>
-                    </div>
-                </div>
-            `;
-        }));
-        pendingList.innerHTML = items.join('');
-    }
-
-    async function handleRequest(reqDocId, fromId, status) {
-        if (!currentUser) return;
-        try {
-            const reqRef = doc(db, "artifacts", appId, "public", "data", "connection_requests", reqDocId);
-            await updateDoc(reqRef, { status: status });
-            
-            if (status === "accepted") {
-                await setDoc(doc(db, "users", currentUser.uid, "connections", fromId), { connectedAt: serverTimestamp() });
-                await setDoc(doc(db, "users", fromId, "connections", currentUser.uid), { connectedAt: serverTimestamp() });
-            }
-        } catch (err) { console.error("Action failed", err); }
-    }
-    window.handleRequest = handleRequest;
-
-    async function sendRequest(targetId) {
-      if (!currentUser) return;
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      try {
-        await addDoc(reqRef, { fromId: currentUser.uid, toId: targetId, status: "pending", createdAt: serverTimestamp() });
-        await addDoc(collection(db, "users", targetId, "notifications"), {
-          toUid: targetId, fromId: currentUser.uid, text: "sent you a connection request", type: "connection_request", read: false, createdAt: serverTimestamp()
-        });
-      } catch (err) { console.error("Send failed", err); }
-    }
-
-    async function syncNetworkState() {
-        if (!currentUser) return;
-        
-        const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-        const qPending = query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"));
-        
-        onSnapshot(qPending, (snap) => {
-            pendingCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderPending();
-            fetchStaticData();
-        });
-
-        fetchStaticData();
-    }
-
-    async function fetchStaticData() {
-        const usersSnap = await getDocs(collection(db, "users"));
-        const connSnap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-        
-        const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-        const outSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "pending")));
-        const inSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
-
-        const connectedIds = new Set(connSnap.docs.map(d => d.id));
-        const outgoingIds = new Set(outSnap.docs.map(d => d.data().toId));
-        const incomingIds = new Set(inSnap.docs.map(d => d.data().fromId));
-
-        suggestionsCache = usersSnap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(u => u.id !== currentUser.uid)
-            .map(u => {
-                if (connectedIds.has(u.id)) return { ...u, _status: "Connected" };
-                if (incomingIds.has(u.id)) return { ...u, _status: "Accept" };
-                if (outgoingIds.has(u.id)) return { ...u, _status: "Pending" };
-                return { ...u, _status: "Connect" };
-            });
-
-        connectionsCount.textContent = connectedIds.size;
-        renderSuggestions();
-        renderQuickDiscover();
-    }
-
-    function renderQuickDiscover(filter = "") {
-        const filtered = suggestionsCache.filter(u => 
-            `${u.fullName || ''} ${u.bio || ''}`.toLowerCase().includes(filter.toLowerCase())
-        );
-        suggestionList.innerHTML = filtered.map((user, i) => {
-            const name = user.fullName || user.name || "User";
-            const photo = user.photoURL || getAvatar(name, palette[i % palette.length]);
-            return `
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg group">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <img src="${photo}" class="w-7 h-7 rounded-full">
-                        <div class="truncate"><p class="text-[11px] font-bold text-slate-800 truncate">${name}</p></div>
-                    </div>
-                    ${user._status === 'Connect' ? `<button data-action="connect" data-id="${user.id}" data-status="Connect" class="opacity-0 group-hover:opacity-100 text-[9px] font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded">Add</button>` : ''}
-                </div>`;
-        }).join('');
-    }
-
-    document.getElementById('showPendingBtn').addEventListener('click', () => switchTab('pendingView'));
-    document.getElementById('showSuggestionsBtn').addEventListener('click', () => switchTab('suggestionsView'));
-    document.getElementById('closeDetails').addEventListener('click', () => switchTab('suggestionsView'));
-    
-    document.getElementById('connectionsBtn').addEventListener('click', async () => {
-        switchTab('detailsPanel');
-        networkPanelTitle.textContent = "Your Connections";
-        networkPanelList.innerHTML = '<div class="col-span-full py-10 text-center animate-pulse text-slate-300">Fetching circle...</div>';
-        
-        const snap = await getDocs(collection(db, "users", currentUser.uid, "connections"));
-        if (snap.empty) { networkPanelList.innerHTML = '<p class="col-span-full text-center text-slate-400 py-10">No connections yet.</p>'; return; }
-        
-        const items = await Promise.all(snap.docs.map(async d => {
-            const u = await getDoc(doc(db, "users", d.id));
-            const data = u.data() || { name: 'User' };
-            const name = data.fullName || data.name || "User";
-            return `
-                <div class="flex items-center gap-3 p-3 border border-slate-100 rounded-xl">
-                    <img src="${data.photoURL || getAvatar(name, '64748b')}" class="w-10 h-10 rounded-full">
-                    <div>
-                        <p class="font-bold text-sm text-slate-900">${name}</p>
-                        <button onclick="window.location.href='messages.html?to=${u.id}'" class="text-[10px] text-blue-600 hover:underline">Message</button>
-                    </div>
-                </div>`;
-        }));
-        networkPanelList.innerHTML = items.join('');
-    });
-
-    suggestionGrid.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      const { action, id, status } = btn.dataset;
-      if (action === 'connect') {
-        if (status === 'Connect') await sendRequest(id);
-        else if (status === 'Accept') {
-            const req = pendingCache.find(r => r.fromId === id);
-            if (req) await handleRequest(req.id, id, 'accepted');
-        }
-        fetchStaticData();
-      } else if (action === 'message') window.location.href = `messages.html?to=${id}`;
-    });
-
-    makerSearch.addEventListener('input', (e) => renderQuickDiscover(e.target.value));
-    shuffleBtn.addEventListener('click', () => { suggestionsCache.sort(() => Math.random() - 0.5); renderSuggestions(); renderQuickDiscover(); });
-    viewAllBtn.addEventListener('click', () => { showAll = !showAll; viewAllBtn.textContent = showAll ? "Show less" : "View all"; renderSuggestions(); });
-
-    loadNavbar();
-    onAuthStateChanged(auth, async (user) => {
-      currentUser = user;
-      if (user) {
-        syncNetworkState();
-        setTimeout(async () => {
-            const navImg = document.getElementById("navProfileImg");
-            if (navImg) {
-                const uDoc = await getDoc(doc(db, "users", user.uid));
-                const data = uDoc.data();
-                if (data) navImg.src = data.photoURL || getAvatar(data.name || 'U', '6366f1');
-            }
-        }, 1000);
-      } else {
-        signInAnonymously(auth);
-      }
-    });
-  </script>
-</body>
-</html>
+export default App;
