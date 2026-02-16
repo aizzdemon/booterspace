@@ -47,12 +47,17 @@ input::-webkit-calendar-picker-indicator { display: none !important; }
 
 <body class="bg-slate-50 min-h-screen flex flex-col font-sans">
 
-<header class="bg-white border-b sticky top-0 z-50">
-  <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-    <div class="font-black text-2xl tracking-tighter text-blue-600">BOOTER<span class="text-slate-900">SPACE</span></div>
-    <div class="text-sm font-medium text-slate-500">Find Your Next Move</div>
-  </div>
-</header>
+<!-- Navbar -->
+<div id="navbar"></div>
+<script>
+fetch("navbar.html").then(r=>r.text()).then(html=>{
+  document.getElementById("navbar").innerHTML=html;
+  const s=document.createElement("script");
+  s.type="module"; 
+  s.src="navbar.js"; 
+  document.body.appendChild(s);
+});
+</script>
 
 <div class="bg-blue-600 py-12 px-4">
   <div class="max-w-5xl mx-auto text-center">
