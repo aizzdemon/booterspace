@@ -1,25 +1,18 @@
 (function signupPage() {
+  const loadFirebaseModule =
+    window.loadFirebaseModule ||
+    ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
+
   function generateUsername(name) {
     return (name || "user").replace(/\s+/g, "").toLowerCase();
   }
 
   window.firebaseServicesReady.then(async ({ auth, db }) => {
-    const {
-      createUserWithEmailAndPassword,
-      GoogleAuthProvider,
-      signInWithPopup
-    } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js");
-    const {
-      doc,
-      setDoc,
-      serverTimestamp
-    } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js");
-    const {
-      getStorage,
-      ref,
-      uploadBytes,
-      getDownloadURL
-    } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js");
+    const { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } =
+      await loadFirebaseModule("firebase-auth.js");
+    const { doc, setDoc, serverTimestamp } = await loadFirebaseModule("firebase-firestore.js");
+    const { getStorage, ref, uploadBytes, getDownloadURL } =
+      await loadFirebaseModule("firebase-storage.js");
 
     const storage = getStorage(window.app);
     const provider = new GoogleAuthProvider();
@@ -27,8 +20,8 @@
     const form = document.getElementById("signup-form");
     const googleBtn = document.getElementById("googleSignInBtn");
 
-    form?.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
 
       const fullName = document.getElementById("name").value.trim();
       const gender = document.getElementById("gender").value;
@@ -44,9 +37,9 @@
         let photoURL = "";
         if (profilePicInput?.files?.length > 0) {
           const file = profilePicInput.files[0];
-          const imgRef = ref(storage, `profile_pictures/${uid}`);
-          await uploadBytes(imgRef, file);
-          photoURL = await getDownloadURL(imgRef);
+          const imageRef = ref(storage, `profile_pictures/${uid}`);
+          await uploadBytes(imageRef, file);
+          photoURL = await getDownloadURL(imageRef);
         }
 
         const username = generateUsername(fullName);
@@ -66,9 +59,9 @@
 
         alert("Signup successful ✅");
         window.location.href = "home.html";
-      } catch (err) {
-        console.error(err);
-        alert(err.message);
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
       }
     });
 
@@ -78,21 +71,25 @@
         const user = result.user;
         const username = generateUsername(user.displayName || "user");
 
-        await setDoc(doc(db, "users", user.uid), {
-          name: user.displayName,
-          username,
-          email: user.email,
-          photoURL: user.photoURL,
-          nameLower: (user.displayName || "").toLowerCase(),
-          usernameLower: username,
-          emailLower: (user.email || "").toLowerCase(),
-          createdAt: serverTimestamp()
-        }, { merge: true });
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            name: user.displayName,
+            username,
+            email: user.email,
+            photoURL: user.photoURL,
+            nameLower: (user.displayName || "").toLowerCase(),
+            usernameLower: username,
+            emailLower: (user.email || "").toLowerCase(),
+            createdAt: serverTimestamp()
+          },
+          { merge: true }
+        );
 
         alert(`Welcome ${user.displayName} ✅`);
         window.location.href = "home.html";
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error(error);
         alert("Google sign-in failed");
       }
     });

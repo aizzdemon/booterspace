@@ -1,4 +1,8 @@
 (function navbarUI() {
+  const loadFirebaseModule =
+    window.loadFirebaseModule ||
+    ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
+
   const profileBtn = document.getElementById("profileBtn");
   const profilePic = document.getElementById("profilePic");
   const profileName = document.getElementById("profileName");
@@ -25,9 +29,7 @@
     mLogoutBtn?.classList.toggle("hidden", !isAuthed);
     mProfileBtn?.classList.toggle("hidden", !isAuthed);
 
-    if (!isAuthed) {
-      return;
-    }
+    if (!isAuthed) return;
 
     const displayName = user.displayName || user.email || "User";
     const avatar = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
@@ -45,7 +47,7 @@
   window.authReady
     .then(async (user) => {
       toggleForAuth(user);
-      const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js");
+      const { signOut } = await loadFirebaseModule("firebase-auth.js");
 
       const onLogout = async () => {
         await signOut(window.auth);
