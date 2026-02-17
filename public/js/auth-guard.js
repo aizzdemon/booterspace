@@ -3,7 +3,7 @@
     window.loadFirebaseModule ||
     ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
 
-  const loginUrl = `login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  const loginUrl = `/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
 
   window.authReady = window.firebaseServicesReady
     .then(async ({ auth }) => {
