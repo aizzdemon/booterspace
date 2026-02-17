@@ -1,18 +1,21 @@
-# React Chat System (Google Firebase Read/Write)
+# React Chat System (Connection-Request Based)
 
-This chat app now uses **Google Firebase (Auth + Firestore)** for all core data operations.
+This demo now follows a realistic contact flow:
 
-## Firebase-backed features
+1. A user sends a connection request.
+2. The recipient accepts the request.
+3. Only accepted users appear in Connected Contacts and can chat.
+4. Mobile numbers can be saved/updated per accepted contact.
 
-- User profile bootstrap in `chat_users/{uid}`.
-- Discover users from Firestore to send connection requests.
-- Send/receive/accept connection requests in `chat_connection_requests`.
-- Auto-create one-to-one conversations in `chat_conversations` after acceptance.
-- Read/write messages in `chat_conversations/{conversationId}/messages`.
-- Save mobile numbers per contact in `chat_users/{uid}/contacts/{contactId}`.
-- Live UI updates using Firestore `onSnapshot` listeners.
+## Features
 
-## Local run
+- Pending connection requests panel with Accept action.
+- Connected contacts list (accepted requests only).
+- One-to-one chat thread per accepted contact.
+- Save mobile number in chat header for the selected contact.
+- Search contacts by name, number, or message text.
+
+## Run locally
 
 ```bash
 cd react-chat
@@ -25,5 +28,3 @@ npm run dev
 ```bash
 npm run build
 ```
-
-> Note: Firestore security rules must allow the signed-in user to read/write these collections.

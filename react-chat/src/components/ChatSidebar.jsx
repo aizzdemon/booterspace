@@ -1,47 +1,42 @@
-function conversationPreview(conversation) {
-  return conversation?.lastMessageText || 'Start conversation';
+function formatPreview(messages) {
+  if (!messages?.length) return 'No messages yet. Say hello 👋';
+  return messages[messages.length - 1].text;
 }
 
-function conversationTime(conversation) {
-  return conversation?.updatedAt?.toDate ? conversation.updatedAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+function formatPreviewTime(messages) {
+  if (!messages?.length) return '--:--';
+  return messages[messages.length - 1].time;
 }
 
 export default function ChatSidebar({
   currentUser,
   contacts,
-  discoverableUsers,
-  incomingRequests,
-  outgoingRequests,
-  selectedConversationId,
-  conversations,
+  pendingRequests,
+  selectedContactId,
+  messagesByContact,
   searchQuery,
   onSearchChange,
-  onSelectConversation,
-  onRequestConnection,
+  onSelectContact,
   onAcceptRequest,
 }) {
-  const convByContact = new Map();
-  conversations.forEach((conversation) => {
-    const contactId = conversation.participantIds?.find((id) => id !== currentUser?.uid);
-    if (contactId) convByContact.set(contactId, conversation);
-  });
-
   return (
     <aside className="sidebar">
       <div className="profile-row">
-        <strong>{currentUser?.displayName || currentUser?.email || 'Loading user...'}</strong>
-        <p>{currentUser?.uid || 'Authenticating with Firebase...'}</p>
+        <div>
+          <strong>{currentUser.name}</strong>
+          <p>{currentUser.phone}</p>
+        </div>
       </div>
 
       <div className="request-section">
-        <h2>Incoming Requests</h2>
-        {incomingRequests.length === 0 ? (
+        <h2>Connection Requests</h2>
+        {pendingRequests.length === 0 ? (
           <p className="empty-state">No pending requests.</p>
         ) : (
           <ul className="request-list">
-            {incomingRequests.map((request) => (
+            {pendingRequests.map((request) => (
               <li key={request.id}>
-                <span>{request.fromUserName || request.fromUserId}</span>
+                <span>{request.fromUser.name}</span>
                 <button type="button" onClick={() => onAcceptRequest(request.id)}>
                   Accept
                 </button>
@@ -49,27 +44,6 @@ export default function ChatSidebar({
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="request-section">
-        <h2>Find People</h2>
-        {discoverableUsers.length === 0 ? (
-          <p className="empty-state">No users available.</p>
-        ) : (
-          <ul className="request-list">
-            {discoverableUsers.map((user) => (
-              <li key={user.id}>
-                <span>{user.displayName || user.email || user.id}</span>
-                <button type="button" onClick={() => onRequestConnection(user)}>
-                  Request
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {outgoingRequests.length > 0 ? (
-          <p className="pending-note">Pending sent: {outgoingRequests.length}</p>
-        ) : null}
       </div>
 
       <input
@@ -86,20 +60,19 @@ export default function ChatSidebar({
           <p className="empty-state">No accepted connections to chat yet.</p>
         ) : (
           contacts.map((contact) => {
-            const conversation = convByContact.get(contact.id);
-            if (!conversation) return null;
+            const messages = messagesByContact[contact.id] || [];
             return (
               <button
                 key={contact.id}
                 type="button"
-                className={`contact-card ${selectedConversationId === conversation.id ? 'active' : ''}`}
-                onClick={() => onSelectConversation(conversation.id)}
+                className={`contact-card ${selectedContactId === contact.id ? 'active' : ''}`}
+                onClick={() => onSelectContact(contact.id)}
               >
                 <div className="contact-top-row">
-                  <span>{contact.displayName || contact.email || contact.id}</span>
-                  <time>{conversationTime(conversation)}</time>
+                  <span>{contact.name}</span>
+                  <time>{formatPreviewTime(messages)}</time>
                 </div>
-                <p>{conversationPreview(conversation)}</p>
+                <p>{formatPreview(messages)}</p>
               </button>
             );
           })

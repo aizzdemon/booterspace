@@ -1,38 +1,32 @@
 import { useEffect, useState } from 'react';
 
-function messageTime(createdAt) {
-  if (!createdAt?.toDate) return '';
-  return createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-export default function ChatWindow({ currentUser, contact, messages, onSendMessage, onSaveNumber, error }) {
+export default function ChatWindow({ currentUser, contact, messages, onSendMessage, onSaveNumber }) {
   const [draft, setDraft] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
 
   useEffect(() => {
-    setPhoneInput(contact?.savedPhone || '');
-  }, [contact?.id, contact?.savedPhone]);
+    setPhoneInput(contact?.phone || '');
+  }, [contact?.id, contact?.phone]);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     const content = draft.trim();
     if (!content) return;
 
-    await onSendMessage(content);
+    onSendMessage(content);
     setDraft('');
   };
 
-  const handleSavePhone = async (event) => {
+  const handleSavePhone = (event) => {
     event.preventDefault();
     if (!contact) return;
-    await onSaveNumber(contact.id, phoneInput.trim());
+    onSaveNumber(contact.id, phoneInput.trim());
   };
 
   if (!contact) {
     return (
       <main className="chat-window">
-        <p className="empty-state">Accept a request in Firebase-backed data to begin chat.</p>
-        {error ? <p className="error-text">{error}</p> : null}
+        <p className="empty-state">Accept a connection request and pick a contact to start chatting.</p>
       </main>
     );
   }
@@ -40,8 +34,8 @@ export default function ChatWindow({ currentUser, contact, messages, onSendMessa
   return (
     <main className="chat-window">
       <header className="chat-header">
-        <h1>{contact.displayName || contact.email || contact.id}</h1>
-        <p>Firebase UID: {contact.id}</p>
+        <h1>{contact.name}</h1>
+        <p>{contact.status}</p>
         <form className="save-phone" onSubmit={handleSavePhone}>
           <input
             type="tel"
@@ -51,19 +45,18 @@ export default function ChatWindow({ currentUser, contact, messages, onSendMessa
           />
           <button type="submit">Save</button>
         </form>
-        {error ? <p className="error-text">{error}</p> : null}
       </header>
 
       <section className="chat-thread">
         {messages.length === 0 ? (
-          <p className="empty-thread">No messages yet. Send one; it will be written to Firestore.</p>
+          <p className="empty-thread">This chat is empty. Send a first message.</p>
         ) : (
           messages.map((message) => {
-            const outgoing = message.senderId === currentUser?.uid;
+            const outgoing = message.senderId === currentUser.id;
             return (
               <article key={message.id} className={`bubble ${outgoing ? 'outgoing' : 'incoming'}`}>
                 <p>{message.text}</p>
-                <time>{messageTime(message.createdAt)}</time>
+                <time>{message.time}</time>
               </article>
             );
           })
@@ -75,7 +68,7 @@ export default function ChatWindow({ currentUser, contact, messages, onSendMessa
           type="text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={`Message ${contact.displayName || contact.email || 'contact'}`}
+          placeholder={`Message ${contact.name}`}
         />
         <button type="submit">Send</button>
       </form>

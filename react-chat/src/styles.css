@@ -240,18 +240,6 @@ body {
   color: #8696a0;
 }
 
-
-.pending-note {
-  margin: 0.55rem 0 0;
-  color: #8696a0;
-  font-size: 0.82rem;
-}
-
-.error-text {
-  color: #ff8a8a;
-  margin: 0.5rem 0 0;
-  font-size: 0.85rem;
-}
 @media (max-width: 920px) {
   .whatsapp-layout {
     grid-template-columns: 1fr;
