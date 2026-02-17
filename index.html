@@ -1,339 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "ed502dbc-48ba-4e0e-9a22-f9965a27767a",
-    });
-  });
-</script>
-<meta charset="UTF-8">
-<title>BooterSpace</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body { background-color: #f8fafc; }
-.blink-new { animation: blink 1s infinite ease-in-out; }
-@keyframes blink { 0%,50%,100% { opacity:1; } 25%,75% { opacity:0; } }
-.tab-button { padding:0.5rem 1rem; border-radius:0.5rem; font-weight: 600; transition: all 0.2s; }
-.tab-active { background-color:#3B82F6; color:white; }
-.tab-inactive { background-color:#E5E7EB; color:#6B7280; cursor:pointer; }
-.tab-inactive:hover { background-color: #D1D5DB; }
-</style>
-</head>
-<body class="font-sans antialiased text-gray-900 bg-gray-50">
-
-<!-- Navbar -->
-<div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module"; 
-  s.src="/booterspace/public/js/navbar.js"; 
-  document.body.appendChild(s);
-});
-</script>
-
-<!-- Header -->
-<header class="bg-white border-b border-gray-200 py-10">
-  <div class="max-w-7xl mx-auto px-4 text-center">
-    <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-      Booter<span class="text-blue-600">Space</span>
-    </h1>
-    <p class="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-      Explore your career opportunities and community posts
-    </p>
-  </div>
-</header>
-
-<!-- Tabs -->
-<div class="max-w-7xl mx-auto mt-6 px-4 flex gap-3 justify-center overflow-x-auto py-2">
-  <div id="btn-featured" class="tab-button tab-active whitespace-nowrap" onclick="switchTab('featured')">Featured Jobs</div>
-  <div id="btn-govt" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('govt')">Govt. Jobs</div>
-  <div id="btn-updates" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('updates')">Updates</div>
-  <div id="btn-community" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('community')">Community</div>
-</div>
-
-<!-- Tab Panels -->
-<main class="max-w-7xl mx-auto py-8 px-4 sm:px-6">
-
-  <!-- Featured Jobs -->
-  <div id="featured" class="tab-content">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col p-2">
-      <div id="featured-jobs" class="flex-grow min-h-[100px]">
-        <div class="p-8 text-center text-gray-400 italic">Loading jobs...</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booterspace | Professional Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Booterspace</div>
+      <div class="topbar-actions">
+        <input id="searchInput" type="search" placeholder="Search jobs, people, posts" />
+        <button id="loginBtn" class="btn">Sign In with GitHub</button>
+        <button id="logoutBtn" class="btn btn-muted hidden">Logout</button>
       </div>
-      <button onclick="window.location.href='jobs.html'" class="mt-2 py-2 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition">Load More</button>
-    </div>
-  </div>
+    </header>
 
-  <!-- Govt Jobs -->
-  <div id="govt" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col p-2">
-      <div id="govt-jobs" class="flex-grow min-h-[100px]">
-        <div class="p-8 text-center text-gray-400 italic">Loading govt jobs...</div>
-      </div>
-      <button onclick="window.location.href='govt.html'" class="mt-2 py-2 px-4 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition">Load More</button>
-    </div>
-  </div>
-
-  <!-- Updates -->
-  <div id="updates" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col p-2">
-      <div id="latest-updates" class="flex-grow min-h-[100px]">
-        <div class="p-8 text-center text-gray-400 italic">Loading updates...</div>
-      </div>
-      <button onclick="window.location.href='updates.html'" class="mt-2 py-2 px-4 bg-yellow-400 text-white font-bold rounded-lg hover:bg-yellow-500 transition">Load More</button>
-    </div>
-  </div>
-
-  <!-- Community -->
-  <div id="community" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col p-4">
-      <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100">
-        <textarea id="postContent" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition" rows="3" placeholder="Share something with the community..."></textarea>
-        <div class="flex justify-end mt-2">
-          <button id="postBtn" disabled title="Please log in to create a community post." class="bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold transition">Post</button>
+    <main class="layout">
+      <aside class="card profile-card">
+        <h2>Your Profile</h2>
+        <div class="profile-meta">
+          <img id="avatar" class="avatar" alt="User avatar" />
+          <div>
+            <p id="displayName">Guest</p>
+            <p id="email" class="muted">Sign in to unlock networking</p>
+          </div>
         </div>
-      </div>
-      <div id="community-posts" class="flex-grow space-y-4 min-h-[100px]">
-        <div class="p-8 text-center text-gray-400 italic">Loading community...</div>
-      </div>
-      <button onclick="window.location.href='community.html'" class="mt-6 py-2 px-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition">Load More</button>
-    </div>
-  </div>
+        <div class="stats">
+          <p><strong id="connectionCount">0</strong> Connections</p>
+          <p><strong id="unreadCount">0</strong> Unread Messages</p>
+          <p><strong id="notificationCount">0</strong> Notifications</p>
+        </div>
+      </aside>
 
-</main>
+      <section class="feed-section">
+        <article class="card composer">
+          <h2>Create Post</h2>
+          <textarea id="postInput" placeholder="Share an update with your network..."></textarea>
+          <button id="publishPostBtn" class="btn">Publish</button>
+        </article>
 
-<!-- Footer -->
-<footer class="mt-12 py-8 text-center">
-  <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">© 2026 BooterSpace</p>
-</footer>
+        <article class="card">
+          <h2>Community Feed</h2>
+          <ul id="postsList" class="list"></ul>
+        </article>
+      </section>
 
-<!-- Firebase & Logic -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, limit, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+      <aside class="right-column">
+        <article class="card">
+          <h2>Messages</h2>
+          <div class="chat-controls">
+            <input id="chatPeerId" type="text" placeholder="Recipient UID" />
+            <textarea id="chatMessage" placeholder="Write a direct message..."></textarea>
+            <button id="sendMessageBtn" class="btn">Send Message</button>
+          </div>
+          <ul id="messagesList" class="list compact"></ul>
+        </article>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan",
-  storageBucket: "kar-kardan.firebasestorage.app",
-  messagingSenderId: "554147696994",
-  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
-};
+        <article class="card">
+          <h2>Notifications</h2>
+          <ul id="notificationsList" class="list compact"></ul>
+          <button id="markNotificationsBtn" class="btn btn-muted">Mark all as read</button>
+        </article>
+      </aside>
+    </main>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+    <template id="emptyStateTpl">
+      <li class="muted">No data yet. Start by publishing your first update.</li>
+    </template>
 
-// Share Firebase instances globally for other scripts if needed
-window.db = db;
-window.auth = auth;
-
-let currentUser = null;
-
-// Global tab switch function
-window.switchTab = (tab) => {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.replace('tab-active', 'tab-inactive'));
-  document.getElementById(tab).classList.remove('hidden');
-  document.getElementById(`btn-${tab}`).classList.replace('tab-inactive', 'tab-active');
-};
-
-async function init() {
-  // Auth state listener
-  onAuthStateChanged(auth, user => {
-    currentUser = user || null;
-    const postBtn = document.getElementById("postBtn");
-    if (!postBtn) return;
-
-    const isAuthed = Boolean(user && !user.isAnonymous);
-    postBtn.disabled = !isAuthed;
-    postBtn.title = isAuthed ? "" : "Please log in to create a community post.";
-  });
-
-  const containers = {
-    featured: document.getElementById("featured-jobs"),
-    govt: document.getElementById("govt-jobs"),
-    updates: document.getElementById("latest-updates"),
-    community: document.getElementById("community-posts")
-  };
-
-  // 1. Featured Jobs Loader
-  async function loadFeatured() {
-    try {
-      const q = query(collection(db, "jobs"), where("status", "==", "approved"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
-      containers.featured.innerHTML = '';
-      if(snap.empty) {
-        containers.featured.innerHTML = '<div class="p-8 text-center text-gray-500">No jobs found.</div>';
-        return;
-      }
-      snap.forEach(docSnap => {
-        const job = docSnap.data();
-        const logo =
-  job.logoUrl ||
-  job.companyImageUrl ||
-  job.icon ||
-  job.logo ||
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company || 'C')}&background=random`;
-        containers.featured.innerHTML += `
-          <a href="job-detail.html?id=${docSnap.id}" class="group block p-4 hover:bg-blue-50/50 transition-all border-b border-gray-50 last:border-0 relative">
-            <div class="flex items-center gap-3">
-              <img src="${logo}" class="w-10 h-10 rounded-lg object-cover border border-gray-100 bg-white flex-shrink-0" onerror="this.src='https://ui-avatars.com/api/?name=Job&background=random'">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-bold text-gray-900 truncate">${job.title}</h3>
-                  <span class="blink-new text-[9px] font-black text-blue-600 bg-blue-100 px-1 rounded">NEW</span>
-                </div>
-                <p class="text-xs text-gray-500 truncate">${job.company}</p>
-              </div>
-            </div>
-          </a>`;
-      });
-    } catch(e) { console.error("Featured Error:", e); }
-  }
-
-  // 2. Govt Jobs Loader
-  async function loadGovt() {
-    try {
-      const q = query(collection(db, "govtJobs"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
-      containers.govt.innerHTML = '';
-      if(snap.empty) {
-        containers.govt.innerHTML = '<div class="p-8 text-center text-gray-500">No govt jobs found.</div>';
-        return;
-      }
-      snap.forEach(docSnap => {
-        const job = docSnap.data();
-        const logo = job.companyImageUrl || "https://img.icons8.com/color/96/government-buildings.png";
-        containers.govt.innerHTML += `
-          <a href="job-detail.html?id=${docSnap.id}" class="group block p-4 hover:bg-orange-50/50 transition-all border-b border-gray-50 last:border-0 relative">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-                <img src="${logo}" class="w-6 h-6 object-contain">
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-bold text-gray-900 truncate">${job.title}</h3>
-                  <span class="blink-new text-[9px] font-black text-orange-600 bg-orange-100 px-1 rounded">NEW</span>
-                </div>
-                <p class="text-xs text-orange-600 font-medium truncate">${job.companyName || "Govt Sector"}</p>
-              </div>
-            </div>
-          </a>`;
-      });
-    } catch(e) { console.error("Govt Jobs Error:", e); }
-  }
-
-  // 3. Updates Loader
-  async function loadUpdates() {
-    try {
-      const q = query(collection(db, "flashLinks"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
-      containers.updates.innerHTML = '';
-      if(snap.empty) {
-        containers.updates.innerHTML = '<div class="p-8 text-center text-gray-500">No updates found.</div>';
-        return;
-      }
-      snap.forEach(docSnap => {
-        const item = docSnap.data();
-        containers.updates.innerHTML += `
-          <a href="${item.url}" target="_blank" class="group block p-4 hover:bg-yellow-50/50 transition-all border-b border-gray-50 last:border-0">
-            <div class="flex items-start gap-3">
-              <span class="text-yellow-500 mt-0.5">⚡</span>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-xs font-bold text-gray-800 group-hover:text-blue-700 leading-tight line-clamp-1">${item.title}</span>
-                  <span class="blink-new text-[9px] font-black text-yellow-700 bg-yellow-100 px-1 rounded">NEW</span>
-                </div>
-                <p class="text-[10px] text-gray-400">Official Update</p>
-              </div>
-            </div>
-          </a>`;
-      });
-    } catch(e) { console.error("Updates Error:", e); }
-  }
-
-  // 4. Community Posts Loader
-  async function loadCommunity() {
-    try {
-      const q = query(collection(db, "communityPosts"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
-      containers.community.innerHTML = '';
-      if(snap.empty) {
-        containers.community.innerHTML = '<div class="p-8 text-center text-gray-500">No community posts yet. Be the first!</div>';
-        return;
-      }
-      snap.forEach(docSnap => {
-        const post = docSnap.data();
-        containers.community.innerHTML += `
-          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-green-200 transition">
-            <div class="flex items-center mb-2">
-              <div class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-[10px] font-bold mr-2">
-                ${(post.userName || 'U').charAt(0).toUpperCase()}
-              </div>
-              <b class="text-xs text-gray-700">${post.userName || 'Anonymous'}</b>
-            </div>
-            <p class="text-sm text-gray-600 mb-3 leading-relaxed">${post.content}</p>
-            <div class="flex gap-4 text-[11px] text-gray-400">
-              <span class="flex items-center gap-1 cursor-pointer hover:text-green-600">👍 ${post.likes || 0}</span>
-              <span class="flex items-center gap-1 cursor-pointer hover:text-red-600">👎 ${post.dislikes || 0}</span>
-            </div>
-          </div>`;
-      });
-    } catch(e) { console.error("Community Error:", e); }
-  }
-
-  // Execute all loaders
-  await Promise.all([loadFeatured(), loadGovt(), loadUpdates(), loadCommunity()]);
-
-  // Community Posting Logic
-  document.getElementById("postBtn").addEventListener("click", async () => {
-    if(!currentUser) {
-      alert("Please log in to post in the community.");
-      return;
-    }
-    const content = document.getElementById("postContent").value.trim();
-    if(!content) return;
-    
-    try {
-      const btn = document.getElementById("postBtn");
-      btn.disabled = true;
-      btn.innerText = "Posting...";
-      
-      await addDoc(collection(db, "communityPosts"), {
-        content,
-        userName: currentUser.displayName || "User_" + currentUser.uid.substring(0, 4),
-        userId: currentUser.uid,
-        timestamp: serverTimestamp(),
-        likes: 0,
-        dislikes: 0
-      });
-      
-      document.getElementById("postContent").value = '';
-      await loadCommunity();
-    } catch(e) {
-      console.error("Posting error:", e);
-      alert("Error posting content.");
-    } finally {
-      const btn = document.getElementById("postBtn");
-      btn.disabled = !(currentUser && !currentUser.isAnonymous);
-      btn.innerText = "Post";
-    }
-  });
-}
-
-window.addEventListener("DOMContentLoaded", init);
-</script>
-
-</body>
+    <script type="module" src="assets/js/app.js"></script>
+  </body>
 </html>
