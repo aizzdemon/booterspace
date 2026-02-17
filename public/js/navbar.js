@@ -91,7 +91,7 @@
 
       const onLogout = async () => {
         await signOut(window.auth);
-        window.location.href = "/login.html";
+        window.location.href = "login.html";
       };
 
       logoutBtn?.addEventListener("click", onLogout);
