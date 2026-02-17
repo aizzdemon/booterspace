@@ -58,7 +58,7 @@
         });
 
         alert("Signup successful ✅");
-        window.location.href = "home.html";
+        window.location.href = "index.html";
       } catch (error) {
         console.error(error);
         alert(error.message);
@@ -87,7 +87,7 @@
         );
 
         alert(`Welcome ${user.displayName} ✅`);
-        window.location.href = "home.html";
+        window.location.href = "index.html";
       } catch (error) {
         console.error(error);
         alert("Google sign-in failed");
