@@ -44,6 +44,19 @@
         let allConversations = [];
         let suggestedUsers = [];
 
+        function getParticipantIds(entity = {}) {
+            return entity.participantIds || entity.participants || [];
+        }
+
+        function getRequestFromId(request = {}) {
+            return request.fromUserId || request.fromId || '';
+        }
+
+        function getRequestToId(request = {}) {
+            return request.toUserId || request.toId || '';
+        }
+
+
         // Dynamic Navbar Fetch & Auth Sync
         async function loadNavbar() {
             try {
@@ -154,8 +167,10 @@
         function setupRequestsListener() {
             if (!currentUser || currentUser.isAnonymous) return;
 
-            const requestsByFrom = query(getRequestsCollection(), where('fromId', '==', currentUser.uid));
-            const requestsByTo = query(getRequestsCollection(), where('toId', '==', currentUser.uid));
+            const requestsByFrom = query(getRequestsCollection(), where('fromUserId', '==', currentUser.uid));
+            const requestsByTo = query(getRequestsCollection(), where('toUserId', '==', currentUser.uid));
+            const legacyRequestsByFrom = query(getRequestsCollection(), where('fromId', '==', currentUser.uid));
+            const legacyRequestsByTo = query(getRequestsCollection(), where('toId', '==', currentUser.uid));
 
             const requestDocsMap = new Map();
             const rerenderRequests = () => {
@@ -174,6 +189,8 @@
 
             onSnapshot(requestsByFrom, syncRequestDocs, (err) => console.error("Request listener error:", err));
             onSnapshot(requestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
+            onSnapshot(legacyRequestsByFrom, syncRequestDocs, (err) => console.error("Request listener error:", err));
+            onSnapshot(legacyRequestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
         }
 
         async function sendRequest(targetUid, fullName, ev) {
@@ -187,8 +204,12 @@
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
                     fromId: currentUser.uid,
+                    fromUserId: currentUser.uid,
                     toId: targetUid,
+                    toUserId: targetUid,
                     fromName: currentUser.displayName || "User",
+                    fromUserName: currentUser.displayName || "User",
+                    participants: [currentUser.uid, targetUid],
                     status: 'pending',
                     createdAt: serverTimestamp()
                 });
@@ -277,7 +298,10 @@
             if (!chatSnap.exists()) {
                 await setDoc(chatRef, {
                     participants: [currentUser.uid, targetUid],
-                    createdAt: serverTimestamp()
+                    participantIds: [currentUser.uid, targetUid],
+                    participantNames: [currentUser.displayName || 'You', activeRecipient.fullName || 'User'],
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
                 });
             }
             
@@ -291,7 +315,7 @@
             document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
             document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
             
-            chatUnsubscribe = onSnapshot(getMessagesCollection(activeChatId), (snapshot) => {
+            chatUnsubscribe = onSnapshot(query(getMessagesCollection(activeChatId)), (snapshot) => {
                 renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
             }, (error) => {
                 console.error("Chat error:", error);
@@ -382,6 +406,7 @@
             const msgData = {
                 text,
                 senderId: currentUser.uid,
+                senderName: currentUser.displayName || currentUser.email || 'User',
                 createdAt: serverTimestamp()
             };
 
@@ -393,7 +418,10 @@
                 
                 const meta = {
                     lastMessage: text,
-                    lastMessageAt: serverTimestamp()
+                    lastMessageText: text,
+                    lastMessageSenderId: currentUser.uid,
+                    lastMessageAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
                 };
 
                 await setDoc(getConversationDoc(activeChatId), meta, { merge: true });
@@ -414,14 +442,24 @@
 
         async function loadConversations() {
             if (!currentUser || currentUser.isAnonymous) return;
-            const q = query(
-                collection(db, 'artifacts', appId, 'public', 'data', 'conversations'),
-                where('participants', 'array-contains', currentUser.uid)
-            );
-            onSnapshot(q, (snapshot) => {
-                allConversations = snapshot.docs
-                    .map(d => ({ id: d.id, ...d.data() }));
+
+            const requestQueries = [
+                query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participantIds', 'array-contains', currentUser.uid)),
+                query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participants', 'array-contains', currentUser.uid))
+            ];
+
+            const conversationDocsMap = new Map();
+            const syncConversations = (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'removed') conversationDocsMap.delete(change.doc.id);
+                    else conversationDocsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+                });
+                allConversations = Array.from(conversationDocsMap.values());
                 renderConversations();
+            };
+
+            requestQueries.forEach((conversationQuery) => {
+                onSnapshot(conversationQuery, syncConversations, (err) => console.error('Conversation listener error:', err));
             });
         }
 
@@ -435,9 +473,14 @@
             }
 
             const filtered = allConversations.filter(c => {
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantIds = getParticipantIds(c);
+                const otherId = participantIds.find(p => p !== currentUser.uid);
+                const legacyName = participantIds[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantNames = c.participantNames || [];
+                const participantIndex = participantIds.indexOf(otherId);
+                const displayName = c.title || participantNames[participantIndex] || legacyName || 'User';
                 return (displayName || '').toLowerCase().includes(filter.toLowerCase()) || 
-                       (c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
+                       (c.lastMessageText || c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
             });
 
             if (filtered.length === 0) {
@@ -446,8 +489,12 @@
             }
 
             list.innerHTML = filtered.map(c => {
-                const otherId = c.participants.find(p => p !== currentUser.uid);
-                const displayName = c.participants[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantIds = getParticipantIds(c);
+                const otherId = participantIds.find(p => p !== currentUser.uid);
+                const legacyName = participantIds[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantNames = c.participantNames || [];
+                const participantIndex = participantIds.indexOf(otherId);
+                const displayName = c.title || participantNames[participantIndex] || legacyName || 'User';
                 const isActive = activeChatId === c.id;
 
                 return `
@@ -458,7 +505,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <h4 class="text-[15px] font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
-                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessage}</p>
+                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessageText || c.lastMessage || 'Start the conversation'}</p>
                             </div>
                         </div>
                     </div>
@@ -495,11 +542,11 @@
             }
 
             list.innerHTML = filtered.map((user) => {
-                const sentReq = userRequests.find(r => r.fromId === currentUser?.uid && r.toId === user.id);
-                const incomingReq = userRequests.find(r => r.fromId === user.id && r.toId === currentUser?.uid);
+                const sentReq = userRequests.find(r => getRequestFromId(r) === currentUser?.uid && getRequestToId(r) === user.id);
+                const incomingReq = userRequests.find(r => getRequestFromId(r) === user.id && getRequestToId(r) === currentUser?.uid);
                 const acceptedReq = userRequests.find(r =>
                     r.status === 'accepted' &&
-                    ((r.fromId === currentUser?.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === currentUser?.uid))
+                    ((getRequestFromId(r) === currentUser?.uid && getRequestToId(r) === user.id) || (getRequestFromId(r) === user.id && getRequestToId(r) === currentUser?.uid))
                 );
 
                 return `
@@ -550,8 +597,8 @@
             }
 
             const connectedUids = userRequests
-                .filter(r => r.status === 'accepted' && (r.fromId === currentUser.uid || r.toId === currentUser.uid))
-                .map(r => r.fromId === currentUser.uid ? r.toId : r.fromId);
+                .filter(r => r.status === 'accepted' && (getRequestFromId(r) === currentUser.uid || getRequestToId(r) === currentUser.uid))
+                .map(r => getRequestFromId(r) === currentUser.uid ? getRequestToId(r) : getRequestFromId(r));
 
             const connectedUsers = suggestedUsers.filter(u => connectedUids.includes(u.id));
 
