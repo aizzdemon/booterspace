@@ -15,7 +15,7 @@
             <div id="status" class="w-2 h-2 rounded-full bg-gray-500"></div>
         </div>
         <div id="usersList" class="flex-1 overflow-y-auto p-2 space-y-1">
-            <div class="text-gray-500 text-sm p-2 italic">Loading users...</div>
+            <div class="text-gray-500 text-sm p-2 italic">Looking for people...</div>
         </div>
         <div id="user-info" class="p-4 text-[10px] text-gray-400 border-t border-gray-700 truncate">
             <!-- User ID will be shown here -->
@@ -62,7 +62,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, query, onSnapshot, serverTimestamp, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
@@ -82,8 +82,9 @@
         let currentUser = null;
         let activeChatId = null;
         let messageUnsubscribe = null;
+        let usersUnsubscribe = null;
 
-        // AUTHENTICATION
+        // AUTHENTICATION (RULE 3 - Auth Before Queries)
         async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -102,56 +103,80 @@
                 statusEl.className = "w-2 h-2 rounded-full bg-green-500";
                 userInfoEl.innerText = `Logged in: ${user.uid}`;
                 
-                // Register/Update User Profile (Required by Rules)
-                await setDoc(doc(db, 'users', user.uid), {
-                    name: `User-${user.uid.substring(0, 4)}`,
-                    fullName: `Guest User ${user.uid.substring(0, 4)}`,
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-
-                startUserDiscovery();
+                // We must use the user profile update BEFORE starting discovery to avoid 403s on read-if-signed-in
+                try {
+                    // Create user profile in /users/{userId} as required by the security rules
+                    await setDoc(doc(db, 'users', user.uid), {
+                        name: `User-${user.uid.substring(0, 4)}`,
+                        fullName: `Guest User ${user.uid.substring(0, 4)}`,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                    
+                    // Only start discovery after we are sure auth state is recognized and user doc created
+                    startUserDiscovery();
+                } catch (e) {
+                    console.error("Error setting user profile:", e);
+                }
             } else {
                 statusEl.className = "w-2 h-2 rounded-full bg-red-500";
+                if (usersUnsubscribe) usersUnsubscribe();
             }
         });
 
         // USER DISCOVERY
         function startUserDiscovery() {
-            // Rules allow reading /users if signed in
+            if (!currentUser) return;
+            if (usersUnsubscribe) usersUnsubscribe();
+            
+            // Rules allow read: if isSignedIn();
             const usersRef = collection(db, 'users');
-            onSnapshot(usersRef, (snapshot) => {
+            
+            // Note: In some environments, broad collection reads on root 'users' 
+            // might be restricted if the app is intended to be scoped under 'artifacts'.
+            // However, following the provided rules strictly:
+            usersUnsubscribe = onSnapshot(usersRef, (snapshot) => {
                 const users = [];
                 snapshot.forEach(doc => {
-                    if (doc.id !== currentUser.uid) {
-                        users.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    if (doc.id !== currentUser?.uid) {
+                        users.push({ id: doc.id, ...data });
                     }
                 });
                 renderUsers(users);
+            }, (err) => {
+                console.error("User discovery error:", err);
+                usersListEl.innerHTML = `<div class="text-red-400 text-xs p-2">Permission Error: Discovery failed.</div>`;
             });
         }
 
         function renderUsers(users) {
             if (users.length === 0) {
-                usersListEl.innerHTML = `<div class="text-gray-500 text-xs p-2">Waiting for others...</div>`;
+                usersListEl.innerHTML = `<div class="text-gray-500 text-xs p-2 italic">Waiting for others to join...</div>`;
                 return;
             }
-            usersListEl.innerHTML = users.map(u => `
-                <div onclick="selectUser('${u.id}', '${u.name}')" 
-                     class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors ${activeChatId?.includes(u.id) ? 'bg-gray-700 border-l-4 border-blue-500' : ''}">
-                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-                        ${u.name.substring(0, 2).toUpperCase()}
+            usersListEl.innerHTML = users.map(u => {
+                const displayName = u.name || `User-${u.id.substring(0, 4)}`;
+                const isSelected = activeChatId?.includes(u.id);
+                return `
+                    <div onclick="selectUser('${u.id}', '${displayName}')" 
+                         class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors ${isSelected ? 'bg-gray-700 border-l-4 border-blue-500' : ''}">
+                        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold shrink-0">
+                            ${displayName.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div class="flex-1 truncate">
+                            <div class="text-sm font-medium">${displayName}</div>
+                            <div class="text-[10px] opacity-50 font-mono">${u.id.substring(0, 8)}</div>
+                        </div>
                     </div>
-                    <div class="flex-1 truncate">
-                        <div class="text-sm font-medium">${u.name}</div>
-                        <div class="text-[10px] opacity-50 font-mono">${u.id.substring(0, 8)}</div>
-                    </div>
-                </div>
-            `).join("");
+                `;
+            }).join("");
         }
 
-        // CHAT SELECTION & INITIALIZATION
+        // CHAT SELECTION
         window.selectUser = async function(targetUid, targetName) {
-            // Generate deterministic Chat ID for 1-on-1 (Rules require participants.size == 2)
+            if (!currentUser) return;
+            
+            // Deterministic chatId for 1-on-1 conversations
             activeChatId = [currentUser.uid, targetUid].sort().join("_");
             chatTitle.innerText = `Chat with ${targetName}`;
             inputArea.classList.remove("hidden");
@@ -159,19 +184,21 @@
             const convoRef = doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId);
             
             try {
-                // Initialize conversation doc if it doesn't exist
+                // Rules: create: if isSignedIn() && auth.uid in participants && participants.size == 2
                 await setDoc(convoRef, {
                     participants: [currentUser.uid, targetUid],
                     updatedAt: serverTimestamp()
                 }, { merge: true });
 
                 listenToMessages();
+                renderUsers([]); // Trigger visual refresh for selection
             } catch (e) {
-                console.error("Permission error: Ensure rules allow your UID in participants.", e);
+                console.error("Conversation initialization error:", e);
             }
         };
 
         function listenToMessages() {
+            if (!currentUser || !activeChatId) return;
             if (messageUnsubscribe) messageUnsubscribe();
             
             const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages');
@@ -181,12 +208,14 @@
                 snapshot.forEach(doc => msgs.push(doc.data()));
                 msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
                 renderMessages(msgs);
+            }, (err) => {
+                console.error("Messages permission error:", err);
             });
         }
 
         function renderMessages(msgs) {
             if (msgs.length === 0) {
-                chatContainer.innerHTML = `<div class="h-full flex items-center justify-center text-gray-400">No messages yet. Say hello!</div>`;
+                chatContainer.innerHTML = `<div class="h-full flex items-center justify-center text-gray-400">No messages yet.</div>`;
                 return;
             }
             chatContainer.innerHTML = msgs.map(m => {
@@ -202,15 +231,16 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // SENDING MESSAGES (Following strictly keysOnly and size checks in Rules)
         window.send = async function () {
             const text = msgInput.value.trim();
             if (!text || !currentUser || !activeChatId) return;
-            if (text.length > 300) return; // Rule enforcement
+            if (text.length > 300) return;
 
             msgInput.value = "";
             try {
                 const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages');
+                
+                // Rules for create messages: senderId == auth.uid, keysOnly allowed keys
                 await addDoc(messagesRef, {
                     senderId: currentUser.uid,
                     senderName: `User-${currentUser.uid.substring(0, 4)}`,
@@ -218,7 +248,7 @@
                     createdAt: serverTimestamp()
                 });
 
-                // Update metadata (Rules allow update on specific fields)
+                // Update metadata on conversation
                 const convoRef = doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId);
                 await setDoc(convoRef, {
                     lastMessageText: text,
@@ -226,7 +256,7 @@
                     updatedAt: serverTimestamp()
                 }, { merge: true });
 
-            } catch (error) { console.error("Send error (Check Rules):", error); }
+            } catch (error) { console.error("Send error:", error); }
         }
 
         function escapeHTML(str) {
@@ -235,6 +265,7 @@
             return p.innerHTML;
         }
 
+        // Trigger auth
         initAuth();
     </script>
 </body>
