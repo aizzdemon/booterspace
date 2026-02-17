@@ -36,21 +36,36 @@
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-chat';
 
-        const state = {
-            currentUser: null,
-            currentTab: 'chats',
-            activeChatId: null,
-            activeRecipient: null,
-            allConversations: [],
-            userRequests: [],
-            suggestedUsers: [],
-            unsubscribers: {
-                chats: null,
-                messages: null,
-                requestsFrom: null,
-                requestsTo: null,
-            },
-        };
+        function getParticipantIds(entity = {}) {
+            return entity.participantIds || entity.participants || [];
+        }
+
+        function getRequestFromId(request = {}) {
+            return request.fromUserId || request.fromId || '';
+        }
+
+        function getRequestToId(request = {}) {
+            return request.toUserId || request.toId || '';
+        }
+
+
+        // Dynamic Navbar Fetch & Auth Sync
+        async function loadNavbar() {
+            try {
+                const response = await fetch('navbar.html');
+                if (response.ok) {
+                    const html = await response.text();
+                    document.getElementById('navbar-placeholder').innerHTML = html;
+
+                    const navbarScript = document.createElement('script');
+                    navbarScript.type = 'module';
+                    navbarScript.src = '/booterspace/public/js/navbar.js';
+                    document.body.appendChild(navbarScript);
+                }
+            } catch (error) {
+                console.error("Error loading navbar:", error);
+            }
+        }
 
         const paths = {
             conversations: () => collection(db, `artifacts/${appId}/public/data/conversations`),
@@ -109,18 +124,73 @@
             });
         }
 
-        async function loadNavbar() {
+        function getConversationDoc(chatId) {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId);
+        }
+
+        function getMessagesCollection(chatId) {
+            return collection(db, 'artifacts', appId, 'public', 'data', 'conversations', chatId, 'messages');
+        }
+
+        function setupRequestsListener() {
+            if (!currentUser || currentUser.isAnonymous) return;
+
+            const requestsByFrom = query(getRequestsCollection(), where('fromUserId', '==', currentUser.uid));
+            const requestsByTo = query(getRequestsCollection(), where('toUserId', '==', currentUser.uid));
+            const legacyRequestsByFrom = query(getRequestsCollection(), where('fromId', '==', currentUser.uid));
+            const legacyRequestsByTo = query(getRequestsCollection(), where('toId', '==', currentUser.uid));
+
+            const requestDocsMap = new Map();
+            const rerenderRequests = () => {
+                userRequests = Array.from(requestDocsMap.values());
+                if (currentTab === 'new-chat') renderNewChatUI();
+                else renderSuggestedUI();
+            };
+
+            const syncRequestDocs = (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'removed') requestDocsMap.delete(change.doc.id);
+                    else requestDocsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+                });
+                rerenderRequests();
+            };
+
+            onSnapshot(requestsByFrom, syncRequestDocs, (err) => console.error("Request listener error:", err));
+            onSnapshot(requestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
+            onSnapshot(legacyRequestsByFrom, syncRequestDocs, (err) => console.error("Request listener error:", err));
+            onSnapshot(legacyRequestsByTo, syncRequestDocs, (err) => console.error("Request listener error:", err));
+        }
+
+        async function sendRequest(targetUid, fullName, ev) {
+            if (ev) ev.stopPropagation();
+            if (!currentUser || currentUser.isAnonymous) {
+                showToast("Please log in to connect with makers");
+                return;
+            }
+
+            const requestId = `${currentUser.uid}_${targetUid}`;
             try {
-                const response = await fetch('navbar.html');
-                if (!response.ok) return;
-                const html = await response.text();
-                el.get('navbar-placeholder').innerHTML = html;
-                const navbarScript = document.createElement('script');
-                navbarScript.type = 'module';
-                navbarScript.src = '/booterspace/public/js/navbar.js';
-                document.body.appendChild(navbarScript);
-            } catch (error) {
-                console.error('Error loading navbar:', error);
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', requestId), {
+                    fromId: currentUser.uid,
+                    fromUserId: currentUser.uid,
+                    toId: targetUid,
+                    toUserId: targetUid,
+                    fromName: currentUser.displayName || "User",
+                    fromUserName: currentUser.displayName || "User",
+                    participants: [currentUser.uid, targetUid],
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                });
+
+                await createNotification(targetUid, `${currentUser.displayName || "Someone"} sent you a connection request.`, {
+                    type: 'connection_request',
+                    fromId: currentUser.uid,
+                    requestId
+                });
+
+                showToast('Connection request sent');
+            } catch (err) {
+                console.error("Failed to send request:", err);
             }
         }
 
@@ -148,12 +218,46 @@
             }
         }
 
-        function clearRealtimeListeners() {
-            Object.keys(state.unsubscribers).forEach((key) => {
-                if (state.unsubscribers[key]) {
-                    state.unsubscribers[key]();
-                    state.unsubscribers[key] = null;
-                }
+        async function startChat(targetUid) {
+            if (!currentUser) return;
+            if (currentUser.isAnonymous) {
+                showToast("Login to start a conversation");
+                return;
+            }
+            if (chatUnsubscribe) chatUnsubscribe();
+            
+            const targetSnap = await getDoc(doc(db, 'users', targetUid));
+            if (!targetSnap.exists()) return;
+            
+            activeRecipient = { id: targetUid, ...targetSnap.data() };
+            activeChatId = getChatId(currentUser.uid, targetUid);
+
+            const chatRef = getConversationDoc(activeChatId);
+            const chatSnap = await getDoc(chatRef);
+            if (!chatSnap.exists()) {
+                await setDoc(chatRef, {
+                    participants: [currentUser.uid, targetUid],
+                    participantIds: [currentUser.uid, targetUid],
+                    participantNames: [currentUser.displayName || 'You', activeRecipient.fullName || 'User'],
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+            }
+            
+            document.getElementById('sidebar-panel').classList.add('hidden', 'md:flex');
+            document.getElementById('chat-panel').classList.remove('hidden');
+            document.getElementById('chat-panel').classList.add('flex');
+
+            document.getElementById('chat-placeholder').classList.add('hidden');
+            document.getElementById('chat-window').classList.remove('hidden');
+            document.getElementById('recipient-name').textContent = activeRecipient.fullName || "User";
+            document.getElementById('recipient-avatar').textContent = (activeRecipient.fullName || 'U').charAt(0);
+            document.getElementById('messages-container').innerHTML = '<div class="p-4 text-center text-gray-400">Loading history...</div>';
+            
+            chatUnsubscribe = onSnapshot(query(getMessagesCollection(activeChatId)), (snapshot) => {
+                renderMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            }, (error) => {
+                console.error("Chat error:", error);
             });
         }
 
@@ -190,6 +294,71 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        window.sendMessage = async () => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text || !activeChatId || !currentUser || currentUser.isAnonymous) return;
+
+            const msgData = {
+                text,
+                senderId: currentUser.uid,
+                senderName: currentUser.displayName || currentUser.email || 'User',
+                createdAt: serverTimestamp()
+            };
+
+            input.value = '';
+            input.style.height = 'auto';
+            
+            try {
+                await addDoc(getMessagesCollection(activeChatId), msgData);
+                
+                const meta = {
+                    lastMessage: text,
+                    lastMessageText: text,
+                    lastMessageSenderId: currentUser.uid,
+                    lastMessageAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+
+                await setDoc(getConversationDoc(activeChatId), meta, { merge: true });
+
+                await createNotification(activeRecipient.id, `${currentUser.displayName || "Someone"} sent you a new message.`, {
+                    type: 'message',
+                    senderId: currentUser.uid,
+                    fromId: currentUser.uid,
+                    recipientId: activeRecipient.id,
+                    chatId: activeChatId,
+                    messageText: text,
+                    link: `messages.html?chatId=${encodeURIComponent(activeChatId)}`
+                });
+            } catch (err) {
+                console.error("Failed to send:", err);
+            }
+        };
+
+        async function loadConversations() {
+            if (!currentUser || currentUser.isAnonymous) return;
+
+            const requestQueries = [
+                query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participantIds', 'array-contains', currentUser.uid)),
+                query(collection(db, 'artifacts', appId, 'public', 'data', 'conversations'), where('participants', 'array-contains', currentUser.uid))
+            ];
+
+            const conversationDocsMap = new Map();
+            const syncConversations = (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'removed') conversationDocsMap.delete(change.doc.id);
+                    else conversationDocsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+                });
+                allConversations = Array.from(conversationDocsMap.values());
+                renderConversations();
+            };
+
+            requestQueries.forEach((conversationQuery) => {
+                onSnapshot(conversationQuery, syncConversations, (err) => console.error('Conversation listener error:', err));
+            });
+        }
+
         function renderConversations(filter = '') {
             const list = el.get('conversation-list');
             if (!list || state.currentTab !== 'chats') return;
@@ -199,12 +368,15 @@
                 return;
             }
 
-            const normalized = state.allConversations.filter((c) => getParticipantIds(c).length >= 2);
-            const filtered = normalized.filter((c) => {
-                const name = getConversationDisplayName(c).toLowerCase();
-                const preview = getConversationPreview(c).toLowerCase();
-                const q = filter.toLowerCase();
-                return name.includes(q) || preview.includes(q);
+            const filtered = allConversations.filter(c => {
+                const participantIds = getParticipantIds(c);
+                const otherId = participantIds.find(p => p !== currentUser.uid);
+                const legacyName = participantIds[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantNames = c.participantNames || [];
+                const participantIndex = participantIds.indexOf(otherId);
+                const displayName = c.title || participantNames[participantIndex] || legacyName || 'User';
+                return (displayName || '').toLowerCase().includes(filter.toLowerCase()) || 
+                       (c.lastMessageText || c.lastMessage || '').toLowerCase().includes(filter.toLowerCase());
             });
 
             if (!filtered.length) {
@@ -212,11 +384,15 @@
                 return;
             }
 
-            list.innerHTML = filtered.map((c) => {
-                const otherId = getOtherParticipantId(c);
-                if (!otherId) return '';
-                const displayName = getConversationDisplayName(c);
-                const isActive = state.activeChatId === c.id;
+            list.innerHTML = filtered.map(c => {
+                const participantIds = getParticipantIds(c);
+                const otherId = participantIds.find(p => p !== currentUser.uid);
+                const legacyName = participantIds[0] === currentUser.uid ? c.recipientName : c.senderName;
+                const participantNames = c.participantNames || [];
+                const participantIndex = participantIds.indexOf(otherId);
+                const displayName = c.title || participantNames[participantIndex] || legacyName || 'User';
+                const isActive = activeChatId === c.id;
+
                 return `
                     <div onclick="startChat('${otherId}')" class="p-4 cursor-pointer transition-colors hover:bg-slate-50 border-b ${isActive ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white'}">
                         <div class="flex items-center gap-3">
@@ -224,8 +400,8 @@
                                 ${(displayName || '?').charAt(0)}
                             </div>
                             <div class="min-w-0 flex-1">
-                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${displayName}</h4>
-                                <p class="text-xs text-slate-500 truncate mt-0.5">${getConversationPreview(c)}</p>
+                                <h4 class="text-[15px] font-bold text-slate-800 truncate">${displayName || 'User'}</h4>
+                                <p class="text-xs text-slate-500 truncate mt-0.5">${c.lastMessageText || c.lastMessage || 'Start the conversation'}</p>
                             </div>
                         </div>
                     </div>
@@ -246,9 +422,12 @@
             }
 
             list.innerHTML = filtered.map((user) => {
-                const sentReq = state.userRequests.find((r) => r.fromId === state.currentUser?.uid && r.toId === user.id);
-                const incomingReq = state.userRequests.find((r) => r.fromId === user.id && r.toId === state.currentUser?.uid);
-                const acceptedReq = state.userRequests.find((r) => r.status === 'accepted' && ((r.fromId === state.currentUser?.uid && r.toId === user.id) || (r.fromId === user.id && r.toId === state.currentUser?.uid)));
+                const sentReq = userRequests.find(r => getRequestFromId(r) === currentUser?.uid && getRequestToId(r) === user.id);
+                const incomingReq = userRequests.find(r => getRequestFromId(r) === user.id && getRequestToId(r) === currentUser?.uid);
+                const acceptedReq = userRequests.find(r =>
+                    r.status === 'accepted' &&
+                    ((getRequestFromId(r) === currentUser?.uid && getRequestToId(r) === user.id) || (getRequestFromId(r) === user.id && getRequestToId(r) === currentUser?.uid))
+                );
 
                 return `
                     <div class="p-4 border-b hover:bg-slate-50 transition-colors flex items-center justify-between">
@@ -285,9 +464,11 @@
                 return;
             }
 
-            const connectedUids = state.userRequests
-                .filter((r) => r.status === 'accepted' && (r.fromId === state.currentUser.uid || r.toId === state.currentUser.uid))
-                .map((r) => (r.fromId === state.currentUser.uid ? r.toId : r.fromId));
+            const connectedUids = userRequests
+                .filter(r => r.status === 'accepted' && (getRequestFromId(r) === currentUser.uid || getRequestToId(r) === currentUser.uid))
+                .map(r => getRequestFromId(r) === currentUser.uid ? getRequestToId(r) : getRequestFromId(r));
+
+            const connectedUsers = suggestedUsers.filter(u => connectedUids.includes(u.id));
 
             const filtered = state.suggestedUsers
                 .filter((u) => connectedUids.includes(u.id))
