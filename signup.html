@@ -190,6 +190,12 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let selectedRole = "";
 
+auth.onAuthStateChanged((user) => {
+  if (user && !user.isAnonymous) {
+    window.location.replace("index.html");
+  }
+});
+
 const formEl = document.getElementById("signupForm");
 const fields = {
   fullName: document.getElementById("name"),
@@ -350,8 +356,5 @@ formEl.addEventListener("submit", async (e) => {
 });
 </script>
 
-
-<script src="/public/js/firebase.js"></script>
-<script src="/public/js/signup.js"></script>
 </body>
 </html>

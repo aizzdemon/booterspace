@@ -15,8 +15,20 @@
   };
 
   window.firebaseServicesReady.then(async ({ auth }) => {
-    const { signInWithEmailAndPassword, sendPasswordResetEmail } =
-      await loadFirebaseModule("firebase-auth.js");
+    const {
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail
+    } = await loadFirebaseModule("firebase-auth.js");
+
+    const params = new URLSearchParams(window.location.search);
+    const nextPath = params.get("next") || "index.html";
+
+    onAuthStateChanged(auth, (user) => {
+      if (user && !user.isAnonymous) {
+        window.location.replace(nextPath);
+      }
+    });
 
     document.getElementById("signin-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -28,7 +40,7 @@
         await signInWithEmailAndPassword(auth, email, password);
         showMessage("Sign-in successful! Redirecting...");
         setTimeout(() => {
-          window.location.href = "profile.html";
+          window.location.href = nextPath;
         }, 1500);
       } catch (error) {
         showMessage("Sign-in Failed: " + error.message, true);
