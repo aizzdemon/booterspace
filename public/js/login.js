@@ -26,12 +26,17 @@
 
     onAuthStateChanged(auth, (user) => {
       if (user && !user.isAnonymous) {
-        window.location.replace(nextPath);
+        showMessage("You are already signed in. Click Sign In to continue.");
       }
     });
 
     document.getElementById("signin-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const submitButton = event.currentTarget?.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.classList.add("opacity-70", "cursor-not-allowed");
+      }
 
       const email = document.getElementById("email")?.value || "";
       const password = document.getElementById("password")?.value || "";
@@ -44,6 +49,11 @@
         }, 1500);
       } catch (error) {
         showMessage("Sign-in Failed: " + error.message, true);
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+        }
       }
     });
 

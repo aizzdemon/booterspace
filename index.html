@@ -98,7 +98,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
       <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100">
         <textarea id="postContent" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition" rows="3" placeholder="Share something with the community..."></textarea>
         <div class="flex justify-end mt-2">
-          <button id="postBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition">Post</button>
+          <button id="postBtn" disabled title="Please log in to create a community post." class="bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold transition">Post</button>
         </div>
       </div>
       <div id="community-posts" class="flex-grow space-y-4 min-h-[100px]">
@@ -119,7 +119,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, limit, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
@@ -150,15 +150,15 @@ window.switchTab = (tab) => {
 
 async function init() {
   // Auth state listener
-  onAuthStateChanged(auth, user => { 
-    currentUser = user; 
-  });
+  onAuthStateChanged(auth, user => {
+    currentUser = user || null;
+    const postBtn = document.getElementById("postBtn");
+    if (!postBtn) return;
 
-  try { 
-    await signInAnonymously(auth); 
-  } catch(e) { 
-    console.warn("Auth failed", e); 
-  }
+    const isAuthed = Boolean(user && !user.isAnonymous);
+    postBtn.disabled = !isAuthed;
+    postBtn.title = isAuthed ? "" : "Please log in to create a community post.";
+  });
 
   const containers = {
     featured: document.getElementById("featured-jobs"),
@@ -299,7 +299,7 @@ async function init() {
   // Community Posting Logic
   document.getElementById("postBtn").addEventListener("click", async () => {
     if(!currentUser) {
-      alert("Authenticating... please try again in a moment.");
+      alert("Please log in to post in the community.");
       return;
     }
     const content = document.getElementById("postContent").value.trim();
@@ -326,7 +326,7 @@ async function init() {
       alert("Error posting content.");
     } finally {
       const btn = document.getElementById("postBtn");
-      btn.disabled = false;
+      btn.disabled = !(currentUser && !currentUser.isAnonymous);
       btn.innerText = "Post";
     }
   });
