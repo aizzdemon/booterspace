@@ -3,6 +3,46 @@
     window.loadFirebaseModule ||
     ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
 
+  async function ensureAuthContext() {
+    if (window.authReady) return window.authReady;
+
+    if (!window.firebaseServicesReady) {
+      window.firebaseServicesReady = (async () => {
+        const { initializeApp, getApp, getApps } = await loadFirebaseModule("firebase-app.js");
+        const { getAuth } = await loadFirebaseModule("firebase-auth.js");
+        const { getFirestore } = await loadFirebaseModule("firebase-firestore.js");
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+          authDomain: "kar-kardan.firebaseapp.com",
+          projectId: "kar-kardan",
+          storageBucket: "kar-kardan.firebasestorage.app",
+          messagingSenderId: "554147696994",
+          appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+          measurementId: "G-RRC3X485KQ"
+        };
+
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+        window.app = app;
+        window.auth = window.auth || getAuth(app);
+        window.db = window.db || getFirestore(app);
+        return { app: window.app, auth: window.auth, db: window.db };
+      })();
+    }
+
+    window.authReady = window.firebaseServicesReady.then(async ({ auth }) => {
+      const { onAuthStateChanged } = await loadFirebaseModule("firebase-auth.js");
+      return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user || null);
+        });
+      });
+    });
+
+    return window.authReady;
+  }
+
   const profileBtn = document.getElementById("profileBtn");
   const profilePic = document.getElementById("profilePic");
   const profileName = document.getElementById("profileName");
@@ -44,14 +84,14 @@
     mobileMenu?.classList.toggle("hidden");
   });
 
-  window.authReady
+  ensureAuthContext()
     .then(async (user) => {
       toggleForAuth(user);
       const { signOut } = await loadFirebaseModule("firebase-auth.js");
 
       const onLogout = async () => {
         await signOut(window.auth);
-        window.location.href = "/login.html";
+        window.location.href = "login.html";
       };
 
       logoutBtn?.addEventListener("click", onLogout);
