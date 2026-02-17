@@ -8,11 +8,11 @@
 </head>
 <body class="bg-gray-100 h-screen flex flex-col md:flex-row overflow-hidden">
 
-    <!-- Sidebar for Connected People -->
+    <!-- Sidebar for Discovering Users -->
     <div class="w-full md:w-64 bg-gray-800 text-white flex flex-col border-b md:border-b-0 md:border-r border-gray-700">
-        <div class="p-4 border-b border-gray-700 flex items-center gap-2">
-            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <h2 class="text-lg font-bold">Online Now</h2>
+        <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-bold">People</h2>
+            <div id="status" class="w-2 h-2 rounded-full bg-gray-500"></div>
         </div>
         <div id="usersList" class="flex-1 overflow-y-auto p-2 space-y-1">
             <div class="text-gray-500 text-sm p-2 italic">Loading users...</div>
@@ -26,17 +26,21 @@
     <div class="flex-1 flex flex-col bg-white">
         <!-- Header -->
         <div class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-md z-10">
-            <h2 class="text-xl font-bold">Cloud Chat</h2>
-            <div id="status" class="text-xs bg-blue-700 px-2 py-1 rounded">Connecting...</div>
+            <div>
+                <h2 id="chatTitle" class="text-xl font-bold">Select a user to chat</h2>
+                <p id="chatSubtitle" class="text-xs opacity-75">Private 1-on-1 Conversations</p>
+            </div>
         </div>
 
         <!-- Chat Messages -->
         <div id="chat" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            <!-- Messages appear here -->
+            <div class="h-full flex items-center justify-center text-gray-400 italic">
+                Choose a contact from the sidebar to start a secure conversation.
+            </div>
         </div>
 
         <!-- Input Area -->
-        <div class="p-4 border-t border-gray-200 bg-white">
+        <div id="inputArea" class="p-4 border-t border-gray-200 bg-white hidden">
             <div class="max-w-4xl mx-auto flex gap-2">
                 <input 
                     id="msgInput" 
@@ -58,13 +62,11 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, query, onSnapshot, serverTimestamp, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global environment variables
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
         
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -74,10 +76,14 @@
         const statusEl = document.getElementById("status");
         const userInfoEl = document.getElementById("user-info");
         const usersListEl = document.getElementById("usersList");
+        const inputArea = document.getElementById("inputArea");
+        const chatTitle = document.getElementById("chatTitle");
 
         let currentUser = null;
+        let activeChatId = null;
+        let messageUnsubscribe = null;
 
-        // AUTHENTICATION FLOW
+        // AUTHENTICATION
         async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -87,77 +93,107 @@
                 }
             } catch (error) {
                 console.error("Auth failed:", error);
-                statusEl.innerText = "Auth Error";
             }
         }
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                statusEl.innerText = "Online";
-                userInfoEl.innerText = `Your ID: ${user.uid}`;
+                statusEl.className = "w-2 h-2 rounded-full bg-green-500";
+                userInfoEl.innerText = `Logged in: ${user.uid}`;
                 
-                // Presence: Update current user's status
-                updatePresence(user.uid);
-                
-                // Start listening to data
-                startListening();
-                startPresenceListener();
+                // Register/Update User Profile (Required by Rules)
+                await setDoc(doc(db, 'users', user.uid), {
+                    name: `User-${user.uid.substring(0, 4)}`,
+                    fullName: `Guest User ${user.uid.substring(0, 4)}`,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                startUserDiscovery();
             } else {
-                statusEl.innerText = "Offline";
+                statusEl.className = "w-2 h-2 rounded-full bg-red-500";
             }
         });
 
-        // Update current user's last seen every 30 seconds
-        async function updatePresence(uid) {
-            if (!uid) return;
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', uid);
-            try {
-                await setDoc(userRef, {
-                    uid: uid,
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
-            } catch (e) { console.error("Presence error", e); }
-        }
-        setInterval(() => currentUser && updatePresence(currentUser.uid), 30000);
-
-        // FIRESTORE LISTENING - MESSAGES
-        function startListening() {
-            const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-            onSnapshot(messagesRef, (snapshot) => {
-                const msgs = [];
-                snapshot.forEach(doc => msgs.push(doc.data()));
-                msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                renderMessages(msgs);
-            }, (error) => console.error("Message listener error:", error));
-        }
-
-        // FIRESTORE LISTENING - PRESENCE
-        function startPresenceListener() {
-            const presenceRef = collection(db, 'artifacts', appId, 'public', 'data', 'presence');
-            onSnapshot(presenceRef, (snapshot) => {
+        // USER DISCOVERY
+        function startUserDiscovery() {
+            // Rules allow reading /users if signed in
+            const usersRef = collection(db, 'users');
+            onSnapshot(usersRef, (snapshot) => {
                 const users = [];
-                const now = Date.now();
-                
                 snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Consider user "online" if seen in the last 2 minutes
-                    const lastSeenMs = data.lastSeen?.seconds * 1000 || 0;
-                    if (now - lastSeenMs < 120000) {
-                        users.push(data);
+                    if (doc.id !== currentUser.uid) {
+                        users.push({ id: doc.id, ...doc.data() });
                     }
                 });
                 renderUsers(users);
-            }, (error) => console.error("Presence listener error:", error));
+            });
+        }
+
+        function renderUsers(users) {
+            if (users.length === 0) {
+                usersListEl.innerHTML = `<div class="text-gray-500 text-xs p-2">Waiting for others...</div>`;
+                return;
+            }
+            usersListEl.innerHTML = users.map(u => `
+                <div onclick="selectUser('${u.id}', '${u.name}')" 
+                     class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors ${activeChatId?.includes(u.id) ? 'bg-gray-700 border-l-4 border-blue-500' : ''}">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+                        ${u.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div class="flex-1 truncate">
+                        <div class="text-sm font-medium">${u.name}</div>
+                        <div class="text-[10px] opacity-50 font-mono">${u.id.substring(0, 8)}</div>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        // CHAT SELECTION & INITIALIZATION
+        window.selectUser = async function(targetUid, targetName) {
+            // Generate deterministic Chat ID for 1-on-1 (Rules require participants.size == 2)
+            activeChatId = [currentUser.uid, targetUid].sort().join("_");
+            chatTitle.innerText = `Chat with ${targetName}`;
+            inputArea.classList.remove("hidden");
+            
+            const convoRef = doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId);
+            
+            try {
+                // Initialize conversation doc if it doesn't exist
+                await setDoc(convoRef, {
+                    participants: [currentUser.uid, targetUid],
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                listenToMessages();
+            } catch (e) {
+                console.error("Permission error: Ensure rules allow your UID in participants.", e);
+            }
+        };
+
+        function listenToMessages() {
+            if (messageUnsubscribe) messageUnsubscribe();
+            
+            const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages');
+            
+            messageUnsubscribe = onSnapshot(messagesRef, (snapshot) => {
+                const msgs = [];
+                snapshot.forEach(doc => msgs.push(doc.data()));
+                msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+                renderMessages(msgs);
+            });
         }
 
         function renderMessages(msgs) {
+            if (msgs.length === 0) {
+                chatContainer.innerHTML = `<div class="h-full flex items-center justify-center text-gray-400">No messages yet. Say hello!</div>`;
+                return;
+            }
             chatContainer.innerHTML = msgs.map(m => {
-                const isMe = m.uid === currentUser?.uid;
+                const isMe = m.senderId === currentUser?.uid;
                 return `
-                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-[85%] rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-blue-500 text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'}">
-                            <div class="text-[10px] font-mono opacity-70 mb-1">${isMe ? 'You' : m.uid.substring(0, 8)}</div>
+                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300">
+                        <div class="max-w-[85%] rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'}">
                             <div class="text-sm break-words">${escapeHTML(m.text)}</div>
                         </div>
                     </div>
@@ -166,38 +202,31 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function renderUsers(users) {
-            if (users.length === 0) {
-                usersListEl.innerHTML = `<div class="text-gray-500 text-xs p-2">No one else online</div>`;
-                return;
-            }
-            usersListEl.innerHTML = users.map(u => {
-                const isMe = u.uid === currentUser?.uid;
-                return `
-                    <div class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-700 transition-colors">
-                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span class="text-sm font-medium truncate ${isMe ? 'text-blue-400' : 'text-gray-200'}">
-                            ${u.uid.substring(0, 12)}${isMe ? ' (You)' : ''}
-                        </span>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        // SENDING MESSAGES
+        // SENDING MESSAGES (Following strictly keysOnly and size checks in Rules)
         window.send = async function () {
             const text = msgInput.value.trim();
-            if (!text || !currentUser) return;
+            if (!text || !currentUser || !activeChatId) return;
+            if (text.length > 300) return; // Rule enforcement
 
             msgInput.value = "";
             try {
-                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId, 'messages');
                 await addDoc(messagesRef, {
-                    uid: currentUser.uid,
+                    senderId: currentUser.uid,
+                    senderName: `User-${currentUser.uid.substring(0, 4)}`,
                     text: text,
-                    timestamp: serverTimestamp()
+                    createdAt: serverTimestamp()
                 });
-            } catch (error) { console.error("Send error:", error); }
+
+                // Update metadata (Rules allow update on specific fields)
+                const convoRef = doc(db, 'artifacts', appId, 'public', 'data', 'conversations', activeChatId);
+                await setDoc(convoRef, {
+                    lastMessageText: text,
+                    lastMessageSenderId: currentUser.uid,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+            } catch (error) { console.error("Send error (Check Rules):", error); }
         }
 
         function escapeHTML(str) {
