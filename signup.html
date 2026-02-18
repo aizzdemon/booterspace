@@ -215,8 +215,21 @@ auth.onAuthStateChanged((user) => {
   if (isSignupFlowInProgress && !didFirestoreWriteSucceed) return;
 
   // Existing signed-in users can still be redirected away from signup.
+  // Fix: never redirect while signup is still writing profile data.
+  if (isSignupFlowInProgress && !didFirestoreWriteSucceed) {
+    return;
+  }
+
+  // Fix: only redirect signed-in users when profile doc exists, avoiding premature redirect states.
   if (user && !user.isAnonymous) {
-    window.location.replace("index.html");
+    db.collection("users").doc(user.uid).get().then((snap) => {
+      if (snap.exists) {
+        window.location.replace("index.html");
+      }
+    }).catch((err) => {
+      // Keep UI stable if this check fails; submit handler has primary error handling.
+      console.error("Auth redirect guard Firestore check failed:", err.code, err.message);
+    });
   }
 });
 
@@ -451,6 +464,62 @@ formEl.addEventListener("submit", async (e) => {
       "auth/weak-password": "Password is too weak. Please use at least 6 characters.",
       "auth/network-request-failed": "Network issue detected. Check your internet connection and try again.",
       "permission-denied": "Profile save was blocked by Firestore rules. Please ensure users/{uid} create allows only the exact signup fields."
+    };
+
+  try {
+    isSignupFlowInProgress = true;
+    didFirestoreWriteSucceed = false;
+
+    const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
+    const resolvedPhotoURL = cred.user.photoURL || getDefaultPhotoURLByEmail(emailVal);
+
+    if (resolvedPhotoURL) {
+      await cred.user.updateProfile({ photoURL: resolvedPhotoURL });
+    }
+
+    // Fix: build role-specific payload and avoid sending unused fields.
+    const userPayload = {
+      fullName,
+      fullNameLower: fullName.toLowerCase(),
+      email: emailVal,
+      emailLower: emailVal.toLowerCase(),
+      phone: phoneVal,
+      role: selectedRole,
+      photoURL: resolvedPhotoURL,
+      // Required: production-safe server timestamp for createdAt.
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      // Optional: immediate client timestamp for optimistic UI rendering.
+      createdAtClient: new Date()
+    };
+
+    if (selectedRole === "jobSeeker") {
+      // Required: jobSeeker must provide gender.
+      userPayload.gender = genderVal;
+      userPayload.jobPostAccess = true;
+    } else if (selectedRole === "jobProvider") {
+      // Required: jobProvider must provide company fields and start with posting disabled.
+      userPayload.company = companyVal;
+      userPayload.gstNumber = gstVal;
+      userPayload.companyPAN = panVal;
+      userPayload.jobPostAccess = false;
+    }
+
+    await writeUserDocWithRetry(cred.user.uid, userPayload);
+    didFirestoreWriteSucceed = true;
+
+    // Fix: redirect only after Firestore write has completed successfully.
+    window.location.replace("index.html");
+  } catch (err) {
+    // Fix: log full Firebase error details for production debugging.
+    console.error("Signup failed:", err.code, err.message, err);
+
+    // Fix: user-friendly error messaging in UI.
+    const friendlyMessages = {
+      "auth/email-already-in-use": "This email is already registered. Please log in instead.",
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/weak-password": "Password is too weak. Please use at least 6 characters.",
+      "auth/network-request-failed": "Network issue detected. Check your internet connection and try again.",
+      "permission-denied": "Unable to save profile due to permission settings. Please contact support."
     };
 
     const message = friendlyMessages[err.code] || "We could not create your account right now. Please try again.";
