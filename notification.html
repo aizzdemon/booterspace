@@ -88,7 +88,8 @@ function renderNotificationsErrorState() {
 }
 
 function buildNotificationElement(id, notificationData) {
-  const label = resolveNotificationLabel(notificationData.text || "");
+  const bodyText = (notificationData.message || notificationData.text || "").toString();
+  const label = resolveNotificationLabel(notificationData.type || "", bodyText);
   const createdAt = notificationData.createdAt?.toDate ? notificationData.createdAt.toDate() : null;
   const targetLink = resolveNotificationTarget(notificationData);
 
@@ -104,7 +105,7 @@ function buildNotificationElement(id, notificationData) {
           <p class="font-bold text-slate-800 text-sm md:text-base">${label.title}</p>
           ${notificationData.read ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Read</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">Unread</span>'}
         </div>
-        <p class="text-sm text-slate-600 mt-1 break-words">${notificationData.text || "You have a new notification."}</p>
+        <p class="text-sm text-slate-600 mt-1 break-words">${bodyText || "You have a new notification."}</p>
         <p class="text-xs text-slate-400 mt-2">${createdAt ? createdAt.toLocaleString() : "Just now"}</p>
       </div>
       <div class="flex flex-col items-end gap-2">
@@ -215,7 +216,7 @@ function resolveNotificationTarget(notificationData = {}) {
     return `messages.html?chatId=${encodeURIComponent(notificationData.chatId)}`;
   }
 
-  const targetUid = notificationData.fromId || notificationData.senderId || notificationData.userIdRef;
+  const targetUid = notificationData.fromUid || notificationData.fromId || notificationData.senderId || notificationData.userIdRef;
   if (targetUid) {
     return `messages.html?composeTo=${encodeURIComponent(targetUid)}`;
   }
@@ -223,42 +224,54 @@ function resolveNotificationTarget(notificationData = {}) {
   const lower = (notificationData.text || "").toLowerCase();
   if (notificationData.type === "job_posted" || lower.includes("job")) return "jobs.html";
   if (notificationData.type === "message" || lower.includes("message")) return "messages.html";
-  return "notifications.html";
+  return "notification.html";
 }
 
 window.openNotification = async (id) => {
   if (!currentUser) return;
   const ref = doc(db, "users", currentUser.uid, "notifications", id);
   const el = notificationElements.get(id);
-  const target = el?.dataset?.notificationTarget || "notifications.html";
+  const target = el?.dataset?.notificationTarget || "notification.html";
 
   try {
-    await updateDoc(ref, { read: true });
+    await updateDoc(ref, {
+      read: true,
+      readAt: serverTimestamp()
+    });
   } catch (err) {
     console.warn("Failed to mark notification as read before redirect", err);
   }
 
   window.location.href = target;
 };
-function resolveNotificationLabel(text = "") {
+function resolveNotificationLabel(type = "", text = "") {
+  const normalizedType = type.toLowerCase();
   const lower = text.toLowerCase();
-  if (lower.includes("message")) return { title: "New message", icon: "💬" };
-  if (lower.includes("connection")) return { title: "Connection update", icon: "🤝" };
-  if (lower.includes("job")) return { title: "Job update", icon: "💼" };
-  if (lower.includes("comment")) return { title: "New comment", icon: "💭" };
-  if (lower.includes("post")) return { title: "New post", icon: "📝" };
+
+  if (normalizedType.includes("message") || lower.includes("message")) return { title: "New message", icon: "💬" };
+  if (normalizedType.includes("connection") || lower.includes("connection")) return { title: "Connection update", icon: "🤝" };
+  if (normalizedType.includes("job") || lower.includes("job")) return { title: "Job update", icon: "💼" };
+  if (normalizedType.includes("comment") || lower.includes("comment")) return { title: "New comment", icon: "💭" };
+  if (normalizedType.includes("post") || lower.includes("post")) return { title: "New post", icon: "📝" };
   return { title: "Notification", icon: "🔔" };
 }
 
 window.markOneRead = async (id) => {
   if (!currentUser) return;
-  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), { read: true });
+  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), {
+    read: true,
+    readAt: serverTimestamp()
+  });
 };
 
 window.markAllRead = async () => {
   if (!currentUser) return;
   const snap = await getDocs(query(collection(db, "users", currentUser.uid, "notifications"), where("read", "!=", true)));
-  await Promise.all(snap.docs.filter((d) => !d.data().read).map((d) => updateDoc(d.ref, { read: true })));
+  await Promise.all(
+    snap.docs
+      .filter((d) => !d.data().read)
+      .map((d) => updateDoc(d.ref, { read: true, readAt: serverTimestamp() }))
+  );
 };
 
 function renderSuggestionsList(container, suggestions) {
@@ -330,8 +343,12 @@ window.connectUser = async (targetUid) => {
   try {
     await addDoc(collection(db, "artifacts", appId, "public", "data", "connection_requests"), {
       fromId: currentUser.uid,
+      fromUserId: currentUser.uid,
       toId: targetUid,
+      toUserId: targetUid,
       fromName: currentUser.displayName || "User",
+      fromUserName: currentUser.displayName || "User",
+      participants: [currentUser.uid, targetUid],
       status: "pending",
       createdAt: serverTimestamp()
     });
