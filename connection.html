@@ -104,11 +104,30 @@
       addDoc, updateDoc, serverTimestamp, onSnapshot 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = JSON.parse(__firebase_config);
+    const fallbackFirebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+      measurementId: "G-RRC3X485KQ"
+    };
+
+    const firebaseConfig = (() => {
+      if (typeof __firebase_config === "string" && __firebase_config.trim()) {
+        try {
+          return JSON.parse(__firebase_config);
+        } catch (error) {
+          console.warn("Invalid __firebase_config payload, using fallback config.", error);
+        }
+      }
+      return fallbackFirebaseConfig;
+    })();
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-default';
+    const appId = typeof __app_id !== 'undefined' && __app_id ? __app_id : 'connection-request';
 
     let currentUser = null;
     let currentView = "suggestions"; 
