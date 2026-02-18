@@ -13,6 +13,16 @@
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "public/js/navbar.js";
+      document.body.appendChild(s);
+    }).catch(e => console.error("Navbar failed to load", e));
+  </script>
 
   <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
     <div id="authStatus" class="fixed top-4 right-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-white/80 backdrop-blur px-3 py-1 rounded-full border soft-border z-50">Checking session...</div>
@@ -98,7 +108,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, collection, query, where, getDocs, getDoc, doc, 
       addDoc, updateDoc, serverTimestamp, onSnapshot 
@@ -153,15 +163,16 @@
     window.closeModal = () => document.getElementById("customModal").classList.add("hidden");
 
     async function initAuth() {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+      if (auth.currentUser) return;
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        try {
           await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
+          return;
+        } catch (e) {
+          console.warn("Custom token sign-in failed", e);
         }
-      } catch (e) {
-        authStatus.textContent = "Offline Mode";
       }
+      authStatus.textContent = "Login Required";
     }
 
     async function fetchData() {
@@ -170,19 +181,38 @@
       const usersSnap = await getDocs(collection(db, "users"));
       allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      const connPath = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
-      onSnapshot(connPath, (snapshot) => {
-        const allReqs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        
+      const reqCol = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
+      const sentQuery = query(reqCol, where('fromId', '==', currentUser.uid));
+      const receivedQuery = query(reqCol, where('toId', '==', currentUser.uid));
+
+      let sentRequests = new Map();
+      let receivedRequests = new Map();
+
+      const refreshView = () => {
+        const allReqs = Array.from(new Map([...sentRequests, ...receivedRequests]).values());
         connections = allReqs.filter(r => (r.fromId === currentUser.uid || r.toId === currentUser.uid) && r.status === 'accepted');
         incoming = allReqs.filter(r => r.toId === currentUser.uid && r.status === 'pending');
         outgoing = allReqs.filter(r => r.fromId === currentUser.uid && r.status === 'pending');
 
         document.getElementById("connectionsCount").textContent = connections.length;
         document.getElementById("pendingCount").textContent = incoming.length;
-        
+
         renderCurrentView();
-      }, (err) => console.error(err));
+      };
+
+      onSnapshot(sentQuery, (snapshot) => {
+        sentRequests = new Map(snapshot.docs.map((docSnap) => [docSnap.id, { id: docSnap.id, ...docSnap.data() }]));
+        refreshView();
+      }, (err) => {
+        console.error("Failed to watch sent connection requests", err);
+      });
+
+      onSnapshot(receivedQuery, (snapshot) => {
+        receivedRequests = new Map(snapshot.docs.map((docSnap) => [docSnap.id, { id: docSnap.id, ...docSnap.data() }]));
+        refreshView();
+      }, (err) => {
+        console.error("Failed to watch received connection requests", err);
+      });
     }
 
     function renderCurrentView() {
@@ -276,8 +306,22 @@
           status: "pending",
           createdAt: serverTimestamp()
         });
+
+        await addDoc(collection(db, "users", targetId, "notifications"), {
+          toUid: targetId,
+          fromUid: currentUser.uid,
+          type: "connection_request",
+          message: "sent you a connection request",
+          link: `/profile.html?uid=${currentUser.uid}`,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+
         showModal("Success", "Request sent!");
-      } catch (e) { showModal("Error", "Action failed."); }
+      } catch (e) {
+        console.error("Failed to send connection request", e);
+        showModal("Error", "Action failed.");
+      }
     }
 
     onAuthStateChanged(auth, (user) => {
@@ -285,6 +329,9 @@
       if (user) {
         authStatus.textContent = `${user.uid.substring(0, 8)}`;
         fetchData();
+      } else {
+        authStatus.textContent = "Login Required";
+        mainGrid.innerHTML = `<div class="col-span-full py-20 text-center opacity-70"><p class="text-sm font-medium">Please login to view connection requests.</p></div>`;
       }
     });
 
