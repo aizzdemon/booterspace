@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Fix: removed third-party auto-tag script that triggered Topics attestation failures on deployed domain and could interrupt signup reliability. -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sign Up | BooterSpace</title>
@@ -108,8 +107,6 @@
         </div>
 
         <div class="space-y-4">
-          <p id="formError" class="error-msg hidden"></p>
-
           <div class="relative">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-regular fa-user"></i></span>
             <input id="name" type="text" placeholder="Full Name" required class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm" />
@@ -127,7 +124,7 @@
           </div>
 
           <div class="relative">
-            <select id="gender" disabled class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm text-gray-600">
+            <select id="gender" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm text-gray-600">
               <option value="" disabled selected>Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -143,17 +140,10 @@
 
           <div class="space-y-4 pt-2 border-t border-gray-100 hidden" id="providerFieldsGroup">
              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Company Details</p>
-             <input id="company" disabled placeholder="Company Name" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
-             <p id="companyError" class="error-msg hidden">⚠ Please enter your Company Name.</p>
+             <input id="company" placeholder="Company Name" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
              <div class="grid grid-cols-2 gap-3">
-               <div>
-                 <input id="gst" disabled placeholder="GST Number" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
-                 <p id="gstError" class="error-msg hidden">⚠ Please enter GST Number.</p>
-               </div>
-               <div>
-                 <input id="pan" disabled placeholder="Company PAN" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
-                 <p id="panError" class="error-msg hidden">⚠ Please enter Company PAN.</p>
-               </div>
+               <input id="gst" placeholder="GST Number" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
+               <input id="pan" placeholder="Company PAN" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
              </div>
           </div>
         </div>
@@ -174,8 +164,105 @@
 
   <p class="mt-8 text-xs text-gray-400">&copy; 2024 BooterSpace Inc.</p>
 
-<!-- Fix: signup logic is externalized in public/js/signup.js and aligned with Firestore users/{userId} create rules. -->
-<script src="booterspace/public/js/signup.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+let selectedRole = "";
+
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById("roleStep").classList.add("hidden");
+  document.getElementById("signupForm").classList.remove("hidden");
+  document.getElementById("formTitle").innerText = role === "jobSeeker" ? "Job Seeker Account" : "Job Provider Account";
+
+  const isProvider = (role === "jobProvider");
+  const isSeeker = (role === "jobSeeker");
+
+  const providerGroup = document.getElementById("providerFieldsGroup");
+  if(providerGroup) providerGroup.classList.toggle("hidden", !isProvider);
+
+  ["company","gst","pan"].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.toggle("hidden", !isProvider);
+  });
+
+  document.getElementById("gender").classList.toggle("hidden", !isSeeker);
+
+  const noteEl = document.getElementById("approvalNote");
+  if (isProvider) {
+      noteEl.innerText = "⚠ Job posting will be enabled after admin approval.";
+      noteEl.classList.remove("hidden");
+  } else {
+      noteEl.innerText = "";
+      noteEl.classList.add("hidden");
+  }
+}
+
+document.getElementById("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const phoneEl = document.getElementById("phone");
+  const genderEl = document.getElementById("gender");
+  const phoneError = document.getElementById("phoneError");
+  const genderError = document.getElementById("genderError");
+
+  phoneError.classList.add("hidden");
+  genderError.classList.add("hidden");
+
+  let valid = true;
+
+  if (!phoneEl.value.trim()) {
+    phoneError.classList.remove("hidden");
+    valid = false;
+  }
+
+  if (selectedRole === 'jobSeeker' && !genderEl.value) {
+    genderError.classList.remove("hidden");
+    valid = false;
+  }
+
+  if (!valid) return;
+
+  const nameVal = document.getElementById("name").value.trim();
+  const emailVal = document.getElementById("email").value.trim();
+  const phoneVal = phoneEl.value.trim();
+  const passwordVal = document.getElementById("password").value;
+  const genderVal = genderEl.value;
+
+  const companyVal = document.getElementById("company").value.trim();
+  const gstVal = document.getElementById("gst").value.trim();
+  const panVal = document.getElementById("pan").value.trim();
+
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
+
+    await db.collection("users").doc(cred.user.uid).set({
+      name: nameVal,
+      email: emailVal,
+      phone: phoneVal,
+      role: selectedRole,
+      jobPostAccess: false,
+      gender: selectedRole === "jobSeeker" ? genderVal : "",
+      company: selectedRole === "jobProvider" ? companyVal : "",
+      gstNumber: selectedRole === "jobProvider" ? gstVal : "",
+      companyPAN: selectedRole === "jobProvider" ? panVal : "",
+      photoURL: cred.user.photoURL || "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    window.location.href = "index.html";
+
+  } catch (err) {
+    alert(err.message);
+  }
+});
+</script>
 
 </body>
 </html>
