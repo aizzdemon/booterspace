@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
     body,
     icon: payload?.notification?.icon || "https://aizzdemon.github.io/booterspace/assets/images/booterspace.png",
     data: {
-      url: payload?.data?.url || "/notifications.html"
+      url: payload?.data?.url || "/notification.html"
     }
   });
 });
@@ -27,7 +27,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification?.data?.url || "/notifications.html";
+  const targetUrl = event.notification?.data?.url || "/notification.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

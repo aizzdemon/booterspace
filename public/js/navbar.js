@@ -6,6 +6,8 @@
     window.loadFirebaseModule ||
     ((moduleName) => import(`https://www.gstatic.com/firebasejs/10.12.5/${moduleName}`));
 
+  let notificationsUnsubscribe = null;
+
   async function ensureAuthContext() {
     if (window.authReady) return window.authReady;
 
@@ -59,7 +61,13 @@
       mLoginBtn: document.getElementById("mLoginBtn"),
       mLogoutBtn: document.getElementById("mLogoutBtn"),
       menuBtn: document.getElementById("menuBtn"),
-      mobileMenu: document.getElementById("mobileMenu")
+      mobileMenu: document.getElementById("mobileMenu"),
+      notificationBtn: document.getElementById("notificationBtn"),
+      notificationDropdown: document.getElementById("notificationDropdown"),
+      notificationList: document.getElementById("notificationList"),
+      notificationCount: document.getElementById("notificationCount"),
+      mNotificationBtn: document.getElementById("mNotificationBtn"),
+      mNotificationCount: document.getElementById("mNotificationCount")
     };
   }
 
@@ -75,7 +83,10 @@
       mProfilePic,
       mProfileName,
       mLoginBtn,
-      mLogoutBtn
+      mLogoutBtn,
+      notificationCount,
+      mNotificationCount,
+      notificationList
     } = elements;
 
     loginBtn?.classList.toggle("hidden", isAuthed);
@@ -86,7 +97,14 @@
     mLogoutBtn?.classList.toggle("hidden", !isAuthed);
     mProfileBtn?.classList.toggle("hidden", !isAuthed);
 
-    if (!isAuthed) return;
+    if (!isAuthed) {
+      if (notificationCount) notificationCount.classList.add("hidden");
+      if (mNotificationCount) mNotificationCount.classList.add("hidden");
+      if (notificationList) {
+        notificationList.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Login to see notifications</p>';
+      }
+      return;
+    }
 
     const displayName = user.displayName || user.email || "User";
     const avatar = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
@@ -97,9 +115,107 @@
     if (mProfilePic) mProfilePic.src = avatar;
   }
 
+  function resolveNotificationLabel(type = "", text = "") {
+    const normalizedType = type.toLowerCase();
+    const lower = text.toLowerCase();
+
+    if (normalizedType.includes("message") || lower.includes("message")) return "💬";
+    if (normalizedType.includes("connection") || lower.includes("connection")) return "🤝";
+    if (normalizedType.includes("job") || lower.includes("job")) return "💼";
+    if (normalizedType.includes("comment") || lower.includes("comment")) return "💭";
+    if (normalizedType.includes("post") || lower.includes("post")) return "📝";
+    return "🔔";
+  }
+
+  function resolveNotificationTarget(notificationData = {}) {
+    const rawLink = (notificationData.link || notificationData.url || "").toString().trim();
+    if (rawLink) return rawLink;
+
+    const targetUid = notificationData.fromUid || notificationData.fromId || notificationData.senderId;
+    if (targetUid) return `messages.html?composeTo=${encodeURIComponent(targetUid)}`;
+    return "notification.html";
+  }
+
+  function renderNotificationDropdown(listEl, notifications) {
+    if (!listEl) return;
+
+    if (!notifications.length) {
+      listEl.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">No new notifications</p>';
+      return;
+    }
+
+    listEl.innerHTML = notifications.map(({ id, data }) => {
+      const body = (data.message || data.text || "New update").toString();
+      const icon = resolveNotificationLabel(data.type || "", body);
+      const link = resolveNotificationTarget(data);
+      const isUnread = !data.read;
+
+      return `
+        <a href="${link}" class="block px-4 py-3 border-b border-slate-100 hover:bg-slate-50 ${isUnread ? "bg-blue-50/40" : ""}">
+          <div class="flex items-start gap-2">
+            <span>${icon}</span>
+            <p class="text-xs text-slate-700 line-clamp-2">${body}</p>
+          </div>
+        </a>
+      `;
+    }).join("");
+  }
+
+  async function bindNotificationCenter(user, elements) {
+    const {
+      notificationList,
+      notificationCount,
+      mNotificationCount,
+      notificationDropdown
+    } = elements;
+
+    if (!notificationList || !notificationCount || !mNotificationCount) return;
+
+    if (notificationsUnsubscribe) {
+      notificationsUnsubscribe();
+      notificationsUnsubscribe = null;
+    }
+
+    if (!user) {
+      renderNotificationDropdown(notificationList, []);
+      notificationCount.classList.add("hidden");
+      mNotificationCount.classList.add("hidden");
+      notificationDropdown?.classList.add("hidden");
+      return;
+    }
+
+    const { collection, onSnapshot, orderBy, query, limit } = await loadFirebaseModule("firebase-firestore.js");
+    const ref = collection(window.db, "users", user.uid, "notifications");
+    const q = query(ref, orderBy("createdAt", "desc"), limit(8));
+
+    notificationsUnsubscribe = onSnapshot(q, (snap) => {
+      const rows = snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }));
+      const unreadCount = rows.filter((row) => !row.data.read).length;
+
+      renderNotificationDropdown(notificationList, rows);
+
+      notificationCount.textContent = String(unreadCount);
+      mNotificationCount.textContent = String(unreadCount);
+      notificationCount.classList.toggle("hidden", unreadCount === 0);
+      mNotificationCount.classList.toggle("hidden", unreadCount === 0);
+    }, () => {
+      notificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load notifications</p>';
+    });
+  }
+
   function initNavbarInteractions() {
     const elements = getNavbarElements();
-    const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn } = elements;
+    const {
+      loginBtn,
+      mLoginBtn,
+      menuBtn,
+      mobileMenu,
+      logoutBtn,
+      mLogoutBtn,
+      notificationBtn,
+      notificationDropdown,
+      mNotificationBtn
+    } = elements;
 
     if (!loginBtn && !mLoginBtn) {
       window.__navbarUIInitialized = false;
@@ -110,12 +226,29 @@
       mobileMenu?.classList.toggle("hidden");
     });
 
+    notificationBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      notificationDropdown?.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!notificationDropdown || !notificationBtn || !(target instanceof Element)) return;
+      const clickedInside = notificationDropdown.contains(target) || notificationBtn.contains(target);
+      if (!clickedInside) notificationDropdown.classList.add("hidden");
+    });
+
+    mNotificationBtn?.addEventListener("click", () => {
+      window.location.href = "notification.html";
+    });
+
     ensureAuthContext()
       .then(async () => {
         const { onAuthStateChanged, signOut } = await loadFirebaseModule("firebase-auth.js");
 
         onAuthStateChanged(window.auth, (user) => {
           toggleForAuth(user, elements);
+          bindNotificationCenter(user, elements);
         });
 
         const onLogout = async () => {
