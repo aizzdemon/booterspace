@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
-<script type="text/javascript">
-    aclib.runAutoTag({
-        zoneId: 'bjozial732',
-    });
-</script>
+  <!-- Fix: removed third-party auto-tag script that triggered Topics attestation failures on deployed domain and could interrupt signup reliability. -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sign Up | BooterSpace</title>
@@ -190,7 +185,36 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let selectedRole = "";
 
+// Fix: explicit signup-flow flags prevent auth-state redirects before Firestore writes finish.
+let isSignupFlowInProgress = false;
+let didFirestoreWriteSucceed = false;
+
+// Fix: centralized, production-safe retry helper for transient Firestore failures.
+async function writeUserDocWithRetry(uid, userPayload, attempts = 3) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      // Required: use users/{uid} document write (never .add()).
+      await db.collection("users").doc(uid).set(userPayload);
+      return;
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts) {
+        // Exponential-ish backoff to improve reliability in flaky network conditions.
+        await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 auth.onAuthStateChanged((user) => {
+  // Fix: safely guard auth listener so signup never redirects before Firestore .set() succeeds.
+  if (isSignupFlowInProgress && !didFirestoreWriteSucceed) return;
+
+  // Existing signed-in users can still be redirected away from signup.
   if (user && !user.isAnonymous) {
     window.location.replace("index.html");
   }
@@ -273,6 +297,44 @@ function getDefaultPhotoURLByEmail(email) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedEmail.split("@")[0] || "User")}&background=random&size=256`;
 }
 
+function setSubmitState(isSubmitting) {
+  const submitBtn = formEl.querySelector('button[type="submit"]');
+  if (!submitBtn) return;
+  submitBtn.disabled = isSubmitting;
+  submitBtn.classList.toggle('opacity-70', isSubmitting);
+  submitBtn.classList.toggle('cursor-not-allowed', isSubmitting);
+}
+
+// Fix: build rule-friendly payloads and avoid sending unused role fields.
+function buildUserPayload({ fullName, emailVal, phoneVal, selectedRole, genderVal, companyVal, gstVal, panVal, resolvedPhotoURL }) {
+  // Fix: payload keys strictly match Firestore create-rule allowlist for users/{uid}.
+  const payload = {
+    fullName,
+    fullNameLower: fullName.toLowerCase(),
+    email: emailVal,
+    emailLower: emailVal.toLowerCase(),
+    phone: phoneVal,
+    role: selectedRole,
+    jobPostAccess: selectedRole === "jobProvider" ? false : true,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  // Fix: keep role-based fields strict and avoid sending unrelated fields.
+  if (selectedRole === "jobSeeker") {
+    payload.gender = genderVal;
+  } else if (selectedRole === "jobProvider") {
+    payload.company = companyVal;
+    payload.gstNumber = gstVal;
+    payload.companyPAN = panVal;
+  }
+
+  if (resolvedPhotoURL) {
+    payload.photoURL = resolvedPhotoURL;
+  }
+
+  return payload;
+}
+
 formEl.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -320,6 +382,12 @@ formEl.addEventListener("submit", async (e) => {
 
   if (!valid) return;
 
+  if (!selectedRole) {
+    errors.form.textContent = "⚠ Please select an account type first.";
+    errors.form.classList.remove("hidden");
+    return;
+  }
+
   const fullName = fields.fullName.value.trim();
   const emailVal = fields.email.value.trim();
   const phoneVal = fields.phone.value.trim();
@@ -329,44 +397,69 @@ formEl.addEventListener("submit", async (e) => {
   const gstVal = fields.gst.value.trim();
   const panVal = fields.pan.value.trim();
 
+  let createdUser = null;
+
   try {
-  const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
-  const resolvedPhotoURL = cred.user.photoURL || getDefaultPhotoURLByEmail(emailVal);
+    isSignupFlowInProgress = true;
+    didFirestoreWriteSucceed = false;
+    setSubmitState(true);
 
-  if (resolvedPhotoURL) {
-    await cred.user.updateProfile({ photoURL: resolvedPhotoURL });
+    const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
+    createdUser = cred.user;
+    const resolvedPhotoURL = cred.user.photoURL || getDefaultPhotoURLByEmail(emailVal);
+
+    if (resolvedPhotoURL) {
+      await cred.user.updateProfile({ photoURL: resolvedPhotoURL });
+    }
+
+    const userPayload = buildUserPayload({
+      fullName,
+      emailVal,
+      phoneVal,
+      selectedRole,
+      genderVal,
+      companyVal,
+      gstVal,
+      panVal,
+      resolvedPhotoURL
+    });
+
+    await writeUserDocWithRetry(cred.user.uid, userPayload);
+
+    didFirestoreWriteSucceed = true;
+
+    // Fix: redirect only after Firestore write has completed successfully.
+    window.location.replace("index.html");
+  } catch (err) {
+    // Fix: log full Firebase error details for production debugging.
+    console.error("Signup failed:", err.code, err.message, err);
+
+    // Fix: user-friendly error messaging in UI.
+    if (createdUser && !didFirestoreWriteSucceed) {
+      try {
+        // Fix: rollback partially-created auth account if profile write fails, so user can retry cleanly.
+        await createdUser.delete();
+      } catch (cleanupErr) {
+        console.error("Signup cleanup failed:", cleanupErr.code, cleanupErr.message, cleanupErr);
+      }
+      await auth.signOut().catch(() => {});
+    }
+
+    const friendlyMessages = {
+      "auth/email-already-in-use": "This email is already registered. Please log in instead.",
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/weak-password": "Password is too weak. Please use at least 6 characters.",
+      "auth/network-request-failed": "Network issue detected. Check your internet connection and try again.",
+      "permission-denied": "Profile save was blocked by Firestore rules. Please ensure users/{uid} create allows only the exact signup fields."
+    };
+
+    const message = friendlyMessages[err.code] || "We could not create your account right now. Please try again.";
+    errors.form.textContent = `⚠ ${message}`;
+    errors.form.classList.remove("hidden");
+  } finally {
+    isSignupFlowInProgress = false;
+    setSubmitState(false);
   }
-
-  // Fix: removed duplicate fullName declaration to avoid redeclaration/scope bugs.
-  await db.collection("users").doc(cred.user.uid).set({
-    fullName,
-    fullNameLower: fullName.toLowerCase(),
-
-    email: emailVal,
-    emailLower: emailVal.toLowerCase(),
-
-    phone: phoneVal,
-    role: selectedRole,
-
-    jobPostAccess: selectedRole === "jobProvider" ? false : true,
-
-    gender: selectedRole === "jobSeeker" ? genderVal : "",
-
-    company: selectedRole === "jobProvider" ? companyVal : "",
-    gstNumber: selectedRole === "jobProvider" ? gstVal : "",
-    companyPAN: selectedRole === "jobProvider" ? panVal : "",
-
-    photoURL: resolvedPhotoURL,
-
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  window.location.href = "index.html";
-
-} catch (err) {
-  errors.form.textContent = `⚠ ${err.message}`;
-  errors.form.classList.remove("hidden");
-}
 });
 </script>
 
