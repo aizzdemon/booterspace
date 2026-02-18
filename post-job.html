@@ -149,13 +149,10 @@
         .filter((u) => u.id !== currentUser.uid)
         .map((u) => db.collection("users").doc(u.id).collection("notifications").add({
           toUid: u.id,
-          text: notificationText,
+          fromUid: currentUser.uid,
           type: "job_posted",
-          jobId: createdJobId,
+          message: notificationText,
           link: `job-detail.html?id=${encodeURIComponent(createdJobId)}`,
-          jobTitle: createdJob.title,
-          company: createdJob.company,
-          postedBy: currentUser.uid,
           read: false,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }));
