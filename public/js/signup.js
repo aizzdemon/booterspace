@@ -128,9 +128,9 @@ function setSubmitState(isSubmitting) {
   submitBtn.classList.toggle("cursor-not-allowed", isSubmitting);
 }
 
-// Fix: build rule-friendly payloads and avoid sending unused role fields.
+// Fix: payload strictly aligns with Firestore users/{userId} create rule allowlist + required types.
 function buildUserPayload({ fullName, emailVal, phoneVal, selectedRole, genderVal, companyVal, gstVal, panVal, resolvedPhotoURL }) {
-  // Fix: payload keys strictly match Firestore create-rule allowlist for users/{uid}.
+  const isProvider = selectedRole === "jobProvider";
   const payload = {
     fullName,
     fullNameLower: fullName.toLowerCase(),
@@ -138,22 +138,18 @@ function buildUserPayload({ fullName, emailVal, phoneVal, selectedRole, genderVa
     emailLower: emailVal.toLowerCase(),
     phone: phoneVal,
     role: selectedRole,
-    jobPostAccess: selectedRole === "jobProvider" ? false : true,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    // Rule requires bool on create.
+    jobPostAccess: isProvider ? false : true,
+    // Rule requires Firestore timestamp type.
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    // Keep role fields present at create so profile shape is consistent.
+    gender: isProvider ? "" : genderVal,
+    company: isProvider ? companyVal : "",
+    gstNumber: isProvider ? gstVal : "",
+    companyPAN: isProvider ? panVal : "",
+    // Allowed key in rule; default empty when resolver cannot generate URL.
+    photoURL: resolvedPhotoURL || ""
   };
-
-  // Fix: keep role-based fields strict and avoid sending unrelated fields.
-  if (selectedRole === "jobSeeker") {
-    payload.gender = genderVal;
-  } else if (selectedRole === "jobProvider") {
-    payload.company = companyVal;
-    payload.gstNumber = gstVal;
-    payload.companyPAN = panVal;
-  }
-
-  if (resolvedPhotoURL) {
-    payload.photoURL = resolvedPhotoURL;
-  }
 
   return payload;
 }
@@ -273,7 +269,7 @@ formEl.addEventListener("submit", async (e) => {
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/weak-password": "Password is too weak. Please use at least 6 characters.",
       "auth/network-request-failed": "Network issue detected. Check your internet connection and try again.",
-      "permission-denied": "Profile save was blocked by Firestore rules. Please ensure users/{uid} create allows only the exact signup fields."
+      "permission-denied": "Profile save was blocked by Firestore rules. Allowed keys: fullName, fullNameLower, email, emailLower, phone, role, jobPostAccess, gender, company, gstNumber, companyPAN, photoURL, createdAt."
     };
 
     const message = friendlyMessages[err.code] || "We could not create your account right now. Please try again.";
