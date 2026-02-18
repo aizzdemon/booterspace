@@ -264,6 +264,15 @@ function selectRole(role) {
   }
 }
 
+function getDefaultPhotoURLByEmail(email) {
+  const normalizedEmail = (email || "").trim().toLowerCase();
+  if (!normalizedEmail) return "";
+  if (normalizedEmail.endsWith("@gmail.com")) {
+    return `https://profiles.google.com/s2/photos/profile/${encodeURIComponent(normalizedEmail)}?sz=256`;
+  }
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedEmail.split("@")[0] || "User")}&background=random&size=256`;
+}
+
 formEl.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -322,6 +331,11 @@ formEl.addEventListener("submit", async (e) => {
 
   try {
   const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
+  const resolvedPhotoURL = cred.user.photoURL || getDefaultPhotoURLByEmail(emailVal);
+
+  if (resolvedPhotoURL) {
+    await cred.user.updateProfile({ photoURL: resolvedPhotoURL });
+  }
 
   // Fix: removed duplicate fullName declaration to avoid redeclaration/scope bugs.
   await db.collection("users").doc(cred.user.uid).set({
@@ -342,7 +356,7 @@ formEl.addEventListener("submit", async (e) => {
     gstNumber: selectedRole === "jobProvider" ? gstVal : "",
     companyPAN: selectedRole === "jobProvider" ? panVal : "",
 
-    photoURL: cred.user.photoURL || "",
+    photoURL: resolvedPhotoURL,
 
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
