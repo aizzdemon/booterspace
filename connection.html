@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConnectionSpace - BooterSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-shadow { box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08); }
+    .soft-border { border: 1px solid rgba(148, 163, 184, 0.2); }
+    .nav-gradient { background: linear-gradient(to right, #1e293b, #0f172a); }
+    .active-tab { @apply bg-blue-50 text-blue-600 border-blue-100; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
+    <div id="authStatus" class="fixed top-4 right-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-white/80 backdrop-blur px-3 py-1 rounded-full border soft-border z-50">Checking session...</div>
+
+    <section class="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+      
+      <!-- Sidebar -->
+      <aside class="order-1 lg:col-span-1 space-y-4">
+        <div class="bg-white rounded-2xl p-4 card-shadow soft-border">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center text-white text-xs font-bold">B</div>
+            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">ConnectionSpace</h1>
+          </div>
+          <p class="text-slate-500 text-xs leading-relaxed">Find creators, founders, and peers.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 card-shadow soft-border">
+          <h2 class="font-bold text-slate-900 mb-3 px-1 text-[10px] uppercase tracking-wider opacity-60">Manage network</h2>
+          <div class="space-y-1" id="sidebarMenu">
+            <button id="showSuggestionsBtn" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition-colors group active-tab" data-view="suggestions">
+              <span class="font-medium text-sm">Suggestions</span>
+              <svg class="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <button id="connectionsBtn" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition-colors group" data-view="connections">
+              <span class="font-medium text-sm">Connections</span>
+              <span id="connectionsCount" class="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-500">0</span>
+            </button>
+            <button id="pendingBtn" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition-colors group" data-view="pending">
+              <span class="font-medium text-sm">Pending invites</span>
+              <span id="pendingCount" class="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-500">0</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Feed -->
+      <section class="order-2 lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl p-5 md:p-8 card-shadow soft-border min-h-[400px]">
+          
+          <!-- Header and Live Search -->
+          <div class="border-b border-slate-100 pb-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <div>
+                <h2 id="feedTitle" class="text-xl font-bold text-slate-900">People you may know</h2>
+                <p id="feedSubtitle" class="text-slate-500 text-sm mt-1">Suggestions based on your background.</p>
+              </div>
+              <button id="viewAllBtn" class="text-sm font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2 rounded-xl transition-all">
+                View all
+              </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <input type="text" id="searchInput" placeholder="Search by name or headline..." 
+                class="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent block pl-10 p-3 transition-all outline-none" />
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-5" id="mainGrid">
+            <div class="col-span-full py-10 text-center">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-100 border-t-blue-600 mb-4"></div>
+              <p class="text-slate-400 text-sm font-medium">Updating list...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Custom Alert Modal -->
+  <div id="customModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border soft-border">
+      <h3 id="modalTitle" class="text-lg font-bold text-slate-900 mb-2">Notification</h3>
+      <p id="modalBody" class="text-slate-600 text-sm mb-6"></p>
+      <button onclick="closeModal()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">Dismiss</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, collection, query, where, getDocs, getDoc, doc, 
+      addDoc, updateDoc, serverTimestamp, onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = JSON.parse(__firebase_config);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-default';
+
+    let currentUser = null;
+    let currentView = "suggestions"; 
+    let showAll = false;
+    let searchQuery = "";
+    
+    let allUsers = [];
+    let connections = [];
+    let incoming = [];
+    let outgoing = [];
+
+    const mainGrid = document.getElementById("mainGrid");
+    const feedTitle = document.getElementById("feedTitle");
+    const feedSubtitle = document.getElementById("feedSubtitle");
+    const authStatus = document.getElementById("authStatus");
+    const searchInput = document.getElementById("searchInput");
+
+    function showModal(title, message) {
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalBody").textContent = message;
+      document.getElementById("customModal").classList.remove("hidden");
+    }
+    window.closeModal = () => document.getElementById("customModal").classList.add("hidden");
+
+    async function initAuth() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (e) {
+        authStatus.textContent = "Offline Mode";
+      }
+    }
+
+    async function fetchData() {
+      if (!currentUser) return;
+      
+      const usersSnap = await getDocs(collection(db, "users"));
+      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const connPath = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
+      onSnapshot(connPath, (snapshot) => {
+        const allReqs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        connections = allReqs.filter(r => (r.fromId === currentUser.uid || r.toId === currentUser.uid) && r.status === 'accepted');
+        incoming = allReqs.filter(r => r.toId === currentUser.uid && r.status === 'pending');
+        outgoing = allReqs.filter(r => r.fromId === currentUser.uid && r.status === 'pending');
+
+        document.getElementById("connectionsCount").textContent = connections.length;
+        document.getElementById("pendingCount").textContent = incoming.length;
+        
+        renderCurrentView();
+      }, (err) => console.error(err));
+    }
+
+    function renderCurrentView() {
+      const connectedIds = new Set([...connections.map(c => c.fromId === currentUser.uid ? c.toId : c.fromId)]);
+      const incomingIds = new Set(incoming.map(i => i.fromId));
+      const outgoingIds = new Set(outgoing.map(o => o.toId));
+
+      let baseList = [];
+      
+      if (currentView === "suggestions") {
+        feedTitle.textContent = "People you may know";
+        feedSubtitle.textContent = "Suggestions based on your background.";
+        baseList = allUsers
+          .filter(u => u.id !== currentUser.uid && !connectedIds.has(u.id) && !incomingIds.has(u.id) && !outgoingIds.has(u.id))
+          .map(u => ({ ...u, _status: "Connect" }));
+      } else if (currentView === "connections") {
+        feedTitle.textContent = "Your Connections";
+        feedSubtitle.textContent = `You have ${connections.length} active connections.`;
+        baseList = allUsers
+          .filter(u => connectedIds.has(u.id))
+          .map(u => ({ ...u, _status: "Connected" }));
+      } else if (currentView === "pending") {
+        feedTitle.textContent = "Pending Invites";
+        feedSubtitle.textContent = "People waiting for response.";
+        baseList = allUsers
+          .filter(u => incomingIds.has(u.id) || outgoingIds.has(u.id))
+          .map(u => ({ ...u, _status: incomingIds.has(u.id) ? "Accept" : "Pending" }));
+      }
+
+      // Live Search Filtering
+      let displayList = baseList;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        displayList = baseList.filter(u => {
+          const name = (u.fullName || u.name || "").toLowerCase();
+          const headline = (u.headline || "").toLowerCase();
+          return name.includes(q) || headline.includes(q);
+        });
+      }
+
+      renderCards(displayList);
+    }
+
+    function renderCards(list) {
+      const finalItems = showAll ? list : list.slice(0, 8);
+      
+      if (!finalItems.length) {
+        const msg = searchQuery ? `No results found for "${searchQuery}"` : "No users found in this category.";
+        mainGrid.innerHTML = `<div class="col-span-full py-20 text-center opacity-40"><p class="text-sm font-medium">${msg}</p></div>`;
+        return;
+      }
+
+      mainGrid.innerHTML = finalItems.map((user, i) => {
+        const name = user.fullName || user.name || "Booter User";
+        const title = user.headline || "Member";
+        const isConnected = user._status === "Connected";
+        const isPending = user._status === "Pending";
+
+        return `
+          <article class="rounded-2xl border border-slate-100 p-4 hover:shadow-lg transition-all bg-white flex flex-col justify-between">
+            <div class="flex items-start gap-3">
+              <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`}" 
+                   class="w-12 h-12 rounded-xl object-cover" alt="" />
+              <div class="min-w-0">
+                <p class="font-bold text-slate-900 text-sm truncate">${name}</p>
+                <p class="text-[10px] text-slate-500 font-medium leading-tight mt-0.5 line-clamp-1">${title}</p>
+              </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button data-action="connect" data-id="${user.id}" 
+                      class="flex-1 ${(isConnected || isPending) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
+                ${user._status}
+              </button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function handleConnect(targetId) {
+      const connPath = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
+      try {
+        await addDoc(connPath, {
+          fromId: currentUser.uid,
+          fromUserId: currentUser.uid,
+          toId: targetId,
+          toUserId: targetId,
+          fromName: currentUser.displayName || "User",
+          fromUserName: currentUser.displayName || "User",
+          participants: [currentUser.uid, targetId],
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+        showModal("Success", "Request sent!");
+      } catch (e) { showModal("Error", "Action failed."); }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        authStatus.textContent = `${user.uid.substring(0, 8)}`;
+        fetchData();
+      }
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderCurrentView();
+    });
+
+    document.getElementById("sidebarMenu").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-view]");
+      if (!btn) return;
+      document.querySelectorAll("#sidebarMenu button").forEach(b => b.classList.remove("active-tab"));
+      btn.classList.add("active-tab");
+      currentView = btn.dataset.view;
+      showAll = false;
+      searchInput.value = "";
+      searchQuery = "";
+      renderCurrentView();
+    });
+
+    document.getElementById("viewAllBtn").addEventListener("click", () => {
+      showAll = !showAll;
+      document.getElementById("viewAllBtn").textContent = showAll ? "Less" : "View All";
+      renderCurrentView();
+    });
+
+    mainGrid.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action='connect']");
+      if (btn && !btn.classList.contains('cursor-not-allowed')) {
+        handleConnect(btn.dataset.id);
+      }
+    });
+
+    initAuth();
+  </script>
+</body>
+</html>
