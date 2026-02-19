@@ -71,7 +71,35 @@
     };
   }
 
-  function toggleForAuth(user, elements) {
+  function resolveProfileName(user, profileData) {
+    return profileData?.fullName || user.displayName || user.email || "User";
+  }
+
+  function resolveProfilePhoto(user, profileData) {
+    if (profileData?.photoURL) return profileData.photoURL;
+    if (profileData?.avatar) return profileData.avatar;
+    if (user.photoURL) return user.photoURL;
+
+    const email = (user.email || "").trim().toLowerCase();
+    if (email.endsWith("@gmail.com")) {
+      return `https://profiles.google.com/s2/photos/profile/${encodeURIComponent(email)}?sz=256`;
+    }
+
+    return `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+  }
+
+  async function getProfileData(uid) {
+    try {
+      const { doc, getDoc } = await loadFirebaseModule("firebase-firestore.js");
+      const profileRef = doc(window.db, "users", uid);
+      const profileSnap = await getDoc(profileRef);
+      return profileSnap.exists() ? profileSnap.data() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function toggleForAuth(user, elements) {
     const isAuthed = Boolean(user && !user.isAnonymous);
     const {
       profileBtn,
@@ -106,8 +134,9 @@
       return;
     }
 
-    const displayName = user.displayName || user.email || "User";
-    const avatar = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    const profileData = await getProfileData(user.uid);
+    const displayName = resolveProfileName(user, profileData);
+    const avatar = resolveProfilePhoto(user, profileData);
 
     if (profileName) profileName.textContent = displayName;
     if (profilePic) profilePic.src = avatar;
@@ -246,8 +275,8 @@
       .then(async () => {
         const { onAuthStateChanged, signOut } = await loadFirebaseModule("firebase-auth.js");
 
-        onAuthStateChanged(window.auth, (user) => {
-          toggleForAuth(user, elements);
+        onAuthStateChanged(window.auth, async (user) => {
+          await toggleForAuth(user, elements);
           bindNotificationCenter(user, elements);
         });
 
