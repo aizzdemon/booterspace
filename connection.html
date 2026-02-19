@@ -111,7 +111,7 @@
     import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, collection, query, where, getDocs, doc, 
-      addDoc, deleteDoc, serverTimestamp, onSnapshot 
+      addDoc, deleteDoc, serverTimestamp, onSnapshot, updateDoc, setDoc 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const fallbackFirebaseConfig = {
@@ -188,15 +188,16 @@
       }
 
       const reqCol = collection(db, 'connections');
+      const listCol = collection(db, 'connection_list');
       const sentQuery = query(reqCol, where('senderId', '==', currentUser.uid));
       const receivedQuery = query(reqCol, where('receiverId', '==', currentUser.uid));
+      const connectionListQuery = query(listCol, where('users', 'array-contains', currentUser.uid));
 
       let sentRequests = new Map();
       let receivedRequests = new Map();
 
       const refreshView = () => {
         const allReqs = Array.from(new Map([...sentRequests, ...receivedRequests]).values());
-        connections = allReqs.filter(r => (r.senderId === currentUser.uid || r.receiverId === currentUser.uid) && r.status === 'accepted');
         incoming = allReqs.filter(r => r.receiverId === currentUser.uid && r.status === 'pending');
         outgoing = allReqs.filter(r => r.senderId === currentUser.uid && r.status === 'pending');
 
@@ -224,6 +225,14 @@
         console.error("Failed to watch received connection requests", err);
         refreshView();
       });
+
+      onSnapshot(connectionListQuery, (snapshot) => {
+        connections = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+        refreshView();
+      }, (err) => {
+        console.error("Failed to watch accepted connections", err);
+        refreshView();
+      });
     }
 
     function resolveUserPhoto(user, name) {
@@ -237,7 +246,9 @@
     }
 
     function renderCurrentView() {
-      const connectedIds = new Set([...connections.map(c => c.senderId === currentUser.uid ? c.receiverId : c.senderId)]);
+      const connectedIds = new Set(connections
+        .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
+        .filter(Boolean));
       const incomingIds = new Set(incoming.map(i => i.senderId));
       const outgoingIds = new Set(outgoing.map(o => o.receiverId));
 
@@ -321,6 +332,19 @@
 
     async function handleConnect(targetId) {
       const connPath = collection(db, 'connections');
+      const hasRequest = incoming.some((req) => req.senderId === targetId) || outgoing.some((req) => req.receiverId === targetId);
+      const alreadyConnected = connections.some((c) => Array.isArray(c.users) && c.users.includes(targetId));
+
+      if (alreadyConnected) {
+        showModal("Info", "You are already connected.");
+        return;
+      }
+
+      if (hasRequest) {
+        showModal("Info", "A pending request already exists.");
+        return;
+      }
+
       try {
         await addDoc(connPath, {
           senderId: currentUser.uid,
@@ -343,6 +367,46 @@
       } catch (e) {
         console.error("Failed to send connection request", e);
         showModal("Error", "Action failed.");
+      }
+    }
+
+    async function handleAccept(targetId) {
+      const incomingReq = incoming.find((req) => req.senderId === targetId);
+      if (!incomingReq?.id) {
+        showModal("Info", "No incoming request found.");
+        return;
+      }
+
+      const users = [currentUser.uid, targetId].sort();
+      const connectionId = `${users[0]}_${users[1]}`;
+
+      try {
+        await updateDoc(doc(db, 'connections', incomingReq.id), {
+          status: "accepted",
+          acceptedAt: serverTimestamp()
+        });
+
+        await setDoc(doc(db, 'connection_list', connectionId), {
+          users,
+          createdAt: serverTimestamp(),
+          acceptedRequestId: incomingReq.id,
+          acceptedBy: currentUser.uid
+        });
+
+        await addDoc(collection(db, "notifications"), {
+          toUid: targetId,
+          fromUid: currentUser.uid,
+          type: "connection_accepted",
+          message: "accepted your connection request",
+          link: `/profile.html?uid=${currentUser.uid}`,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+
+        showModal("Connected", "Request accepted and added to your connections.");
+      } catch (e) {
+        console.error("Failed to accept connection request", e);
+        showModal("Error", "Unable to accept request.");
       }
     }
 
@@ -399,8 +463,15 @@
     mainGrid.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action='connect']");
       if (btn && !btn.classList.contains('cursor-not-allowed')) {
-        if (btn.textContent.trim() === "Cancel") {
+        const action = btn.textContent.trim();
+
+        if (action === "Cancel") {
           handleCancel(btn.dataset.id);
+          return;
+        }
+
+        if (action === "Accept") {
+          handleAccept(btn.dataset.id);
           return;
         }
 
