@@ -148,6 +148,7 @@
     const normalizedType = type.toLowerCase();
     const lower = text.toLowerCase();
 
+    if (normalizedType.includes("chat") || normalizedType.includes("dm") || lower.includes("chat")) return "💬";
     if (normalizedType.includes("message") || lower.includes("message")) return "💬";
     if (normalizedType.includes("connection") || lower.includes("connection")) return "🤝";
     if (normalizedType.includes("job") || lower.includes("job")) return "💼";
@@ -160,8 +161,20 @@
     const rawLink = (notificationData.link || notificationData.url || "").toString().trim();
     if (rawLink) return rawLink;
 
-    const targetUid = notificationData.fromUid || notificationData.fromId || notificationData.senderId;
+    if (notificationData.jobId) {
+      return `job-detail.html?id=${encodeURIComponent(notificationData.jobId)}`;
+    }
+
+    if (notificationData.chatId) {
+      return `messages.html?chatId=${encodeURIComponent(notificationData.chatId)}`;
+    }
+
+    const targetUid = notificationData.fromUid || notificationData.fromId || notificationData.senderId || notificationData.userIdRef;
     if (targetUid) return `messages.html?composeTo=${encodeURIComponent(targetUid)}`;
+
+    const lower = (notificationData.text || notificationData.message || "").toLowerCase();
+    if ((notificationData.type || "").toLowerCase().includes("job") || lower.includes("job")) return "jobs.html";
+    if ((notificationData.type || "").toLowerCase().includes("message") || lower.includes("message")) return "messages.html";
     return "notification.html";
   }
 
@@ -183,7 +196,10 @@
         <a href="${link}" class="block px-4 py-3 border-b border-slate-100 hover:bg-slate-50 ${isUnread ? "bg-blue-50/40" : ""}">
           <div class="flex items-start gap-2">
             <span>${icon}</span>
-            <p class="text-xs text-slate-700 line-clamp-2">${body}</p>
+            <div class="min-w-0">
+              <p class="text-xs text-slate-700 line-clamp-2">${body}</p>
+              <p class="text-[10px] text-slate-400 mt-1">${data.type || "notification"}</p>
+            </div>
           </div>
         </a>
       `;
@@ -213,9 +229,9 @@
       return;
     }
 
-    const { collection, onSnapshot, orderBy, query, limit, where } = await loadFirebaseModule("firebase-firestore.js");
+    const { collection, onSnapshot, orderBy, query, where } = await loadFirebaseModule("firebase-firestore.js");
     const ref = collection(window.db, "notifications");
-    const q = query(ref, where("toUid", "==", user.uid), orderBy("createdAt", "desc"), limit(8));
+    const q = query(ref, where("toUid", "==", user.uid), orderBy("createdAt", "desc"));
 
     notificationsUnsubscribe = onSnapshot(q, (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }));
