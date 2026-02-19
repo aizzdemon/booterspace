@@ -187,18 +187,18 @@
         return;
       }
 
-      const reqCol = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
-      const sentQuery = query(reqCol, where('fromId', '==', currentUser.uid));
-      const receivedQuery = query(reqCol, where('toId', '==', currentUser.uid));
+      const reqCol = collection(db, 'connections');
+      const sentQuery = query(reqCol, where('senderId', '==', currentUser.uid));
+      const receivedQuery = query(reqCol, where('receiverId', '==', currentUser.uid));
 
       let sentRequests = new Map();
       let receivedRequests = new Map();
 
       const refreshView = () => {
         const allReqs = Array.from(new Map([...sentRequests, ...receivedRequests]).values());
-        connections = allReqs.filter(r => (r.fromId === currentUser.uid || r.toId === currentUser.uid) && r.status === 'accepted');
-        incoming = allReqs.filter(r => r.toId === currentUser.uid && r.status === 'pending');
-        outgoing = allReqs.filter(r => r.fromId === currentUser.uid && r.status === 'pending');
+        connections = allReqs.filter(r => (r.senderId === currentUser.uid || r.receiverId === currentUser.uid) && r.status === 'accepted');
+        incoming = allReqs.filter(r => r.receiverId === currentUser.uid && r.status === 'pending');
+        outgoing = allReqs.filter(r => r.senderId === currentUser.uid && r.status === 'pending');
 
         document.getElementById("connectionsCount").textContent = connections.length;
         document.getElementById("pendingCount").textContent = incoming.length;
@@ -237,9 +237,9 @@
     }
 
     function renderCurrentView() {
-      const connectedIds = new Set([...connections.map(c => c.fromId === currentUser.uid ? c.toId : c.fromId)]);
-      const incomingIds = new Set(incoming.map(i => i.fromId));
-      const outgoingIds = new Set(outgoing.map(o => o.toId));
+      const connectedIds = new Set([...connections.map(c => c.senderId === currentUser.uid ? c.receiverId : c.senderId)]);
+      const incomingIds = new Set(incoming.map(i => i.senderId));
+      const outgoingIds = new Set(outgoing.map(o => o.receiverId));
 
       let baseList = [];
       
@@ -320,21 +320,16 @@
     }
 
     async function handleConnect(targetId) {
-      const connPath = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
+      const connPath = collection(db, 'connections');
       try {
         await addDoc(connPath, {
-          fromId: currentUser.uid,
-          fromUserId: currentUser.uid,
-          toId: targetId,
-          toUserId: targetId,
-          fromName: currentUser.displayName || "User",
-          fromUserName: currentUser.displayName || "User",
-          participants: [currentUser.uid, targetId],
+          senderId: currentUser.uid,
+          receiverId: targetId,
           status: "pending",
           createdAt: serverTimestamp()
         });
 
-        await addDoc(collection(db, "users", targetId, "notifications"), {
+        await addDoc(collection(db, "notifications"), {
           toUid: targetId,
           fromUid: currentUser.uid,
           type: "connection_request",
@@ -352,14 +347,14 @@
     }
 
     async function handleCancel(targetId) {
-      const pendingReq = outgoing.find((req) => req.toId === targetId);
+      const pendingReq = outgoing.find((req) => req.receiverId === targetId);
       if (!pendingReq?.id) {
         showModal("Info", "No pending request to cancel.");
         return;
       }
 
       try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', pendingReq.id));
+        await deleteDoc(doc(db, 'connections', pendingReq.id));
         showModal("Cancelled", "Connection request cancelled.");
       } catch (e) {
         console.error("Failed to cancel connection request", e);

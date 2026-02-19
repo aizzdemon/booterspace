@@ -172,19 +172,19 @@
     async function fetchNetworkState() {
       if (!currentUser) return { connected: new Set(), incoming: new Map(), outgoing: new Set() };
 
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const acceptedFromSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted")));
-      const acceptedToSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted")));
-      const outgoingSnap = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "pending")));
-      const incomingSnap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      const reqRef = collection(db, "connections");
+      const acceptedFromSnap = await getDocs(query(reqRef, where("senderId", "==", currentUser.uid), where("status", "==", "accepted")));
+      const acceptedToSnap = await getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "accepted")));
+      const outgoingSnap = await getDocs(query(reqRef, where("senderId", "==", currentUser.uid), where("status", "==", "pending")));
+      const incomingSnap = await getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "pending")));
 
       const connected = new Set([
-        ...acceptedFromSnap.docs.map(d => d.data().toId),
-        ...acceptedToSnap.docs.map(d => d.data().fromId)
+        ...acceptedFromSnap.docs.map(d => d.data().receiverId),
+        ...acceptedToSnap.docs.map(d => d.data().senderId)
       ]);
 
-      const outgoing = new Set(outgoingSnap.docs.map(d => d.data().toId));
-      const incoming = new Map(incomingSnap.docs.map(d => [d.data().fromId, d.id]));
+      const outgoing = new Set(outgoingSnap.docs.map(d => d.data().receiverId));
+      const incoming = new Map(incomingSnap.docs.map(d => [d.data().senderId, d.id]));
 
       return { connected, incoming, outgoing };
     }
@@ -211,37 +211,35 @@
     async function updateCounters() {
       if (!currentUser) return;
 
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const reqRef = collection(db, "connections");
 
-      const [acceptedFromSnap, acceptedToSnap, pendingSnap, followerSnap] = await Promise.all([
-        getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted"))),
-        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted"))),
-        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending"))),
-        getDocs(collection(db, "users", currentUser.uid, "followers"))
+      const [acceptedFromSnap, acceptedToSnap, pendingSnap] = await Promise.all([
+        getDocs(query(reqRef, where("senderId", "==", currentUser.uid), where("status", "==", "accepted"))),
+        getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "accepted"))),
+        getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "pending")))
       ]);
 
       connectionsCount.textContent = acceptedFromSnap.size + acceptedToSnap.size;
       pendingCount.textContent = pendingSnap.size;
-      followersCount.textContent = followerSnap.size;
+      followersCount.textContent = "0";
     }
 
     async function sendConnectionRequest(targetId) {
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const existing = await getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("toId", "==", targetId), where("status", "==", "pending")));
+      const reqRef = collection(db, "connections");
+      const existing = await getDocs(query(reqRef, where("senderId", "==", currentUser.uid), where("receiverId", "==", targetId), where("status", "==", "pending")));
       if (!existing.empty) return;
 
       await addDoc(reqRef, {
-        fromId: currentUser.uid,
-        toId: targetId,
-        fromName: currentUser.displayName || "User",
-        status: "pending",
+        senderId: currentUser.uid,
+        receiverId: targetId,
+                status: "pending",
         createdAt: serverTimestamp()
       });
 
-      await addDoc(collection(db, "users", targetId, "notifications"), {
+      await addDoc(collection(db, "notifications"), {
         toUid: targetId,
-        text: "You received a connection request.",
-        fromId: currentUser.uid,
+        fromUid: currentUser.uid,
+        message: "You received a connection request.",
         createdAt: serverTimestamp(),
         read: false,
         type: "connection_request",
@@ -250,20 +248,20 @@
     }
 
     async function acceptIncomingRequest(fromId) {
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const incoming = await getDocs(query(reqRef, where("fromId", "==", fromId), where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      const reqRef = collection(db, "connections");
+      const incoming = await getDocs(query(reqRef, where("senderId", "==", fromId), where("receiverId", "==", currentUser.uid), where("status", "==", "pending")));
       if (incoming.empty) return;
 
       const requestDoc = incoming.docs[0];
-      await updateDoc(requestDoc.ref, { status: "accepted" });
+      await updateDoc(requestDoc.ref, { status: "accepted", updatedAt: serverTimestamp() });
     }
 
     async function rejectIncomingRequest(fromId) {
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const incoming = await getDocs(query(reqRef, where("fromId", "==", fromId), where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      const reqRef = collection(db, "connections");
+      const incoming = await getDocs(query(reqRef, where("senderId", "==", fromId), where("receiverId", "==", currentUser.uid), where("status", "==", "pending")));
       if (incoming.empty) return;
 
-      await updateDoc(incoming.docs[0].ref, { status: "rejected" });
+      await updateDoc(incoming.docs[0].ref, { status: "rejected", updatedAt: serverTimestamp() });
     }
 
     function openProfile(targetId) {
@@ -271,11 +269,6 @@
     }
 
     async function logMessageClick(targetId) {
-      await addDoc(collection(db, "users", currentUser.uid, "networkActions"), {
-        action: "message_click",
-        targetId,
-        createdAt: serverTimestamp()
-      });
       window.location.href = `messages.html?composeTo=${encodeURIComponent(targetId)}`;
     }
 
@@ -315,15 +308,15 @@
       if (!requireLogin()) return;
       networkPanelTitle.textContent = "Connections";
 
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+      const reqRef = collection(db, "connections");
       const [acceptedFrom, acceptedTo] = await Promise.all([
-        getDocs(query(reqRef, where("fromId", "==", currentUser.uid), where("status", "==", "accepted"))),
-        getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "accepted")))
+        getDocs(query(reqRef, where("senderId", "==", currentUser.uid), where("status", "==", "accepted"))),
+        getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "accepted")))
       ]);
 
       const connectedIds = [
-        ...acceptedFrom.docs.map((d) => d.data().toId),
-        ...acceptedTo.docs.map((d) => d.data().fromId)
+        ...acceptedFrom.docs.map((d) => d.data().receiverId),
+        ...acceptedTo.docs.map((d) => d.data().senderId)
       ];
 
       if (!connectedIds.length) {
@@ -344,8 +337,8 @@
       if (!requireLogin()) return;
       networkPanelTitle.textContent = "Pending invites";
 
-      const reqRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
-      const snap = await getDocs(query(reqRef, where("toId", "==", currentUser.uid), where("status", "==", "pending")));
+      const reqRef = collection(db, "connections");
+      const snap = await getDocs(query(reqRef, where("receiverId", "==", currentUser.uid), where("status", "==", "pending")));
       if (snap.empty) {
         networkPanelList.innerHTML = '<p class="text-slate-500">No pending invites.</p>';
         return;
@@ -356,7 +349,7 @@
         .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
       const rows = await Promise.all(requests.map(async (item) => {
-        const userSnap = await getDoc(doc(db, "users", item.fromId));
+        const userSnap = await getDoc(doc(db, "users", item.senderId));
         const profile = userSnap.exists() ? userSnap.data() : {};
         const name = profile.fullName || profile.name || item.fromName || "User";
         const title = profile.bio || profile.headline || "BooterSpace member";
@@ -372,9 +365,9 @@
               </div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button data-view-profile="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md border border-slate-300 text-slate-700 hover:border-slate-400">View profile</button>
-              <button data-reject-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">Reject</button>
-              <button data-accept-from="${item.fromId}" class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">Accept</button>
+              <button data-view-profile="${item.senderId}" class="px-3 py-1.5 text-xs rounded-md border border-slate-300 text-slate-700 hover:border-slate-400">View profile</button>
+              <button data-reject-from="${item.senderId}" class="px-3 py-1.5 text-xs rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">Reject</button>
+              <button data-accept-from="${item.senderId}" class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">Accept</button>
             </div>
           </div>
         `;
@@ -387,19 +380,7 @@
       if (!requireLogin()) return;
       networkPanelTitle.textContent = "Followers";
 
-      const snap = await getDocs(collection(db, "users", currentUser.uid, "followers"));
-      if (snap.empty) {
-        networkPanelList.innerHTML = '<p class="text-slate-500">No followers found.</p>';
-        return;
-      }
-
-      const rows = await Promise.all(snap.docs.map(async (d) => {
-        const userSnap = await getDoc(doc(db, "users", d.id));
-        const u = userSnap.exists() ? userSnap.data() : {};
-        return `<div class="p-3 border rounded-lg bg-slate-50">${u.fullName || u.name || "User"}</div>`;
-      }));
-
-      networkPanelList.innerHTML = rows.join("");
+      networkPanelList.innerHTML = '<p class="text-slate-500">Followers are not available in current Firestore rules.</p>';
     }
 
     async function inviteContact() {
@@ -412,12 +393,7 @@
       inviteFeedback.textContent = "Saving invite...";
 
       try {
-        await addDoc(collection(db, "users", currentUser.uid, "contactInvites"), {
-          contact: contact.trim(),
-          createdAt: serverTimestamp(),
-          status: "pending"
-        });
-        inviteFeedback.textContent = "Invite saved to Firestore.";
+        inviteFeedback.textContent = "Invites are disabled by current Firestore rules.";
       } catch (e) {
         console.error(e);
         inviteFeedback.textContent = "Failed to save invite.";
