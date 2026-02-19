@@ -132,14 +132,12 @@ function setSubmitState(isSubmitting) {
 function buildUserPayload({ fullName, emailVal, phoneVal, selectedRole, genderVal, companyVal, gstVal, panVal, resolvedPhotoURL }) {
   const isProvider = selectedRole === "jobProvider";
   const payload = {
-    fullName,
-    fullNameLower: fullName.toLowerCase(),
+    name: fullName,
     email: emailVal,
-    emailLower: emailVal.toLowerCase(),
     phone: phoneVal,
     role: selectedRole,
     // Rule requires bool on create.
-    jobPostAccess: isProvider ? false : true,
+    jobPostAccess: false,
     // Rule requires Firestore timestamp type.
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     // Keep role fields present at create so profile shape is consistent.
@@ -269,7 +267,7 @@ formEl.addEventListener("submit", async (e) => {
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/weak-password": "Password is too weak. Please use at least 6 characters.",
       "auth/network-request-failed": "Network issue detected. Check your internet connection and try again.",
-      "permission-denied": "Profile save was blocked by Firestore rules. Allowed keys: fullName, fullNameLower, email, emailLower, phone, role, jobPostAccess, gender, company, gstNumber, companyPAN, photoURL, createdAt."
+      "permission-denied": "Profile save was blocked by Firestore rules. Allowed keys: name, email, phone, role, jobPostAccess, gender, company, gstNumber, companyPAN, photoURL, createdAt."
     };
 
     const message = friendlyMessages[err.code] || "We could not create your account right now. Please try again.";

@@ -147,7 +147,7 @@
 
       const notifyTasks = usersSnap.docs
         .filter((u) => u.id !== currentUser.uid)
-        .map((u) => db.collection("users").doc(u.id).collection("notifications").add({
+        .map((u) => db.collection("notifications").add({
           toUid: u.id,
           fromUid: currentUser.uid,
           type: "job_posted",

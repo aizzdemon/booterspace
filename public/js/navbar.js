@@ -144,16 +144,16 @@
     if (mProfilePic) mProfilePic.src = avatar;
   }
 
-  function resolveNotificationLabel(type = "", text = "") {
+  function resolveNotificationMeta(type = "", text = "") {
     const normalizedType = type.toLowerCase();
     const lower = text.toLowerCase();
 
-    if (normalizedType.includes("message") || lower.includes("message")) return "💬";
-    if (normalizedType.includes("connection") || lower.includes("connection")) return "🤝";
-    if (normalizedType.includes("job") || lower.includes("job")) return "💼";
-    if (normalizedType.includes("comment") || lower.includes("comment")) return "💭";
-    if (normalizedType.includes("post") || lower.includes("post")) return "📝";
-    return "🔔";
+    if (normalizedType.includes("message") || lower.includes("message")) return { icon: "💬", title: "New message" };
+    if (normalizedType.includes("connection") || lower.includes("connection") || lower.includes("request")) return { icon: "🤝", title: "Connection request" };
+    if (normalizedType.includes("job") || lower.includes("job")) return { icon: "💼", title: "New job post" };
+    if (normalizedType.includes("comment") || lower.includes("comment")) return { icon: "💭", title: "New comment" };
+    if (normalizedType.includes("post") || lower.includes("post")) return { icon: "📝", title: "New post" };
+    return { icon: "🔔", title: "Notification" };
   }
 
   function resolveNotificationTarget(notificationData = {}) {
@@ -175,7 +175,7 @@
 
     listEl.innerHTML = notifications.map(({ id, data }) => {
       const body = (data.message || data.text || "New update").toString();
-      const icon = resolveNotificationLabel(data.type || "", body);
+      const { icon, title } = resolveNotificationMeta(data.type || "", body);
       const link = resolveNotificationTarget(data);
       const isUnread = !data.read;
 
@@ -183,7 +183,10 @@
         <a href="${link}" class="block px-4 py-3 border-b border-slate-100 hover:bg-slate-50 ${isUnread ? "bg-blue-50/40" : ""}">
           <div class="flex items-start gap-2">
             <span>${icon}</span>
-            <p class="text-xs text-slate-700 line-clamp-2">${body}</p>
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold text-slate-800">${title}</p>
+              <p class="text-xs text-slate-700 line-clamp-2">${body}</p>
+            </div>
           </div>
         </a>
       `;
@@ -213,16 +216,15 @@
       return;
     }
 
-    const { collection, onSnapshot, orderBy, query, limit } = await loadFirebaseModule("firebase-firestore.js");
-    const ref = collection(window.db, "users", user.uid, "notifications");
-    const q = query(ref, orderBy("createdAt", "desc"), limit(8));
+    const { collection, onSnapshot, query, where } = await loadFirebaseModule("firebase-firestore.js");
+    const q = query(collection(window.db, "notifications"), where("toUid", "==", user.uid));
 
     notificationsUnsubscribe = onSnapshot(q, (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }));
-      const unreadCount = rows.filter((row) => !row.data.read).length;
+      rows.sort((a, b) => ((b.data.createdAt?.seconds || 0) - (a.data.createdAt?.seconds || 0)));
+      renderNotificationDropdown(notificationList, rows.slice(0, 8));
 
-      renderNotificationDropdown(notificationList, rows);
-
+      const unreadCount = rows.reduce((count, row) => count + (row.data.read ? 0 : 1), 0);
       notificationCount.textContent = String(unreadCount);
       mNotificationCount.textContent = String(unreadCount);
       notificationCount.classList.toggle("hidden", unreadCount === 0);
