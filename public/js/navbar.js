@@ -213,9 +213,9 @@
       return;
     }
 
-    const { collection, onSnapshot, orderBy, query, limit } = await loadFirebaseModule("firebase-firestore.js");
-    const ref = collection(window.db, "users", user.uid, "notifications");
-    const q = query(ref, orderBy("createdAt", "desc"), limit(8));
+    const { collection, onSnapshot, orderBy, query, limit, where } = await loadFirebaseModule("firebase-firestore.js");
+    const ref = collection(window.db, "notifications");
+    const q = query(ref, where("toUid", "==", user.uid), orderBy("createdAt", "desc"), limit(8));
 
     notificationsUnsubscribe = onSnapshot(q, (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }));

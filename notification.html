@@ -154,7 +154,7 @@ function startNotificationsListener(uid) {
   renderNotificationsLoadingState();
   notificationElements.clear();
 
-  const notificationsRef = collection(db, "users", uid, "notifications");
+  const notificationsRef = query(collection(db, "notifications"), where("toUid", "==", uid));
   const notificationsQuery = query(notificationsRef, orderBy("createdAt", "desc"));
 
   notificationsUnsubscribe = onSnapshot(
@@ -229,7 +229,7 @@ function resolveNotificationTarget(notificationData = {}) {
 
 window.openNotification = async (id) => {
   if (!currentUser) return;
-  const ref = doc(db, "users", currentUser.uid, "notifications", id);
+  const ref = doc(db, "notifications", id);
   const el = notificationElements.get(id);
   const target = el?.dataset?.notificationTarget || "notification.html";
 
@@ -258,7 +258,7 @@ function resolveNotificationLabel(type = "", text = "") {
 
 window.markOneRead = async (id) => {
   if (!currentUser) return;
-  await updateDoc(doc(db, "users", currentUser.uid, "notifications", id), {
+  await updateDoc(doc(db, "notifications", id), {
     read: true,
     readAt: serverTimestamp()
   });
@@ -266,7 +266,7 @@ window.markOneRead = async (id) => {
 
 window.markAllRead = async () => {
   if (!currentUser) return;
-  const snap = await getDocs(query(collection(db, "users", currentUser.uid, "notifications"), where("read", "!=", true)));
+  const snap = await getDocs(query(collection(db, "notifications"), where("toUid", "==", currentUser.uid), where("read", "!=", true)));
   await Promise.all(
     snap.docs
       .filter((d) => !d.data().read)
@@ -301,10 +301,10 @@ async function loadSuggestions() {
   if (!currentUser) return;
 
   try {
-    const requestsRef = collection(db, "artifacts", appId, "public", "data", "connection_requests");
+    const requestsRef = collection(db, "connections");
     const [fromSnap, toSnap] = await Promise.all([
-      getDocs(query(requestsRef, where("fromId", "==", currentUser.uid))),
-      getDocs(query(requestsRef, where("toId", "==", currentUser.uid)))
+      getDocs(query(requestsRef, where("senderId", "==", currentUser.uid))),
+      getDocs(query(requestsRef, where("receiverId", "==", currentUser.uid)))
     ]);
 
     const connectedIds = new Set([currentUser.uid]);
@@ -312,8 +312,8 @@ async function loadSuggestions() {
       snap.forEach((d) => {
         const req = d.data() || {};
         if (req.status === "accepted" || req.status === "pending") {
-          if (req.fromId) connectedIds.add(req.fromId);
-          if (req.toId) connectedIds.add(req.toId);
+          if (req.senderId) connectedIds.add(req.senderId);
+          if (req.receiverId) connectedIds.add(req.receiverId);
         }
       });
     });
@@ -341,14 +341,9 @@ window.connectUser = async (targetUid) => {
   }
 
   try {
-    await addDoc(collection(db, "artifacts", appId, "public", "data", "connection_requests"), {
-      fromId: currentUser.uid,
-      fromUserId: currentUser.uid,
-      toId: targetUid,
-      toUserId: targetUid,
-      fromName: currentUser.displayName || "User",
-      fromUserName: currentUser.displayName || "User",
-      participants: [currentUser.uid, targetUid],
+    await addDoc(collection(db, "connections"), {
+      senderId: currentUser.uid,
+      receiverId: targetUid,
       status: "pending",
       createdAt: serverTimestamp()
     });

@@ -260,11 +260,7 @@ async function saveProfile() {
   btn.disabled = true;
 
   const updatedData = {
-    fullName: document.getElementById('editName').value,
-    education: document.getElementById('editEdu').value,
-    university: document.getElementById('editUni').value,
-    position: document.getElementById('editPos').value,
-    expYears: document.getElementById('editYears').value
+    name: document.getElementById('editName').value
   };
 
   try {
@@ -360,13 +356,13 @@ async function hydrateRequestStatuses(users) {
     return;
   }
 
-  const requestsRef = db.collection("artifacts").doc(appId).collection("public").doc("data").collection("connection_requests");
+  const requestsRef = db.collection("connections");
 
   await Promise.all(users.map(async (u) => {
     try {
       const [sentSnap, receivedSnap] = await Promise.all([
-        requestsRef.where("fromId", "==", state.currentUser.uid).where("toId", "==", u.id).limit(1).get(),
-        requestsRef.where("fromId", "==", u.id).where("toId", "==", state.currentUser.uid).limit(1).get()
+        requestsRef.where("senderId", "==", state.currentUser.uid).where("receiverId", "==", u.id).limit(1).get(),
+        requestsRef.where("senderId", "==", u.id).where("receiverId", "==", state.currentUser.uid).limit(1).get()
       ]);
 
       const sentDoc = sentSnap.empty ? null : sentSnap.docs[0].data();
@@ -410,15 +406,14 @@ window.sendConnectionRequest = async function(userId, event) {
   if (currentStatus !== "none") return;
 
   const requestPayload = {
-    fromId: state.currentUser.uid,
-    toId: userId,
-    fromName: state.currentUser.displayName || "User",
+    senderId: state.currentUser.uid,
+    receiverId: userId,
     status: "pending",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
-    await db.collection("artifacts").doc(appId).collection("public").doc("data").collection("connection_requests").add(requestPayload);
+    await db.collection("connections").add(requestPayload);
 
     state.requestStatusMap[userId] = "pending";
     renderResults(state.searchResults);
