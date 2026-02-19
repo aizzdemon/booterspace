@@ -110,8 +110,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
-      getFirestore, collection, query, where, getDocs, getDoc, doc, 
-      addDoc, updateDoc, serverTimestamp, onSnapshot 
+      getFirestore, collection, query, where, getDocs, doc, 
+      addDoc, deleteDoc, serverTimestamp, onSnapshot 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const fallbackFirebaseConfig = {
@@ -247,8 +247,8 @@
         feedTitle.textContent = "People you may know";
         feedSubtitle.textContent = "Suggestions based on your background.";
         baseList = allUsers
-          .filter(u => u.id !== currentUser.uid && !connectedIds.has(u.id) && !incomingIds.has(u.id) && !outgoingIds.has(u.id))
-          .map(u => ({ ...u, _status: "Connect" }));
+          .filter(u => u.id !== currentUser.uid && !connectedIds.has(u.id) && !incomingIds.has(u.id))
+          .map(u => ({ ...u, _status: outgoingIds.has(u.id) ? "Cancel" : "Connect" }));
       } else if (currentView === "connections") {
         feedTitle.textContent = "Your Connections";
         feedSubtitle.textContent = `You have ${connections.length} active connections.`;
@@ -291,6 +291,7 @@
         const title = user.headline || "Member";
         const isConnected = user._status === "Connected";
         const isPending = user._status === "Pending";
+        const isCancel = user._status === "Cancel";
 
         const photo = resolveUserPhoto(user, name);
         return `
@@ -305,7 +306,7 @@
             </div>
             <div class="mt-4 flex gap-2">
               <button data-action="connect" data-id="${user.id}" 
-                      class="flex-1 ${(isConnected || isPending) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
+                      class="flex-1 ${isConnected || isPending ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : isCancel ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
                 ${user._status}
               </button>
               <a data-action="message" data-id="${user.id}" href="messages.html?composeTo=${encodeURIComponent(user.id)}"
@@ -350,6 +351,22 @@
       }
     }
 
+    async function handleCancel(targetId) {
+      const pendingReq = outgoing.find((req) => req.toId === targetId);
+      if (!pendingReq?.id) {
+        showModal("Info", "No pending request to cancel.");
+        return;
+      }
+
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'connection_requests', pendingReq.id));
+        showModal("Cancelled", "Connection request cancelled.");
+      } catch (e) {
+        console.error("Failed to cancel connection request", e);
+        showModal("Error", "Unable to cancel request.");
+      }
+    }
+
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
@@ -387,6 +404,11 @@
     mainGrid.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action='connect']");
       if (btn && !btn.classList.contains('cursor-not-allowed')) {
+        if (btn.textContent.trim() === "Cancel") {
+          handleCancel(btn.dataset.id);
+          return;
+        }
+
         handleConnect(btn.dataset.id);
       }
     });
