@@ -177,9 +177,15 @@
 
     async function fetchData() {
       if (!currentUser) return;
-      
-      const usersSnap = await getDocs(collection(db, "users"));
-      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      try {
+        const usersSnap = await getDocs(collection(db, "users"));
+        allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (error) {
+        console.error("Failed to load users", error);
+        mainGrid.innerHTML = `<div class="col-span-full py-20 text-center opacity-70"><p class="text-sm font-medium">Unable to load people right now.</p></div>`;
+        return;
+      }
 
       const reqCol = collection(db, 'artifacts', appId, 'public', 'data', 'connection_requests');
       const sentQuery = query(reqCol, where('fromId', '==', currentUser.uid));
@@ -200,11 +206,15 @@
         renderCurrentView();
       };
 
+      // Ensure suggestions render even if request listeners are delayed or blocked.
+      refreshView();
+
       onSnapshot(sentQuery, (snapshot) => {
         sentRequests = new Map(snapshot.docs.map((docSnap) => [docSnap.id, { id: docSnap.id, ...docSnap.data() }]));
         refreshView();
       }, (err) => {
         console.error("Failed to watch sent connection requests", err);
+        refreshView();
       });
 
       onSnapshot(receivedQuery, (snapshot) => {
@@ -212,7 +222,18 @@
         refreshView();
       }, (err) => {
         console.error("Failed to watch received connection requests", err);
+        refreshView();
       });
+    }
+
+    function resolveUserPhoto(user, name) {
+      if (user.photoURL) return user.photoURL;
+      if (user.avatar) return user.avatar;
+      const email = (user.email || "").trim().toLowerCase();
+      if (email.endsWith("@gmail.com")) {
+        return `https://profiles.google.com/s2/photos/profile/${encodeURIComponent(email)}?sz=256`;
+      }
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
     }
 
     function renderCurrentView() {
@@ -271,10 +292,11 @@
         const isConnected = user._status === "Connected";
         const isPending = user._status === "Pending";
 
+        const photo = resolveUserPhoto(user, name);
         return `
           <article class="rounded-2xl border border-slate-100 p-4 hover:shadow-lg transition-all bg-white flex flex-col justify-between">
             <div class="flex items-start gap-3">
-              <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`}" 
+              <img src="${photo}" 
                    class="w-12 h-12 rounded-xl object-cover" alt="" />
               <div class="min-w-0">
                 <p class="font-bold text-slate-900 text-sm truncate">${name}</p>
@@ -286,6 +308,10 @@
                       class="flex-1 ${(isConnected || isPending) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
                 ${user._status}
               </button>
+              <a data-action="message" data-id="${user.id}" href="messages.html?composeTo=${encodeURIComponent(user.id)}"
+                 class="flex-1 text-center border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] font-bold py-2 rounded-xl transition-all">
+                Message
+              </a>
             </div>
           </article>
         `;
