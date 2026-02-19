@@ -15,7 +15,7 @@
         .modal.active { display: flex; }
 
         .dropdown-content { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 40; margin-top: 0.5rem; overflow: hidden; }
-        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown.open .dropdown-content { display: block; }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -146,8 +146,8 @@
 
         <!-- Consolidated Nav -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="relative dropdown">
-                <button class="w-full bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
+            <div id="jobsDropdown" class="relative dropdown">
+                <button id="jobsDropdownToggle" class="w-full bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
                     <span class="text-2xl">💼</span>
                     <span class="text-sm font-bold mt-2">Jobs Management</span>
                     <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Active / Pending / Add</span>
@@ -248,21 +248,46 @@ function initStats() {
 function showUsersTab() {
     const content = document.getElementById("content");
     content.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h2 class="text-xl font-black text-slate-800">Community Members</h2>
-            <button id="dlUsers" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider hover:bg-slate-200">Export Community CSV</button>
+            <div class="flex items-center gap-2">
+                <button id="dlUsers" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider hover:bg-slate-200">Export Community CSV</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+            <div class="relative md:col-span-2">
+                <input type="date" id="userOnboardDate" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute left-3 top-2.5 text-slate-400">📅</span>
+            </div>
+            <div class="flex items-center justify-between md:justify-end gap-3">
+                <p id="userFilterSummary" class="text-[10px] font-black uppercase tracking-wider text-slate-400">Showing all members</p>
+                <button id="clearUserDateFilter" class="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800">Clear</button>
+            </div>
         </div>
         <div id="uList" class="grid grid-cols-1 md:grid-cols-2 gap-4">Loading members...</div>
     `;
-    if (currentUnsub) currentUnsub();
-    currentUnsub = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), snap => {
-        const list = document.getElementById("uList");
-        list.innerHTML = "";
-        const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        document.getElementById("dlUsers").onclick = () => downloadCSV(raw, "community_members.csv");
 
-        snap.forEach(docSnap => {
-            const u = docSnap.data();
+    const userDateFilterInput = document.getElementById("userOnboardDate");
+    const userFilterSummary = document.getElementById("userFilterSummary");
+    const userList = document.getElementById("uList");
+
+    const normalizeDate = date => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const renderUsers = users => {
+        userList.innerHTML = "";
+
+        if (!users.length) {
+            userList.innerHTML = '<p class="text-sm text-slate-500">No members onboarded on the selected date.</p>';
+            return;
+        }
+
+        users.forEach(({ id, data }) => {
+            const u = data;
             const role = u.role || 'jobSeeker';
             const roleLabel = role === 'jobProvider' ? 'Job Provider' : 'Job Seeker';
             const roleClass = role === 'jobProvider' ? 'role-badge-provider' : 'role-badge-seeker';
@@ -285,18 +310,50 @@ function showUsersTab() {
                 <div class="border-t border-slate-50 pt-3 mt-3 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <label class="switch">
-                            <input type="checkbox" ${canPost ? 'checked' : ''} onchange="toggleJobAllowance('${docSnap.id}', this.checked)">
+                            <input type="checkbox" ${canPost ? 'checked' : ''} onchange="toggleJobAllowance('${id}', this.checked)">
                             <span class="slider"></span>
                         </label>
                         <span class="text-[10px] font-black uppercase text-slate-400">Post Jobs Allowance</span>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="openEditModal('users', '${docSnap.id}')" class="text-[10px] font-black text-indigo-600 uppercase hover:underline">Edit Profile</button>
+                        <button onclick="openEditModal('users', '${id}')" class="text-[10px] font-black text-indigo-600 uppercase hover:underline">Edit Profile</button>
                     </div>
                 </div>
             `;
-            list.appendChild(div);
+            userList.appendChild(div);
         });
+    };
+
+    const applyUserDateFilter = allUsers => {
+        const selectedDate = userDateFilterInput.value;
+        let filteredUsers = allUsers;
+
+        if (selectedDate) {
+            filteredUsers = allUsers.filter(({ data }) => {
+                if (!data.createdAt?.toDate) return false;
+                return normalizeDate(data.createdAt.toDate()) === selectedDate;
+            });
+
+            userFilterSummary.textContent = `${filteredUsers.length} onboarded on ${selectedDate}`;
+        } else {
+            userFilterSummary.textContent = `Showing all members (${allUsers.length})`;
+        }
+
+        renderUsers(filteredUsers);
+    };
+
+    if (currentUnsub) currentUnsub();
+    currentUnsub = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), snap => {
+        const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const allUsers = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+        document.getElementById("dlUsers").onclick = () => downloadCSV(raw, "community_members.csv");
+        applyUserDateFilter(allUsers);
+
+        userDateFilterInput.onchange = () => applyUserDateFilter(allUsers);
+        document.getElementById("clearUserDateFilter").onclick = () => {
+            userDateFilterInput.value = "";
+            applyUserDateFilter(allUsers);
+        };
     });
 }
 
@@ -479,7 +536,23 @@ document.getElementById("loginBtn").onclick = () => {
     signInWithEmailAndPassword(auth, e, p).catch(err => document.getElementById("loginError").innerText = err.message);
 };
 document.getElementById("logoutBtn").onclick = () => signOut(auth);
-document.getElementById("addJobDirect").onclick = () => document.getElementById("createJobModal").classList.add("active");
+
+const jobsDropdown = document.getElementById("jobsDropdown");
+const jobsDropdownToggle = document.getElementById("jobsDropdownToggle");
+
+jobsDropdownToggle.onclick = (event) => {
+    event.stopPropagation();
+    jobsDropdown.classList.toggle("open");
+};
+
+document.addEventListener("click", event => {
+    if (!jobsDropdown.contains(event.target)) jobsDropdown.classList.remove("open");
+});
+
+document.getElementById("addJobDirect").onclick = () => {
+    jobsDropdown.classList.remove("open");
+    document.getElementById("createJobModal").classList.add("active");
+};
 
 document.getElementById("publishJobBtn").onclick = async () => {
     const payload = {
@@ -504,6 +577,7 @@ document.querySelectorAll('.nav-btn-tab').forEach(btn => {
         if (tab === 'jobs') showJobsTab('approved');
         else if (tab === 'pendingJobs') showJobsTab('pending');
         else if (tab === 'users') showUsersTab();
+        jobsDropdown.classList.remove("open");
     };
 });
 
