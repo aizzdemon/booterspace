@@ -146,6 +146,7 @@
     
     let allUsers = [];
     let connections = [];
+    let acceptedConnections = [];
     let incoming = [];
     let outgoing = [];
 
@@ -200,8 +201,19 @@
         const allReqs = Array.from(new Map([...sentRequests, ...receivedRequests]).values());
         incoming = allReqs.filter(r => r.receiverId === currentUser.uid && r.status === 'pending');
         outgoing = allReqs.filter(r => r.senderId === currentUser.uid && r.status === 'pending');
+        acceptedConnections = allReqs.filter(r => r.status === 'accepted');
 
-        document.getElementById("connectionsCount").textContent = connections.length;
+        const connectedViaRequests = new Set(
+          acceptedConnections.map((req) => req.senderId === currentUser.uid ? req.receiverId : req.senderId)
+        );
+        const connectedViaList = new Set(
+          connections
+            .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
+            .filter(Boolean)
+        );
+        const totalConnected = new Set([...connectedViaList, ...connectedViaRequests]);
+
+        document.getElementById("connectionsCount").textContent = totalConnected.size;
         document.getElementById("pendingCount").textContent = incoming.length;
 
         renderCurrentView();
@@ -246,9 +258,12 @@
     }
 
     function renderCurrentView() {
-      const connectedIds = new Set(connections
-        .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
-        .filter(Boolean));
+      const connectedIds = new Set([
+        ...connections
+          .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
+          .filter(Boolean),
+        ...acceptedConnections.map((req) => req.senderId === currentUser.uid ? req.receiverId : req.senderId)
+      ]);
       const incomingIds = new Set(incoming.map(i => i.senderId));
       const outgoingIds = new Set(outgoing.map(o => o.receiverId));
 
@@ -262,7 +277,7 @@
           .map(u => ({ ...u, _status: outgoingIds.has(u.id) ? "Cancel" : "Connect" }));
       } else if (currentView === "connections") {
         feedTitle.textContent = "Your Connections";
-        feedSubtitle.textContent = `You have ${connections.length} active connections.`;
+        feedSubtitle.textContent = `You have ${connectedIds.size} active connections.`;
         baseList = allUsers
           .filter(u => connectedIds.has(u.id))
           .map(u => ({ ...u, _status: "Connected" }));
