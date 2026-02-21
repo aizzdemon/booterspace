@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Government Jobs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "public/js/navbar.js";
+      document.body.appendChild(s);
+    });
+  </script>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl md:text-4xl font-black text-slate-800">Latest Government Jobs</h1>
+      <p class="text-slate-500 mt-2">New postings published from Admin panel.</p>
+    </div>
+
+    <div id="govtJobsList" class="grid gap-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-400 text-sm">Loading government jobs...</div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const govtJobsList = document.getElementById("govtJobsList");
+
+    function formatDate(value) {
+      if (!value) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const d = new Date(value + "T00:00:00");
+        return d.toLocaleDateString();
+      }
+      return value;
+    }
+
+    const govtJobsQuery = query(collection(db, "govtJobs"), orderBy("createdAt", "desc"));
+
+    onSnapshot(govtJobsQuery, snapshot => {
+      if (snapshot.empty) {
+        govtJobsList.innerHTML = '<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 text-sm">No government jobs posted yet.</div>';
+        return;
+      }
+
+      govtJobsList.innerHTML = "";
+
+      snapshot.forEach(docSnap => {
+        const job = docSnap.data();
+        const card = document.createElement("article");
+        card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
+        card.innerHTML = `
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-xl font-black text-slate-800">${job.jobTitle || "Untitled Job"}</h2>
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Government Vacancy</p>
+            </div>
+            <a href="${job.officialApplyLink || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition">Apply Officially</a>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Publish Date</p>
+              <p class="font-semibold text-slate-700 mt-1">${formatDate(job.publishDate)}</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Last Date of Apply</p>
+              <p class="font-semibold text-slate-700 mt-1">${formatDate(job.lastDateApply)}</p>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-wide text-slate-400 mb-2">Job Details</p>
+            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">${job.jobDetails || "No details available."}</p>
+          </div>
+        `;
+
+        govtJobsList.appendChild(card);
+      });
+    }, err => {
+      govtJobsList.innerHTML = `<div class="bg-white border border-red-200 rounded-2xl p-6 text-red-600 text-sm">Failed to load jobs: ${err.message}</div>`;
+    });
+  </script>
+</body>
+</html>
