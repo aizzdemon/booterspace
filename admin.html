@@ -99,6 +99,62 @@
     </div>
 </div>
 
+<!-- CREATE GOVT JOB MODAL -->
+<div id="createGovtJobModal" class="modal">
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <div>
+                <h3 class="font-black text-slate-800">Post Government Job</h3>
+                <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Govt Jobs Feed</p>
+            </div>
+            <button onclick="closeModal('createGovtJobModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="govtJobForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Title</label>
+                    <input id="govtJobTitle" type="text" placeholder="e.g. SSC CGL Recruitment 2026" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Publish Date</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <label class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <input type="radio" name="publishDateMode" value="calendar" checked>
+                            Calendar Date
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <input type="radio" name="publishDateMode" value="manual">
+                            Manual Text
+                        </label>
+                    </div>
+                    <input id="govtPublishDateCalendar" type="date" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <input id="govtPublishDateManual" type="text" placeholder="e.g. 3rd Week of March 2026" class="hidden w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 mt-3">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Last Date of Apply</label>
+                    <input id="govtLastDate" type="date" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Details</label>
+                    <textarea id="govtJobDetails" rows="5" placeholder="Add eligibility, post count, selection process, etc." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Official Link to Apply</label>
+                    <input id="govtApplyLink" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('createGovtJobModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="publishGovtJobBtn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition">Publish Govt Job</button>
+        </div>
+    </div>
+</div>
+
 <!-- LOGIN -->
 <div id="loginDiv" class="flex items-center justify-center min-h-screen p-4">
     <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
@@ -163,6 +219,9 @@
                     </button>
                     <button id="addJobDirect" class="w-full text-left px-6 py-4 hover:bg-indigo-50 text-indigo-600 font-black">
                         + Post New Job
+                    </button>
+                    <button id="addGovtJobDirect" class="w-full text-left px-6 py-4 hover:bg-emerald-50 text-emerald-600 font-black border-t border-slate-100">
+                        + Post Govt Job
                     </button>
                 </div>
             </div>
@@ -554,6 +613,25 @@ document.getElementById("addJobDirect").onclick = () => {
     document.getElementById("createJobModal").classList.add("active");
 };
 
+const publishDateModeInputs = document.querySelectorAll('input[name="publishDateMode"]');
+const publishDateCalendarInput = document.getElementById("govtPublishDateCalendar");
+const publishDateManualInput = document.getElementById("govtPublishDateManual");
+
+publishDateModeInputs.forEach(input => {
+    input.addEventListener("change", () => {
+        const manualMode = input.value === "manual" && input.checked;
+        publishDateCalendarInput.classList.toggle("hidden", manualMode);
+        publishDateCalendarInput.required = !manualMode;
+        publishDateManualInput.classList.toggle("hidden", !manualMode);
+        publishDateManualInput.required = manualMode;
+    });
+});
+
+document.getElementById("addGovtJobDirect").onclick = () => {
+    jobsDropdown.classList.remove("open");
+    document.getElementById("createGovtJobModal").classList.add("active");
+};
+
 document.getElementById("publishJobBtn").onclick = async () => {
     const payload = {
         title: document.getElementById("jobTitle").value,
@@ -569,6 +647,38 @@ document.getElementById("publishJobBtn").onclick = async () => {
     await addDoc(collection(db, "jobs"), payload);
     document.getElementById("createJobModal").classList.remove("active");
     document.getElementById("jobForm").reset();
+};
+
+document.getElementById("publishGovtJobBtn").onclick = async () => {
+    const publishMode = document.querySelector('input[name="publishDateMode"]:checked')?.value || 'calendar';
+    const publishDate = publishMode === 'manual'
+        ? publishDateManualInput.value.trim()
+        : publishDateCalendarInput.value;
+
+    const payload = {
+        jobTitle: document.getElementById("govtJobTitle").value.trim(),
+        publishDate,
+        publishDateMode: publishMode,
+        lastDateApply: document.getElementById("govtLastDate").value,
+        jobDetails: document.getElementById("govtJobDetails").value.trim(),
+        officialApplyLink: document.getElementById("govtApplyLink").value.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: auth.currentUser?.email || "admin"
+    };
+
+    if (!payload.jobTitle || !payload.publishDate || !payload.lastDateApply || !payload.jobDetails || !payload.officialApplyLink) {
+        alert("Please fill all Govt job fields before publishing.");
+        return;
+    }
+
+    await addDoc(collection(db, "govtJobs"), payload);
+    document.getElementById("createGovtJobModal").classList.remove("active");
+    document.getElementById("govtJobForm").reset();
+    publishDateCalendarInput.classList.remove("hidden");
+    publishDateCalendarInput.required = true;
+    publishDateManualInput.classList.add("hidden");
+    publishDateManualInput.required = false;
+    document.querySelector('input[name="publishDateMode"][value="calendar"]').checked = true;
 };
 
 document.querySelectorAll('.nav-btn-tab').forEach(btn => {
