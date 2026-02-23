@@ -335,11 +335,9 @@ window.submitFeedback=async()=>{
   }
 
   try {
-    const feedbackUser = await ensureFeedbackUser();
-
     await addDoc(collection(db,"feedback"), {
       jobId: currentJobId,
-      userId: feedbackUser?.uid || null,
+      userId: currentUser?.uid || null,
       email,
       feedback,
       createdAt: window.serverTimestamp()
