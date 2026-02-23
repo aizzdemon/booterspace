@@ -182,7 +182,7 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
 
 <!-- ================= LOGIC ================= -->
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const auth = window.auth;
@@ -317,6 +317,14 @@ window.shareJob=(title)=>{
 
 window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
 
+async function ensureFeedbackUser(){
+  if(currentUser) return currentUser;
+
+  const credential = await signInAnonymously(auth);
+  currentUser = credential.user;
+  return currentUser;
+}
+
 window.submitFeedback=async()=>{
   const email = feedbackEmailEl.value.trim();
   const feedback = feedbackTextEl.value.trim();
@@ -340,7 +348,7 @@ window.submitFeedback=async()=>{
     feedbackBoxEl.classList.remove("open");
     showAlert("Thank You ❤️","Your feedback has been saved successfully.");
   } catch (error) {
-    showAlert("Error","Failed to save feedback. Please try again.");
+    showAlert("Feedback Unavailable","We could not submit feedback right now. Please try again later.");
   }
 };
 
