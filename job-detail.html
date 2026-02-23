@@ -318,20 +318,30 @@ window.shareJob=(title)=>{
 window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
 
 window.submitFeedback=async()=>{
-  if(!feedbackTextEl.value.trim()) return;
+  const email = feedbackEmailEl.value.trim();
+  const feedback = feedbackTextEl.value.trim();
 
-  const mailbox = "support@booterspace.app";
-  const subject = encodeURIComponent(`Feedback for job ${currentJob?.title || currentJobId}`);
-  const body = encodeURIComponent([
-    `Job ID: ${currentJobId}`,
-    `Email: ${feedbackEmailEl.value || "Not provided"}`,
-    "",
-    feedbackTextEl.value
-  ].join("\n"));
+  if(!email || !feedback){
+    showAlert("Missing Details","Please enter both your email and feedback.");
+    return;
+  }
 
-  window.location.href = `mailto:${mailbox}?subject=${subject}&body=${body}`;
-  feedbackTextEl.value = "";
-  showAlert("Thank You ❤️","Your feedback draft was opened in your email app.");
+  try {
+    await addDoc(collection(db,"feedback"), {
+      jobId: currentJobId,
+      userId: currentUser?.uid || null,
+      email,
+      feedback,
+      createdAt: window.serverTimestamp()
+    });
+
+    feedbackEmailEl.value = "";
+    feedbackTextEl.value = "";
+    feedbackBoxEl.classList.remove("open");
+    showAlert("Thank You ❤️","Your feedback has been saved successfully.");
+  } catch (error) {
+    showAlert("Error","Failed to save feedback. Please try again.");
+  }
 };
 
 function showLoginPopup(){
