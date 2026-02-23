@@ -182,7 +182,7 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
 
 <!-- ================= LOGIC ================= -->
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const auth = window.auth;
@@ -317,21 +317,41 @@ window.shareJob=(title)=>{
 
 window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
 
+async function ensureFeedbackUser(){
+  if(currentUser) return currentUser;
+
+  const credential = await signInAnonymously(auth);
+  currentUser = credential.user;
+  return currentUser;
+}
+
 window.submitFeedback=async()=>{
-  if(!feedbackTextEl.value.trim()) return;
+  const email = feedbackEmailEl.value.trim();
+  const feedback = feedbackTextEl.value.trim();
 
-  const mailbox = "support@booterspace.app";
-  const subject = encodeURIComponent(`Feedback for job ${currentJob?.title || currentJobId}`);
-  const body = encodeURIComponent([
-    `Job ID: ${currentJobId}`,
-    `Email: ${feedbackEmailEl.value || "Not provided"}`,
-    "",
-    feedbackTextEl.value
-  ].join("\n"));
+  if(!email || !feedback){
+    showAlert("Missing Details","Please enter both your email and feedback.");
+    return;
+  }
 
-  window.location.href = `mailto:${mailbox}?subject=${subject}&body=${body}`;
-  feedbackTextEl.value = "";
-  showAlert("Thank You ❤️","Your feedback draft was opened in your email app.");
+  try {
+    const feedbackUser = await ensureFeedbackUser();
+
+    await addDoc(collection(db,"feedback"), {
+      jobId: currentJobId,
+      userId: feedbackUser?.uid || null,
+      email,
+      feedback,
+      createdAt: window.serverTimestamp()
+    });
+
+    feedbackEmailEl.value = "";
+    feedbackTextEl.value = "";
+    feedbackBoxEl.classList.remove("open");
+    showAlert("Thank You ❤️","Your feedback has been saved successfully.");
+  } catch (error) {
+    showAlert("Feedback Unavailable","We could not submit feedback right now. Please try again later.");
+  }
 };
 
 function showLoginPopup(){
