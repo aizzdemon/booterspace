@@ -525,6 +525,7 @@ function applyJobFilters(status) {
             </div>
             <div class="flex gap-2">
                 ${status === 'pending' ? `<button onclick="updateJobStatus('${j.id}', 'approved')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Approve</button>` : ''}
+                <button onclick="duplicateJob('${j.id}')" class="text-[10px] font-black text-indigo-600 uppercase px-2">Duplicate</button>
                 <button onclick="openEditModal('jobs', '${j.id}')" class="text-[10px] font-black text-slate-400 uppercase px-2">Edit</button>
                 <button onclick="deleteJob('${j.id}')" class="text-[10px] font-black text-red-500 uppercase px-2">Delete</button>
             </div>
@@ -724,6 +725,25 @@ document.querySelectorAll('.nav-btn-tab').forEach(btn => {
 
 window.closeModal = (id) => document.getElementById(id).classList.remove("active");
 window.deleteJob = async (id) => { if(confirm("Delete permanently?")) await deleteDoc(doc(db, "jobs", id)); };
+window.duplicateJob = async (id) => {
+    const sourceRef = doc(db, "jobs", id);
+    const sourceSnap = await getDoc(sourceRef);
+
+    if (!sourceSnap.exists()) {
+        alert("Original job could not be found.");
+        return;
+    }
+
+    const sourceData = sourceSnap.data();
+    const duplicatedPayload = {
+        ...sourceData,
+        timestamp: serverTimestamp(),
+        duplicatedFrom: id,
+        userName: auth.currentUser?.email ? "Administrator" : (sourceData.userName || "Admin")
+    };
+
+    await addDoc(collection(db, "jobs"), duplicatedPayload);
+};
 window.updateJobStatus = async (id, status) => await updateDoc(doc(db, "jobs", id), { status });
 window.toggleJobAllowance = async (uid, allowed) => { await updateDoc(doc(db, "users", uid), { canPostJobs: allowed }); };
 window.openEditModal = openEditModal;
