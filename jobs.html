@@ -90,6 +90,10 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 });
 </script>
 
+<div id="emojiToast" class="fixed bottom-6 right-6 hidden bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-xl z-50">
+  Emoji copied
+</div>
+
 <div class="bg-blue-600 py-12 px-4">
   <div class="max-w-5xl mx-auto text-center">
     <h1 class="text-4xl font-extrabold text-white mb-4">Discover Your Dream Job</h1>
@@ -158,7 +162,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 <script type="module">
 import {
   collection, query, where, orderBy, limit,
-  getDocs, startAfter, doc, updateDoc, increment
+  getDocs, startAfter, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const db = window.db;
@@ -176,6 +180,7 @@ const dateFilter = document.getElementById("dateFilter");
 const mainSearchBtn = document.getElementById("mainSearchBtn");
 
 let lastDoc = null; 
+let jobsRealtimeUnsubscribe = null;
 const INITIAL_PAGE_SIZE = 10;
 const SUBSEQUENT_PAGE_SIZE = 20;
 let loadedJobs = []; // Maintain local list for filtering
@@ -207,7 +212,7 @@ function renderJobCard(job) {
   
   const div = document.createElement("div");
   div.className = "group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start sm:items-center";
-  
+
   div.innerHTML = `
     <div class="relative shrink-0">
       <img src="${logo}" class="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
@@ -218,16 +223,47 @@ function renderJobCard(job) {
         <h3 class="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">${job.title}</h3>
       </div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 font-medium">
-        <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${job.company}</span>
-        <span class="flex items-center gap-1.5 text-blue-600/80"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${job.location || 'Remote'}</span>
+        <span class="flex items-center gap-1.5">
+          <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
+          ${job.company}
+        </span>
+        <span class="flex items-center gap-1.5 text-blue-600/80">
+          <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
+          ${job.location || 'Remote'}
+        </span>
       </div>
-      <div class="mt-3 font-bold text-slate-900 text-sm">${formatSalary(job.salary)}</div>
+      <div class="mt-3 font-bold text-slate-900 text-sm flex items-center gap-1.5">
+        <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="💵" title="Copy salary emoji" aria-label="Copy salary emoji">💵</button>
+        ${formatSalary(job.salary)}
+      </div>
     </div>
     <div class="flex sm:flex-col gap-2 w-full sm:w-auto shrink-0">
       <button onclick="window.location.href='job-detail.html?id=${job.id}'" class="flex-grow bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">View Details</button>
     </div>
   `;
   return div;
+}
+
+const emojiToast = document.getElementById("emojiToast");
+let emojiToastTimeout;
+
+function showEmojiToast(message) {
+  emojiToast.textContent = message;
+  emojiToast.classList.remove("hidden");
+  clearTimeout(emojiToastTimeout);
+  emojiToastTimeout = setTimeout(() => {
+    emojiToast.classList.add("hidden");
+  }, 1400);
+}
+
+async function copyEmoji(emoji) {
+  try {
+    await navigator.clipboard.writeText(emoji);
+    showEmojiToast(`Copied ${emoji}`);
+  } catch (err) {
+    console.error("Emoji copy failed:", err);
+    showEmojiToast("Unable to copy emoji");
+  }
 }
 
 // Client-side Filter Logic
@@ -278,6 +314,35 @@ function renderList(jobs) {
   }
 }
 
+function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
+  if (snapshot.empty && !isLoadMore) {
+    emptyState.classList.remove("hidden");
+    jobsList.innerHTML = "";
+    loadMoreBtn.classList.add("hidden");
+    return;
+  }
+
+  const newJobs = snapshot.docs.map(d => {
+    const data = { id: d.id, ...d.data() };
+    updateSuggestions(data);
+    return data;
+  });
+
+  loadedJobs = isLoadMore ? [...loadedJobs, ...newJobs] : newJobs;
+  lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+
+  applyFilters();
+
+  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+  if (snapshot.docs.length < currentLimit || isSearching) {
+    loadMoreBtn.classList.add("hidden");
+  } else {
+    loadMoreBtn.classList.remove("hidden");
+    loadMoreBtn.innerHTML = '<span>Show More Jobs</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+    loadMoreBtn.disabled = false;
+  }
+}
+
 async function fetchJobs(isLoadMore = false) {
   try {
     const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
@@ -301,36 +366,21 @@ async function fetchJobs(isLoadMore = false) {
 
     if (isLoadMore && lastDoc) {
       q = query(q, startAfter(lastDoc));
-    }
-
-    const snap = await getDocs(q);
-
-    if (snap.empty && !isLoadMore) {
-      emptyState.classList.remove("hidden");
-      jobsList.innerHTML = "";
-      loadMoreBtn.classList.add("hidden");
+      const snap = await getDocs(q);
+      handleSnapshotData(snap, true, currentLimit);
       return;
     }
 
-    const newJobs = snap.docs.map(d => {
-      const data = { id: d.id, ...d.data() };
-      updateSuggestions(data); // Populate both title and location suggestions
-      return data;
-    });
-
-    loadedJobs = [...loadedJobs, ...newJobs];
-    lastDoc = snap.docs[snap.docs.length - 1];
-
-    applyFilters();
-
-    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
-    if (snap.docs.length < currentLimit || isSearching) {
-      loadMoreBtn.classList.add("hidden");
-    } else {
-      loadMoreBtn.classList.remove("hidden");
-      loadMoreBtn.innerHTML = '<span>Show More Jobs</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
-      loadMoreBtn.disabled = false;
+    if (jobsRealtimeUnsubscribe) {
+      jobsRealtimeUnsubscribe();
     }
+
+    jobsRealtimeUnsubscribe = onSnapshot(q, (snapshot) => {
+      handleSnapshotData(snapshot, false, currentLimit);
+    }, (err) => {
+      console.error("Realtime Firestore Error:", err);
+      jobCount.innerText = "Error loading jobs";
+    });
 
   } catch (err) {
     console.error("Firestore Error:", err);
@@ -344,11 +394,20 @@ mainSearchBtn.addEventListener("click", applyFilters);
 searchInput.addEventListener("input", applyFilters);
 locationInput.addEventListener("input", applyFilters);
 dateFilter.addEventListener("change", applyFilters);
+jobsList.addEventListener("click", (event) => {
+  const copyButton = event.target.closest("[data-copy-emoji]");
+  if (!copyButton) return;
+  copyEmoji(copyButton.dataset.copyEmoji);
+});
 
 // Initial Load
 window.onload = () => {
   fetchJobs();
 };
+
+window.addEventListener("beforeunload", () => {
+  if (jobsRealtimeUnsubscribe) jobsRealtimeUnsubscribe();
+});
 
 </script>
 </body>
