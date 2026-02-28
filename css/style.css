@@ -265,7 +265,20 @@ animation: blink 1s infinite ease-in-out;
 0%,50%,100% { opacity:1; } 25%,75% { opacity:0; }
 }
 body.page-index .tab-button {
-padding:0.5rem 1rem; border-radius:0.5rem; font-weight: 600; transition: all 0.2s;
+padding:0.5rem 1rem; border-radius:0.5rem; font-weight: 600; transition: all 0.2s; flex:0 0 auto;
+}
+body.page-index .tabs-row {
+scroll-snap-type:x proximity;
+scrollbar-width:thin;
+}
+body.page-index .tabs-row .tab-button {
+scroll-snap-align:start;
+}
+@media (max-width: 640px) {
+body.page-index .tabs-row {
+justify-content:flex-start;
+padding-bottom:0.75rem;
+}
 }
 body.page-index .tab-active {
 background-color:#3B82F6; color:white;
