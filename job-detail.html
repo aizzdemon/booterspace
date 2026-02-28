@@ -73,29 +73,11 @@ window.db = getFirestore(app);
 window.serverTimestamp = serverTimestamp;
 </script>
 
-<style>
-body { background:#f8fafc; font-family:'Plus Jakarta Sans',sans-serif; }
-.job-card { background:#fff; border-radius:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.05); }
-.gradient-border::after {
-  content:''; position:absolute; top:0; left:0; right:0;
-  height:6px; background:linear-gradient(90deg,#2563eb,#60a5fa);
-  border-radius:24px 24px 0 0;
-}
-.shimmer {
-  background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
-  background-size:200% 100%; animation:shimmer 1.5s infinite;
-}
-@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
-.slide { max-height:0; overflow:hidden; transition:max-height .4s ease; }
-.slide.open { max-height:400px; }
-.custom-modal {
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.5); align-items:center; justify-content:center; z-index:1000;
-}
-</style>
+
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen bg-gray-50 page-job-detail">
 
 <!-- ================= NAVBAR ================= -->
 <div id="navbar"></div>
