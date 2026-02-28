@@ -1,0 +1,98 @@
+:root {
+  --bs-bg: #f8fafc;
+  --bs-text: #111827;
+  --bs-card: #ffffff;
+  --bs-border: #e5e7eb;
+  --bs-focus: #2563eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bs-bg);
+  color: var(--bs-text);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  text-decoration-thickness: from-font;
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--bs-focus);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+.container,
+main,
+section {
+  min-width: 0;
+}
+
+.card,
+.panel,
+.content-box {
+  background: var(--bs-card);
+  border: 1px solid var(--bs-border);
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: clamp(1.5rem, 7vw, 2rem); }
+  h2 { font-size: clamp(1.25rem, 5.5vw, 1.5rem); }
+
+  .card,
+  .panel,
+  .content-box {
+    border-radius: 0.6rem;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  button,
+  .btn,
+  [role="button"] {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
