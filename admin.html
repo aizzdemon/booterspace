@@ -39,34 +39,10 @@
   </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .nav-btn.active { border-color: #4f46e5; background-color: #eef2ff; color: #4f46e5; }
-        .user-card.new-user { border-left: 4px solid #10b981; background-color: #f0fdf4; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
-        .modal.active { display: flex; }
-
-        .dropdown-content { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 40; margin-top: 0.5rem; overflow: hidden; }
-        .dropdown.open .dropdown-content { display: block; }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-        .role-badge-seeker { background-color: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
-        .role-badge-provider { background-color: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; }
-        
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #4f46e5; }
-        input:checked + .slider:before { transform: translateX(14px); }
-    </style>
+    
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900 page-admin">
 
 <!-- UNIVERSAL EDIT MODAL -->
 <div id="editModal" class="modal">

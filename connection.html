@@ -38,14 +38,10 @@
 }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .card-shadow { box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08); }
-    .soft-border { border: 1px solid rgba(148, 163, 184, 0.2); }
-    .nav-gradient { background: linear-gradient(to right, #1e293b, #0f172a); }
-    .active-tab { @apply bg-blue-50 text-blue-600 border-blue-100; }
-  </style>
+  
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900">
+<body class="bg-slate-50 min-h-screen text-slate-900 page-connection">
   <div id="navbar"></div>
   <script>
     fetch("navbar.html").then(r => r.text()).then(html => {
