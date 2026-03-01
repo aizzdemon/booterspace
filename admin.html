@@ -202,6 +202,88 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">State</label>
+                    <input id="govtState" type="text" list="indiaStates" placeholder="Start typing a state..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <datalist id="indiaStates">
+                        <option value="Andhra Pradesh"></option>
+                        <option value="Arunachal Pradesh"></option>
+                        <option value="Assam"></option>
+                        <option value="Bihar"></option>
+                        <option value="Chhattisgarh"></option>
+                        <option value="Goa"></option>
+                        <option value="Gujarat"></option>
+                        <option value="Haryana"></option>
+                        <option value="Himachal Pradesh"></option>
+                        <option value="Jharkhand"></option>
+                        <option value="Karnataka"></option>
+                        <option value="Kerala"></option>
+                        <option value="Madhya Pradesh"></option>
+                        <option value="Maharashtra"></option>
+                        <option value="Manipur"></option>
+                        <option value="Meghalaya"></option>
+                        <option value="Mizoram"></option>
+                        <option value="Nagaland"></option>
+                        <option value="Odisha"></option>
+                        <option value="Punjab"></option>
+                        <option value="Rajasthan"></option>
+                        <option value="Sikkim"></option>
+                        <option value="Tamil Nadu"></option>
+                        <option value="Telangana"></option>
+                        <option value="Tripura"></option>
+                        <option value="Uttar Pradesh"></option>
+                        <option value="Uttarakhand"></option>
+                        <option value="West Bengal"></option>
+                    </datalist>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
+                        <input id="govtCompanyName" type="text" placeholder="e.g. Railway Recruitment Board" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post Name</label>
+                        <input id="govtPostName" type="text" placeholder="e.g. Assistant Loco Pilot" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">No of Posts</label>
+                        <input id="govtNoOfPosts" type="number" min="1" placeholder="e.g. 250" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Advt No</label>
+                        <input id="govtAdvtNo" type="text" placeholder="e.g. RRB/ALP/2026/01" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Salary</label>
+                    <input id="govtSalary" type="text" placeholder="e.g. ₹35,400 - ₹1,12,400" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Type</label>
+                        <select id="govtJobType" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <option value="">Select Job Type</option>
+                            <option value="contract">Contract</option>
+                            <option value="permanent">Permanent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apply Mode</label>
+                        <select id="govtApplyMode" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <option value="">Select Apply Mode</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                            <option value="online/offline">Online/Offline</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Publish Date</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         <label class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
