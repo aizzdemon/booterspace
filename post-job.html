@@ -77,6 +77,8 @@
 
     <input id="companyName" type="text" placeholder="Company Name" class="w-full px-3 py-2 border rounded" required>
 
+    <input id="companyWebsite" type="url" placeholder="Company Website (optional)" class="w-full px-3 py-2 border rounded">
+
     <input id="companyLogo" type="url" placeholder="Company Logo URL (optional)" class="w-full px-3 py-2 border rounded">
 
     <input id="jobPlace" type="text" placeholder="Location" class="w-full px-3 py-2 border rounded" required>
@@ -135,6 +137,7 @@
         userId: currentUser.uid,              // ✅ REQUIRED BY RULE
         title: jobTitle.value.trim(),
         company: companyName.value.trim(),
+        companyWebsite: companyWebsite.value.trim() || null,
         logoUrl: companyLogo.value.trim() || null,
         location: jobPlace.value.trim(),
         salary: salary.value.trim() || null,
