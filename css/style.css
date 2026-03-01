@@ -187,7 +187,10 @@ body.page-connection .nav-gradient {
 background: linear-gradient(to right, #1e293b, #0f172a);
 }
 body.page-connection .active-tab {
-@apply bg-blue-50 text-blue-600 border-blue-100;
+background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #ffffff;
+            border: 1px solid transparent;
+            box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.9);
 }
 
 /* govt01.html */
@@ -275,6 +278,31 @@ background-color:#E5E7EB; color:#6B7280; cursor:pointer;
 }
 body.page-index .tab-inactive:hover {
 background-color: #D1D5DB;
+}
+
+@media (max-width: 768px) {
+body.page-index .tab-button {
+padding: 0.62rem 0.85rem;
+              border-radius: 999px;
+              border: 1px solid rgba(148, 163, 184, 0.26);
+              font-size: 0.86rem;
+              line-height: 1.2;
+              text-align: center;
+              white-space: normal;
+              overflow-wrap: anywhere;
+              box-shadow: 0 10px 22px -20px rgba(15, 23, 42, 1);
+}
+body.page-index .tab-active {
+background: linear-gradient(135deg, #2563eb, #4f46e5);
+              box-shadow: 0 16px 28px -18px rgba(37, 99, 235, 0.75);
+}
+body.page-index .tab-inactive {
+background-color: #f1f5f9;
+              color: #475569;
+}
+body.page-connection #sidebarMenu button {
+min-height: 46px;
+}
 }
 
 /* job-detail.html */
