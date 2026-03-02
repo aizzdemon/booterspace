@@ -55,7 +55,49 @@
   <main class="max-w-5xl mx-auto px-4 py-8">
     <div class="mb-8">
       <h1 class="text-3xl md:text-4xl font-black text-slate-800">Latest Government Jobs</h1>
-      <p class="text-slate-500 mt-2">New postings published from Admin panel.</p>
+      <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+        <label for="stateFilter" class="text-sm font-semibold text-slate-700">Search jobs by state</label>
+        <select id="stateFilter" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">All States</option>
+          <option value="Andhra Pradesh">Andhra Pradesh</option>
+          <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+          <option value="Assam">Assam</option>
+          <option value="Bihar">Bihar</option>
+          <option value="Chhattisgarh">Chhattisgarh</option>
+          <option value="Goa">Goa</option>
+          <option value="Gujarat">Gujarat</option>
+          <option value="Haryana">Haryana</option>
+          <option value="Himachal Pradesh">Himachal Pradesh</option>
+          <option value="Jharkhand">Jharkhand</option>
+          <option value="Karnataka">Karnataka</option>
+          <option value="Kerala">Kerala</option>
+          <option value="Madhya Pradesh">Madhya Pradesh</option>
+          <option value="Maharashtra">Maharashtra</option>
+          <option value="Manipur">Manipur</option>
+          <option value="Meghalaya">Meghalaya</option>
+          <option value="Mizoram">Mizoram</option>
+          <option value="Nagaland">Nagaland</option>
+          <option value="Odisha">Odisha</option>
+          <option value="Punjab">Punjab</option>
+          <option value="Rajasthan">Rajasthan</option>
+          <option value="Sikkim">Sikkim</option>
+          <option value="Tamil Nadu">Tamil Nadu</option>
+          <option value="Telangana">Telangana</option>
+          <option value="Tripura">Tripura</option>
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Uttarakhand">Uttarakhand</option>
+          <option value="West Bengal">West Bengal</option>
+          <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+          <option value="Chandigarh">Chandigarh</option>
+          <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+          <option value="Delhi">Delhi</option>
+          <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+          <option value="Ladakh">Ladakh</option>
+          <option value="Lakshadweep">Lakshadweep</option>
+          <option value="Puducherry">Puducherry</option>
+        </select>
+        <button id="searchStateBtn" type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition">Search Jobs</button>
+      </div>
     </div>
 
     <div id="govtJobsList" class="grid gap-4">
@@ -65,7 +107,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, query, orderBy, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
@@ -79,6 +121,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const govtJobsList = document.getElementById("govtJobsList");
+    const stateFilter = document.getElementById("stateFilter");
+    const searchStateBtn = document.getElementById("searchStateBtn");
+    let allJobs = [];
 
     function formatDate(value) {
       if (!value) return "N/A";
@@ -91,16 +136,15 @@
 
     const govtJobsQuery = query(collection(db, "govtJobs"), orderBy("createdAt", "desc"));
 
-    onSnapshot(govtJobsQuery, snapshot => {
-      if (snapshot.empty) {
+    function renderJobs(jobs) {
+      if (!jobs.length) {
         govtJobsList.innerHTML = '<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 text-sm">No government jobs posted yet.</div>';
         return;
       }
 
       govtJobsList.innerHTML = "";
 
-      snapshot.forEach(docSnap => {
-        const job = docSnap.data();
+      jobs.forEach(job => {
         const card = document.createElement("article");
         card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
         card.innerHTML = `
@@ -131,6 +175,54 @@
 
         govtJobsList.appendChild(card);
       });
+    }
+
+    async function fetchJobsByState() {
+      const selectedState = stateFilter.value.trim();
+      if (!selectedState) {
+        renderJobs(allJobs);
+        return;
+      }
+
+      govtJobsList.innerHTML = '<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-400 text-sm">Searching jobs...</div>';
+
+      try {
+        const stateJobsQuery = query(
+          collection(db, "govtJobs"),
+          where("state", "==", selectedState)
+        );
+
+        const stateSnapshot = await getDocs(stateJobsQuery);
+        const filteredJobs = stateSnapshot.docs.map(docSnap => docSnap.data());
+
+        if (!filteredJobs.length) {
+          govtJobsList.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 text-sm">No government jobs found for <span class="font-bold">${selectedState}</span>.</div>`;
+          return;
+        }
+
+        renderJobs(filteredJobs);
+      } catch (err) {
+        govtJobsList.innerHTML = `<div class="bg-white border border-red-200 rounded-2xl p-6 text-red-600 text-sm">Failed to search jobs by state: ${err.message}</div>`;
+      }
+    }
+
+    searchStateBtn.addEventListener("click", fetchJobsByState);
+
+    onSnapshot(govtJobsQuery, snapshot => {
+      if (snapshot.empty) {
+        allJobs = [];
+        renderJobs(allJobs);
+        return;
+      }
+
+      allJobs = [];
+      snapshot.forEach(docSnap => {
+        allJobs.push(docSnap.data());
+      });
+
+      if (!stateFilter.value) {
+        renderJobs(allJobs);
+      }
     }, err => {
       govtJobsList.innerHTML = `<div class="bg-white border border-red-200 rounded-2xl p-6 text-red-600 text-sm">Failed to load jobs: ${err.message}</div>`;
     });
