@@ -470,7 +470,7 @@ function showUsersTab() {
                         <span class="text-[10px] font-black uppercase text-slate-400">Post Jobs Allowance</span>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="openEditModal('users', '${id}')" class="text-[10px] font-black text-indigo-600 uppercase hover:underline">Edit Profile</button>
+                        <span class="text-[10px] font-black text-slate-300 uppercase">Read only</span>
                     </div>
                 </div>
             `;
@@ -671,6 +671,18 @@ document.getElementById("saveBtn").onclick = async () => {
         updates[key] = value;
     });
 
+    if (col === "users") {
+        const allowedAdminKeys = ["jobPostAccess", "canPostJobs"];
+        const changed = Object.keys(updates);
+        const hasOnlyAllowed = changed.every((key) => allowedAdminKeys.includes(key));
+        if (!hasOnlyAllowed) {
+            alert("Users collection is restricted by rules. Only jobPostAccess/canPostJobs can be updated by admin.");
+            saveBtn.innerText = originalText;
+            saveBtn.disabled = false;
+            return;
+        }
+    }
+
     try {
         await updateDoc(doc(db, col, id), updates);
         closeModal('editModal');
@@ -727,18 +739,27 @@ document.getElementById("addGovtJobDirect").onclick = () => {
 };
 
 document.getElementById("publishJobBtn").onclick = async () => {
+    if (!auth.currentUser) {
+        alert("Admin login is required.");
+        return;
+    }
+
     const payload = {
+        userId: auth.currentUser.uid,
         title: document.getElementById("jobTitle").value,
         company: document.getElementById("companyName").value,
         jobPlace: document.getElementById("jobPlace").value,
         jobLink: document.getElementById("jobLink").value,
         description: document.getElementById("jobDescription").value,
-        status: 'approved',
+        status: 'pending',
         timestamp: serverTimestamp(),
+        likes: 0,
+        dislikes: 0,
         userName: "Administrator",
         userEmail: auth.currentUser?.email
     };
-    await addDoc(collection(db, "jobs"), payload);
+    const newJobRef = await addDoc(collection(db, "jobs"), payload);
+    await updateDoc(newJobRef, { status: "approved" });
     document.getElementById("createJobModal").classList.remove("active");
     document.getElementById("jobForm").reset();
 };
@@ -791,6 +812,11 @@ document.querySelectorAll('.nav-btn-tab').forEach(btn => {
 window.closeModal = (id) => document.getElementById(id).classList.remove("active");
 window.deleteJob = async (id) => { if(confirm("Delete permanently?")) await deleteDoc(doc(db, "jobs", id)); };
 window.duplicateJob = async (id) => {
+    if (!auth.currentUser) {
+        alert("Admin login is required.");
+        return;
+    }
+
     const sourceRef = doc(db, "jobs", id);
     const sourceSnap = await getDoc(sourceRef);
 
@@ -802,12 +828,17 @@ window.duplicateJob = async (id) => {
     const sourceData = sourceSnap.data();
     const duplicatedPayload = {
         ...sourceData,
+        userId: auth.currentUser.uid,
+        status: "pending",
+        likes: 0,
+        dislikes: 0,
         timestamp: serverTimestamp(),
         duplicatedFrom: id,
         userName: auth.currentUser?.email ? "Administrator" : (sourceData.userName || "Admin")
     };
 
-    await addDoc(collection(db, "jobs"), duplicatedPayload);
+    const duplicatedRef = await addDoc(collection(db, "jobs"), duplicatedPayload);
+    await updateDoc(duplicatedRef, { status: "approved" });
 };
 window.updateJobStatus = async (id, status) => await updateDoc(doc(db, "jobs", id), { status });
 window.toggleJobAllowance = async (uid, allowed) => { await updateDoc(doc(db, "users", uid), { canPostJobs: allowed }); };

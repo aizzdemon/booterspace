@@ -140,7 +140,7 @@
     import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, collection, query, where, getDocs, doc, 
-      addDoc, deleteDoc, serverTimestamp, onSnapshot, updateDoc, setDoc 
+      addDoc, serverTimestamp, onSnapshot, updateDoc
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const fallbackFirebaseConfig = {
@@ -174,7 +174,6 @@
     let searchQuery = "";
     
     let allUsers = [];
-    let connections = [];
     let acceptedConnections = [];
     let incoming = [];
     let outgoing = [];
@@ -218,10 +217,8 @@
       }
 
       const reqCol = collection(db, 'connections');
-      const listCol = collection(db, 'connection_list');
       const sentQuery = query(reqCol, where('senderId', '==', currentUser.uid));
       const receivedQuery = query(reqCol, where('receiverId', '==', currentUser.uid));
-      const connectionListQuery = query(listCol, where('users', 'array-contains', currentUser.uid));
 
       let sentRequests = new Map();
       let receivedRequests = new Map();
@@ -235,12 +232,7 @@
         const connectedViaRequests = new Set(
           acceptedConnections.map((req) => req.senderId === currentUser.uid ? req.receiverId : req.senderId)
         );
-        const connectedViaList = new Set(
-          connections
-            .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
-            .filter(Boolean)
-        );
-        const totalConnected = new Set([...connectedViaList, ...connectedViaRequests]);
+        const totalConnected = new Set([...connectedViaRequests]);
 
         document.getElementById("connectionsCount").textContent = totalConnected.size;
         document.getElementById("pendingCount").textContent = incoming.length;
@@ -267,13 +259,6 @@
         refreshView();
       });
 
-      onSnapshot(connectionListQuery, (snapshot) => {
-        connections = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-        refreshView();
-      }, (err) => {
-        console.error("Failed to watch accepted connections", err);
-        refreshView();
-      });
     }
 
     function resolveUserPhoto(user, name) {
@@ -288,9 +273,6 @@
 
     function renderCurrentView() {
       const connectedIds = new Set([
-        ...connections
-          .map(c => Array.isArray(c.users) ? c.users.find(uid => uid !== currentUser.uid) : null)
-          .filter(Boolean),
         ...acceptedConnections.map((req) => req.senderId === currentUser.uid ? req.receiverId : req.senderId)
       ]);
       const incomingIds = new Set(incoming.map(i => i.senderId));
@@ -303,7 +285,7 @@
         feedSubtitle.textContent = "Suggestions based on your background.";
         baseList = allUsers
           .filter(u => u.id !== currentUser.uid && !connectedIds.has(u.id) && !incomingIds.has(u.id))
-          .map(u => ({ ...u, _status: outgoingIds.has(u.id) ? "Cancel" : "Connect" }));
+          .map(u => ({ ...u, _status: outgoingIds.has(u.id) ? "Pending" : "Connect" }));
       } else if (currentView === "connections") {
         feedTitle.textContent = "Your Connections";
         feedSubtitle.textContent = `You have ${connectedIds.size} active connections.`;
@@ -346,7 +328,6 @@
         const title = user.headline || "Member";
         const isConnected = user._status === "Connected";
         const isPending = user._status === "Pending";
-        const isCancel = user._status === "Cancel";
 
         const photo = resolveUserPhoto(user, name);
         return `
@@ -361,7 +342,7 @@
             </div>
             <div class="mt-4 flex gap-2">
               <button data-action="connect" data-id="${user.id}" 
-                      class="flex-1 ${isConnected || isPending ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : isCancel ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
+                      class="flex-1 ${isConnected || isPending ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'} text-[11px] font-bold py-2 rounded-xl transition-all">
                 ${user._status}
               </button>
               <a data-action="message" data-id="${user.id}" href="messages.html?composeTo=${encodeURIComponent(user.id)}"
@@ -377,7 +358,10 @@
     async function handleConnect(targetId) {
       const connPath = collection(db, 'connections');
       const hasRequest = incoming.some((req) => req.senderId === targetId) || outgoing.some((req) => req.receiverId === targetId);
-      const alreadyConnected = connections.some((c) => Array.isArray(c.users) && c.users.includes(targetId));
+      const alreadyConnected = acceptedConnections.some((req) => (
+        (req.senderId === currentUser.uid && req.receiverId === targetId)
+        || (req.receiverId === currentUser.uid && req.senderId === targetId)
+      ));
 
       if (alreadyConnected) {
         showModal("Info", "You are already connected.");
@@ -421,20 +405,10 @@
         return;
       }
 
-      const users = [currentUser.uid, targetId].sort();
-      const connectionId = `${users[0]}_${users[1]}`;
-
       try {
         await updateDoc(doc(db, 'connections', incomingReq.id), {
           status: "accepted",
-          acceptedAt: serverTimestamp()
-        });
-
-        await setDoc(doc(db, 'connection_list', connectionId), {
-          users,
-          createdAt: serverTimestamp(),
-          acceptedRequestId: incomingReq.id,
-          acceptedBy: currentUser.uid
+          updatedAt: serverTimestamp()
         });
 
         await addDoc(collection(db, "notifications"), {
@@ -447,26 +421,10 @@
           createdAt: serverTimestamp()
         });
 
-        showModal("Connected", "Request accepted and added to your connections.");
+        showModal("Connected", "Request accepted.");
       } catch (e) {
         console.error("Failed to accept connection request", e);
         showModal("Error", "Unable to accept request.");
-      }
-    }
-
-    async function handleCancel(targetId) {
-      const pendingReq = outgoing.find((req) => req.receiverId === targetId);
-      if (!pendingReq?.id) {
-        showModal("Info", "No pending request to cancel.");
-        return;
-      }
-
-      try {
-        await deleteDoc(doc(db, 'connections', pendingReq.id));
-        showModal("Cancelled", "Connection request cancelled.");
-      } catch (e) {
-        console.error("Failed to cancel connection request", e);
-        showModal("Error", "Unable to cancel request.");
       }
     }
 
@@ -508,11 +466,6 @@
       const btn = e.target.closest("button[data-action='connect']");
       if (btn && !btn.classList.contains('cursor-not-allowed')) {
         const action = btn.textContent.trim();
-
-        if (action === "Cancel") {
-          handleCancel(btn.dataset.id);
-          return;
-        }
 
         if (action === "Accept") {
           handleAccept(btn.dataset.id);

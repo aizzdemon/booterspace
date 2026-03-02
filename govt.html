@@ -145,12 +145,13 @@
       govtJobsList.innerHTML = "";
 
       jobs.forEach(job => {
+        const postTitle = job.postName || job.jobTitle || "Untitled Job";
         const card = document.createElement("article");
         card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
         card.innerHTML = `
           <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
             <div>
-              <h2 class="text-xl font-black text-slate-800">${job.jobTitle || "Untitled Job"}</h2>
+              <h2 class="text-xl font-black text-slate-800">${postTitle}</h2>
               <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Government Vacancy</p>
             </div>
             <a href="${job.officialApplyLink || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition">Apply Officially</a>
