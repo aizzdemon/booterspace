@@ -134,6 +134,23 @@
         .replace(/'/g, "&#39;");
     }
 
+    function humanizeKey(key) {
+      return key
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function formatValue(value, key) {
+      if (value === null || value === undefined || value === "") return "N/A";
+      if (typeof value === "string" && /(date|deadline)/i.test(key)) return formatDate(value);
+      if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
     function formatDate(value) {
       if (!value) return "N/A";
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -155,23 +172,35 @@
 
       jobs.forEach((job, index) => {
         const postTitle = job.postName || job.jobTitle || "Untitled Job";
-        const stateName = job.state || job.jobState || "N/A";
-        const organizationName = job.organisationName || job.organizationName || job.departmentName || "N/A";
-        const lastDate = formatDate(job.lastDateApply);
-        const detailUrl = `govt-job-details.html?id=${encodeURIComponent(job.id || index)}`;
+        const detailId = `job-details-${job.id || index}`;
+        const allDetailsRows = Object.entries(job)
+          .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
+          .map(([key, value]) => `
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">${escapeHtml(humanizeKey(key))}</p>
+              <p class="font-semibold text-slate-700 mt-1 whitespace-pre-line break-words">${escapeHtml(formatValue(value, key))}</p>
+            </div>
+          `)
+          .join("");
+
+        const safeApplyLink = job.officialApplyLink ? escapeHtml(job.officialApplyLink) : "#";
+        const isApplyDisabled = !job.officialApplyLink;
 
         const card = document.createElement("article");
         card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
         card.innerHTML = `
-          <div class="mb-4">
-            <h2 class="text-xl font-black text-slate-800">${escapeHtml(postTitle)}</h2>
-            <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Government Vacancy</p>
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-xl font-black text-slate-800">${escapeHtml(postTitle)}</h2>
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Government Vacancy</p>
+            </div>
+            <a href="${safeApplyLink}" ${isApplyDisabled ? 'aria-disabled="true" tabindex="-1"' : 'target="_blank" rel="noopener noreferrer"'} class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition ${isApplyDisabled ? 'opacity-50 pointer-events-none' : ''}">Apply Officially</a>
           </div>
 
           <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">State Name</p>
-              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(stateName)}</p>
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Publish Date</p>
+              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(formatDate(job.publishDate))}</p>
             </div>
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
               <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Organisation Name</p>
@@ -179,17 +208,45 @@
             </div>
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
               <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Last Date of Apply</p>
-              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(lastDate)}</p>
+              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(formatDate(job.lastDateApply))}</p>
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-3">
-            <a href="${detailUrl}" class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition">See Details</a>
-            <a href="${detailUrl}" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition">Apply</a>
+          <div class="mb-3">
+            <button type="button" class="see-details-btn inline-flex items-center justify-center px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition" data-target="${detailId}" aria-expanded="false">
+              See Details
+            </button>
+          </div>
+
+          <div id="${detailId}" class="job-details-panel overflow-hidden max-h-0 opacity-0 transition-all duration-300 ease-in-out">
+            <div class="grid sm:grid-cols-2 gap-3 text-sm pt-1">
+              ${allDetailsRows || '<div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-500">No details available.</div>'}
+            </div>
           </div>
         `;
 
         govtJobsList.appendChild(card);
+      });
+
+      govtJobsList.querySelectorAll(".see-details-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const targetId = button.getAttribute("data-target");
+          const panel = document.getElementById(targetId);
+          if (!panel) return;
+
+          const isOpen = panel.classList.contains("max-h-[2000px]");
+          if (isOpen) {
+            panel.classList.remove("max-h-[2000px]", "opacity-100");
+            panel.classList.add("max-h-0", "opacity-0");
+            button.setAttribute("aria-expanded", "false");
+            button.textContent = "See Details";
+          } else {
+            panel.classList.remove("max-h-0", "opacity-0");
+            panel.classList.add("max-h-[2000px]", "opacity-100");
+            button.setAttribute("aria-expanded", "true");
+            button.textContent = "Hide Details";
+          }
+        });
       });
     }
 
