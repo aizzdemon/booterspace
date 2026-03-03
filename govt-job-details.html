@@ -12,10 +12,12 @@
   <main class="max-w-4xl mx-auto px-4 py-10">
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="bg-indigo-600 px-6 py-4">
-        <h1 class="text-2xl md:text-3xl font-black text-white">BPSC Government Job Details</h1>
+        <h1 id="jobDetailsTitle" class="text-2xl md:text-3xl font-black text-white">Government Job Details</h1>
       </div>
 
       <div class="p-6">
+        <div id="jobDetailsMessage" class="hidden mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
+
         <div class="overflow-x-auto">
           <table class="w-full border border-slate-200 rounded-xl overflow-hidden">
             <thead class="bg-slate-50">
@@ -24,54 +26,108 @@
                 <th class="text-left text-sm font-bold text-slate-700 px-4 py-3 border-b border-slate-200">Details</th>
               </tr>
             </thead>
-            <tbody>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Post Name</td>
-                <td class="px-4 py-3">Bihar Public Service Commission (BPSC)</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Post Name</td>
-                <td class="px-4 py-3">Assistant Prosecution Officer (Abhiyojan Padadhikari)</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">No of Posts</td>
-                <td class="px-4 py-3">300</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Advt No</td>
-                <td class="px-4 py-3">13/2026</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Salary</td>
-                <td class="px-4 py-3">Pay Level-9</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Qualification</td>
-                <td class="px-4 py-3">Law Graduate (LLB) with eligibility for Advocate registration</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Age Limit</td>
-                <td class="px-4 py-3">21-37 years (UR Male) as on 01.08.2026 (relaxations applicable)</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Start Date for Apply</td>
-                <td class="px-4 py-3">27.02.2026</td>
-              </tr>
-              <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-semibold">Last Date for Apply</td>
-                <td class="px-4 py-3">20.03.2026</td>
-              </tr>
-              <tr>
-                <td class="px-4 py-3 font-semibold">Official Website</td>
-                <td class="px-4 py-3">
-                  <a href="https://www.bpsc.bihar.gov.in" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline">www.bpsc.bihar.gov.in</a>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="jobDetailsBody"></tbody>
           </table>
         </div>
       </div>
     </section>
   </main>
+
+  <script>
+    const titleElement = document.getElementById("jobDetailsTitle");
+    const bodyElement = document.getElementById("jobDetailsBody");
+    const messageElement = document.getElementById("jobDetailsMessage");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function humanizeKey(key) {
+      return key
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function formatDate(value) {
+      if (!value) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const d = new Date(`${value}T00:00:00`);
+        return d.toLocaleDateString();
+      }
+      return value;
+    }
+
+    function formatValue(value, key) {
+      if (value === null || value === undefined || value === "") return "N/A";
+      if (typeof value === "string" && /(date|deadline)/i.test(key)) return formatDate(value);
+      if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    function setMessage(text) {
+      messageElement.textContent = text;
+      messageElement.classList.remove("hidden");
+    }
+
+    function renderJobDetails(job) {
+      const postTitle = job.postName || job.jobTitle || "Government Job Details";
+      titleElement.textContent = postTitle;
+
+      const rows = Object.entries(job)
+        .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
+        .map(([key, value], index, list) => {
+          const borderClass = index === list.length - 1 ? "" : "border-b border-slate-200";
+          const displayValue = formatValue(value, key);
+
+          const renderedValue = /^(https?:\/\/)/i.test(displayValue)
+            ? `<a href="${escapeHtml(displayValue)}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline break-all">${escapeHtml(displayValue)}</a>`
+            : `<span class="whitespace-pre-line break-words">${escapeHtml(displayValue)}</span>`;
+
+          return `
+            <tr class="${borderClass}">
+              <td class="px-4 py-3 font-semibold align-top">${escapeHtml(humanizeKey(key))}</td>
+              <td class="px-4 py-3">${renderedValue}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      bodyElement.innerHTML = rows || `
+        <tr>
+          <td colspan="2" class="px-4 py-4 text-slate-500 text-sm">No additional details available for this job.</td>
+        </tr>
+      `;
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id") || "";
+      const savedJobRaw = sessionStorage.getItem("selectedGovtJob");
+
+      if (!savedJobRaw) {
+        setMessage("Job details are unavailable. Please go back and click See Details again.");
+      } else {
+        const savedJob = JSON.parse(savedJobRaw);
+        const savedJobId = String(savedJob.id || "");
+
+        if (requestedId && savedJobId && requestedId !== savedJobId) {
+          setMessage("Loaded details may not match the selected job. Please return and open details again.");
+        }
+
+        renderJobDetails(savedJob);
+      }
+    } catch (error) {
+      setMessage(`Failed to load job details: ${error.message}`);
+    }
+  </script>
 </body>
 </html>
