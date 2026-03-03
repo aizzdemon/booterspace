@@ -1,365 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BPSC APO Recruitment 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #0d0d0d;
-    --paper: #f5f0e8;
-    --accent: #b5451b;
-    --accent2: #1b4f8a;
-    --border: #c8bfa8;
-    --soft: #ede8dc;
-    --gold: #c9983a;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    padding: 40px 20px;
-  }
-
-  .page {
-    max-width: 860px;
-    margin: 0 auto;
-  }
-
-  .header {
-    border-top: 4px solid var(--ink);
-    border-bottom: 1px solid var(--border);
-    padding: 28px 0 20px;
-    margin-bottom: 32px;
-    position: relative;
-  }
-
-  .header::after {
-    content: '';
-    display: block;
-    height: 3px;
-    background: var(--accent);
-    margin-top: 16px;
-    width: 60px;
-  }
-
-  .org-tag {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent2);
-    margin-bottom: 10px;
-  }
-
-  .title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(22px, 4vw, 34px);
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--ink);
-  }
-
-  .title span { color: var(--accent); }
-
-  .subtitle {
-    margin-top: 10px;
-    font-size: 13px;
-    color: #666;
-    line-height: 1.6;
-    max-width: 640px;
-  }
-
-  .badges {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 20px 0 28px;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-
-  .badge-red { background: var(--accent); color: #fff; }
-  .badge-blue { background: var(--accent2); color: #fff; }
-  .badge-gold { background: var(--gold); color: #fff; }
-  .badge-outline { border: 1.5px solid var(--ink); background: transparent; color: var(--ink); }
-
-  .section-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .overview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0;
-    border: 1px solid var(--border);
-    margin-bottom: 32px;
-  }
-
-  .ov-item {
-    padding: 16px 18px;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    background: #fff;
-    transition: background 0.2s;
-  }
-
-  .ov-item:hover { background: var(--soft); }
-
-  .ov-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 5px;
-  }
-
-  .ov-value {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.3;
-  }
-
-  .ov-value.big {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px;
-    color: var(--accent);
-  }
-
-  .dates-banner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .date-box {
-    padding: 20px 22px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .date-box.start {
-    background: var(--accent2);
-    color: #fff;
-  }
-
-  .date-box.end {
-    background: var(--accent);
-    color: #fff;
-  }
-
-  .date-box .d-label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.8;
-    margin-bottom: 6px;
-  }
-
-  .date-box .d-value {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    font-weight: 700;
-  }
-
-  .date-box .d-sub {
-    font-size: 11px;
-    opacity: 0.75;
-    margin-top: 3px;
-  }
-
-  .vacancy-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 32px;
-    font-size: 13px;
-  }
-
-  .vacancy-table thead tr {
-    background: var(--ink);
-    color: #fff;
-  }
-
-  .vacancy-table thead th {
-    padding: 12px 16px;
-    text-align: left;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    font-size: 11px;
-    text-transform: uppercase;
-  }
-
-  .vacancy-table tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-  }
-
-  .vacancy-table tbody tr:hover { background: var(--soft); }
-
-  .vacancy-table tbody tr.total-row {
-    background: var(--soft);
-    font-weight: 700;
-    border-top: 2px solid var(--ink);
-  }
-
-  .vacancy-table td {
-    padding: 11px 16px;
-    color: var(--ink);
-  }
-
-  .vacancy-table td:not(:first-child) {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .cat-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
-
-  .info-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 32px;
-  }
-
-  .info-box {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--accent2);
-    padding: 20px;
-  }
-
-  .info-box h3 {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--accent2);
-    margin-bottom: 14px;
-  }
-
-  .info-list { list-style: none; }
-
-  .info-list li {
-    padding: 7px 0;
-    font-size: 13px;
-    border-bottom: 1px dashed var(--border);
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    line-height: 1.5;
-  }
-
-  .info-list li:last-child { border-bottom: none; }
-
-  .info-list li::before {
-    content: '→';
-    color: var(--accent);
-    font-size: 12px;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-
-  .footer {
-    border-top: 1px solid var(--border);
-    padding-top: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .footer-info {
-    font-size: 11px;
-    color: #888;
-  }
-
-  .apply-btn {
-    display: inline-block;
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    padding: 12px 28px;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    transition: background 0.2s, transform 0.1s;
-    cursor: pointer;
-    border: none;
-  }
-
-  .apply-btn:hover {
-    background: var(--ink);
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 600px) {
-    .info-row { grid-template-columns: 1fr; }
-    .dates-banner { grid-template-columns: 1fr; }
-    .overview-grid { grid-template-columns: 1fr 1fr; }
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <title>Government Job Details</title>
+  <meta name="description" content="View complete government job details, important dates, and official application links on BooterSpace.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen page-govt-job-details">
-  <main class="max-w-4xl mx-auto px-4 py-10">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "public/js/navbar.js";
+      document.body.appendChild(s);
+    });
+  </script>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-      <div class="bg-indigo-600 px-6 py-4">
-        <h1 id="jobDetailsTitle" class="text-2xl md:text-3xl font-black text-white">Government Job Details</h1>
+      <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-6">
+        <p class="text-xs font-bold tracking-widest uppercase text-indigo-100">Government Vacancy</p>
+        <h1 id="jobDetailsTitle" class="text-2xl md:text-3xl font-black text-white mt-1">Government Job Details</h1>
       </div>
 
-      <div class="p-6">
-        <div id="jobDetailsMessage" class="hidden mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
+      <div class="p-6 space-y-6">
+        <div id="jobDetailsMessage" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full border border-slate-200 rounded-xl overflow-hidden">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="text-left text-sm font-bold text-slate-700 px-4 py-3 border-b border-slate-200 w-1/3">Field</th>
-                <th class="text-left text-sm font-bold text-slate-700 px-4 py-3 border-b border-slate-200">Details</th>
-              </tr>
-            </thead>
-            <tbody id="jobDetailsBody"></tbody>
-          </table>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickHighlights"></div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+            <h2 class="text-sm font-black uppercase tracking-wide text-slate-700">Complete Details</h2>
+          </div>
+          <div id="jobDetailsBody" class="grid md:grid-cols-2"></div>
         </div>
       </div>
     </section>
@@ -368,7 +47,17 @@
   <script>
     const titleElement = document.getElementById("jobDetailsTitle");
     const bodyElement = document.getElementById("jobDetailsBody");
+    const highlightsElement = document.getElementById("quickHighlights");
     const messageElement = document.getElementById("jobDetailsMessage");
+
+    const quickHighlightKeys = [
+      "organizationName",
+      "organisationName",
+      "publishDate",
+      "lastDateApply",
+      "state",
+      "applicationFee"
+    ];
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -410,34 +99,55 @@
       messageElement.classList.remove("hidden");
     }
 
+    function renderHighlights(job) {
+      const seen = new Set();
+      const cards = quickHighlightKeys
+        .filter((key) => {
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return key in job;
+        })
+        .map((key) => `
+          <article class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">${escapeHtml(humanizeKey(key))}</p>
+            <p class="text-sm font-semibold text-slate-700 mt-1 break-words">${escapeHtml(formatValue(job[key], key))}</p>
+          </article>
+        `)
+        .join("");
+
+      highlightsElement.innerHTML = cards || '<p class="text-sm text-slate-500">No quick highlights available.</p>';
+    }
+
     function renderJobDetails(job) {
       const postTitle = job.postName || job.jobTitle || "Government Job Details";
       titleElement.textContent = postTitle;
+      renderHighlights(job);
 
-      const rows = Object.entries(job)
+      const cards = Object.entries(job)
         .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
-        .map(([key, value], index, list) => {
-          const borderClass = index === list.length - 1 ? "" : "border-b border-slate-200";
+        .map(([key, value], index) => {
           const displayValue = formatValue(value, key);
-
           const renderedValue = /^(https?:\/\/)/i.test(displayValue)
             ? `<a href="${escapeHtml(displayValue)}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline break-all">${escapeHtml(displayValue)}</a>`
             : `<span class="whitespace-pre-line break-words">${escapeHtml(displayValue)}</span>`;
 
+          const borderClasses = [
+            "border-slate-200",
+            "p-4",
+            "md:border-b",
+            index % 2 === 0 ? "md:border-r" : ""
+          ].join(" ").trim();
+
           return `
-            <tr class="${borderClass}">
-              <td class="px-4 py-3 font-semibold align-top">${escapeHtml(humanizeKey(key))}</td>
-              <td class="px-4 py-3">${renderedValue}</td>
-            </tr>
+            <div class="${borderClasses}">
+              <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">${escapeHtml(humanizeKey(key))}</p>
+              <div class="mt-1 text-sm text-slate-700">${renderedValue}</div>
+            </div>
           `;
         })
         .join("");
 
-      bodyElement.innerHTML = rows || `
-        <tr>
-          <td colspan="2" class="px-4 py-4 text-slate-500 text-sm">No additional details available for this job.</td>
-        </tr>
-      `;
+      bodyElement.innerHTML = cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>';
     }
 
     try {
