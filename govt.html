@@ -172,6 +172,7 @@
 
       jobs.forEach((job, index) => {
         const postTitle = job.postName || job.jobTitle || "Untitled Job";
+        const organizationName = job.organizationName || job.organisationName || "N/A";
         const detailId = `job-details-${job.id || index}`;
         const allDetailsRows = Object.entries(job)
           .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
