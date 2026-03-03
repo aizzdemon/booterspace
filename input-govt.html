@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Extractor → Firebase</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+    measurementId: "G-RRC3X485KQ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.__firestore = db;
+  window.__fsModules = { collection, addDoc, serverTimestamp };
+</script>
+
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a3a;
+    --accent: #00e5a0;
+    --accent2: #7b5cfa;
+    --warn: #f5a623;
+    --danger: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 820px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* Header */
+  .hdr {
+    margin-bottom: 40px;
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+  }
+
+  .hdr-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .hdr h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 5vw, 42px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  .hdr h1 span { color: var(--accent); }
+
+  .hdr p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Input section */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+
+  .input-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .url-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 13px 16px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .url-input:focus { border-color: var(--accent); }
+  .url-input::placeholder { color: var(--muted); }
+
+  .btn {
+    padding: 13px 24px;
+    border: none;
+    border-radius: 3px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-extract {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-extract:hover { background: #00ffb3; transform: translateY(-1px); }
+  .btn-extract:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-save {
+    background: var(--accent2);
+    color: #fff;
+    width: 100%;
+    padding: 16px;
+    font-size: 15px;
+    margin-top: 20px;
+    border-radius: 3px;
+  }
+
+  .btn-save:hover { background: #9370ff; transform: translateY(-1px); }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Status bar */
+  .status-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 3px;
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+
+  .status-bar.loading { display: flex; background: rgba(123,92,250,0.15); border: 1px solid var(--accent2); color: var(--accent2); }
+  .status-bar.success { display: flex; background: rgba(0,229,160,0.12); border: 1px solid var(--accent); color: var(--accent); }
+  .status-bar.error { display: flex; background: rgba(255,77,109,0.12); border: 1px solid var(--danger); color: var(--danger); }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Preview section */
+  .preview-section { display: none; }
+  .preview-section.visible { display: block; }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .badge-new {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    background: rgba(0,229,160,0.15);
+    color: var(--accent);
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  /* Field grid */
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .field-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .field-item:hover { border-color: var(--accent2); }
+
+  .field-item.full-width { grid-column: 1 / -1; }
+
+  .field-key {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field-val {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .field-val.mono { font-family: var(--mono); font-size: 12px; }
+
+  /* Vacancy table preview */
+  .vac-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  .vac-table thead tr { background: var(--surface2); }
+  .vac-table thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vac-table tbody tr { border-bottom: 1px solid var(--border); }
+  .vac-table tbody tr:hover { background: var(--surface); }
+  .vac-table td { padding: 10px 14px; color: var(--text); }
+  .vac-table td:not(:first-child) { text-align: center; font-family: var(--mono); }
+
+  .vac-table tr.total td {
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(0,229,160,0.06);
+    border-top: 1px solid var(--accent);
+  }
+
+  /* JSON preview */
+  .json-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #7ec8a0;
+    line-height: 1.7;
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 4px;
+  }
+
+  .json-preview::-webkit-scrollbar { width: 4px; }
+  .json-preview::-webkit-scrollbar-track { background: var(--bg); }
+  .json-preview::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Firebase success */
+  .firebase-success {
+    display: none;
+    background: rgba(0,229,160,0.08);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .firebase-success.visible { display: block; }
+
+  .firebase-success .icon { font-size: 36px; margin-bottom: 10px; }
+
+  .firebase-success h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .firebase-success p { color: var(--muted); font-size: 13px; }
+
+  .doc-id {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface);
+    padding: 6px 12px;
+    border-radius: 2px;
+    color: var(--accent2);
+    word-break: break-all;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  @media (max-width: 560px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .url-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-tag">// tool v1.0 · FreeJobAlert Extractor</div>
+    <h1>Job Data <span>Extractor</span><br>→ Firebase</h1>
+    <p>Paste any FreeJobAlert article URL. Claude AI will extract all job details and save them directly to your Firestore database.</p>
+  </div>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <label class="input-label">Paste FreeJobAlert URL</label>
+    <div class="url-row">
+      <input
+        type="url"
+        id="urlInput"
+        class="url-input"
+        placeholder="https://www.freejobalert.com/articles/..."
+      />
+      <button class="btn btn-extract" id="extractBtn" onclick="extractData()">
+        ⚡ Extract
+      </button>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span id="statusMsg">Fetching and extracting data...</span>
+    </div>
+  </div>
+
+  <!-- Preview Section -->
+  <div class="preview-section" id="previewSection">
+
+    <div class="preview-header">
+      <span class="section-label">Extracted Data Preview</span>
+      <span class="badge-new">READY TO SAVE</span>
+    </div>
+
+    <!-- Key Fields -->
+    <div class="field-grid" id="fieldGrid"></div>
+
+    <!-- Vacancy Table -->
+    <div id="vacancySection" style="display:none">
+      <div class="section-label" style="margin-bottom:12px">Category-wise Vacancy</div>
+      <table class="vac-table" id="vacancyTable"></table>
+      <div class="divider"></div>
+    </div>
+
+    <!-- Raw JSON -->
+    <div class="section-label" style="margin-bottom:10px">Raw JSON (will be saved to Firestore)</div>
+    <div class="json-preview" id="jsonPreview"></div>
+
+    <!-- Save Button -->
+    <button class="btn btn-save" id="saveBtn" onclick="saveToFirebase()">
+      🔥 Save to Firebase Firestore
+    </button>
+
+    <!-- Firebase success -->
+    <div class="firebase-success" id="firebaseSuccess">
+      <div class="icon">✅</div>
+      <h3>Saved to Firestore!</h3>
+      <p>Job data has been written to your <strong>kar-kardan</strong> project</p>
+      <p>Collection: <strong>jobs</strong></p>
+      <div class="doc-id" id="docIdDisplay"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let extractedData = null;
+
+  function setStatus(type, msg) {
+    const bar = document.getElementById('statusBar');
+    bar.className = 'status-bar ' + type;
+    document.getElementById('statusMsg').textContent = msg;
+    if (type === '') bar.style.display = 'none';
+  }
+
+  async function extractData() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url || !url.startsWith('http')) {
+      setStatus('error', 'Please enter a valid URL starting with https://');
+      return;
+    }
+
+    const btn = document.getElementById('extractBtn');
+    btn.disabled = true;
+    document.getElementById('previewSection').classList.remove('visible');
+    document.getElementById('firebaseSuccess').classList.remove('visible');
+    setStatus('loading', 'Fetching page and extracting with Claude AI...');
+
+    try {
+      // Use a CORS proxy to fetch the URL
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const pageRes = await fetch(proxyUrl);
+      const proxyData = await pageRes.json();
+      const htmlContent = proxyData.contents;
+
+      // Strip HTML tags to get plain text
+      const tmp = document.createElement('div');
+      tmp.innerHTML = htmlContent;
+      // Remove scripts and styles
+      tmp.querySelectorAll('script, style, nav, footer, .sidebar').forEach(e => e.remove());
+      const pageText = tmp.innerText || tmp.textContent;
+      const truncated = pageText.slice(0, 6000);
+
+      setStatus('loading', 'Claude AI is analyzing the content...');
+
+      // Call Claude API
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a job data extractor. Extract structured information from job recruitment page text and return ONLY valid JSON with no markdown, no backticks, no explanation. Return this exact structure:
+{
+  "title": "",
+  "organization": "",
+  "post_name": "",
+  "total_posts": "",
+  "advertisement_no": "",
+  "qualification": "",
+  "age_limit": "",
+  "salary": "",
+  "application_start_date": "",
+  "application_end_date": "",
+  "official_website": "",
+  "apply_link": "",
+  "selection_process": "",
+  "eligibility_details": "",
+  "application_fee": "",
+  "source_url": "",
+  "vacancy_by_category": [
+    {"category": "", "total": "", "women": ""}
+  ],
+  "important_dates": {},
+  "extra_notes": ""
+}
+Fill all fields as accurately as possible from the text. For vacancy_by_category, extract all category rows. Return ONLY JSON.`,
+          messages: [{
+            role: 'user',
+            content: `Extract job details from this page. Source URL: ${url}\n\nPage content:\n${truncated}`
+          }]
+        })
+      });
+
+      const claudeData = await claudeRes.json();
+      const rawText = claudeData.content.map(c => c.text || '').join('');
+
+      // Clean and parse JSON
+      let cleaned = rawText.trim();
+      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+      extractedData = JSON.parse(cleaned);
+      extractedData.source_url = url;
+      extractedData.extracted_at = new Date().toISOString();
+
+      renderPreview(extractedData);
+      setStatus('success', '✓ Extraction complete! Review below then save to Firebase.');
+      document.getElementById('previewSection').classList.add('visible');
+
+    } catch (err) {
+      console.error(err);
+      setStatus('error', 'Error: ' + err.message + ' — Check console for details.');
+    }
+
+    btn.disabled = false;
+  }
+
+  function renderPreview(data) {
+    // Key fields
+    const fields = [
+      { key: 'title', label: 'Job Title' },
+      { key: 'organization', label: 'Organization' },
+      { key: 'post_name', label: 'Post Name' },
+      { key: 'total_posts', label: 'Total Posts' },
+      { key: 'advertisement_no', label: 'Advertisement No' },
+      { key: 'salary', label: 'Salary' },
+      { key: 'qualification', label: 'Qualification' },
+      { key: 'age_limit', label: 'Age Limit' },
+      { key: 'application_start_date', label: 'Apply Start Date' },
+      { key: 'application_end_date', label: 'Apply Last Date' },
+      { key: 'application_fee', label: 'Application Fee' },
+      { key: 'official_website', label: 'Official Website' },
+      { key: 'selection_process', label: 'Selection Process', full: true },
+      { key: 'eligibility_details', label: 'Eligibility Details', full: true },
+    ];
+
+    const grid = document.getElementById('fieldGrid');
+    grid.innerHTML = fields.map(f => `
+      <div class="field-item ${f.full ? 'full-width' : ''}">
+        <div class="field-key">${f.label}</div>
+        <div class="field-val">${data[f.key] || '<span style="color:var(--muted)">—</span>'}</div>
+      </div>
+    `).join('');
+
+    // Vacancy table
+    if (data.vacancy_by_category && data.vacancy_by_category.length > 0) {
+      const vt = document.getElementById('vacancyTable');
+      vt.innerHTML = `
+        <thead><tr><th>Category</th><th>Total Posts</th><th>Women (35%)</th></tr></thead>
+        <tbody>
+          ${data.vacancy_by_category.map(v => `
+            <tr class="${v.category?.toLowerCase().includes('total') ? 'total' : ''}">
+              <td>${v.category || ''}</td>
+              <td>${v.total || ''}</td>
+              <td>${v.women || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+      document.getElementById('vacancySection').style.display = 'block';
+    }
+
+    // JSON
+    document.getElementById('jsonPreview').textContent = JSON.stringify(data, null, 2);
+  }
+
+  async function saveToFirebase() {
+    if (!extractedData) return;
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving...';
+
+    try {
+      // Wait for Firebase to be ready
+      let attempts = 0;
+      while (!window.__firestore && attempts < 20) {
+        await new Promise(r => setTimeout(r, 200));
+        attempts++;
+      }
+
+      if (!window.__firestore) throw new Error('Firebase not initialized. Refresh and try again.');
+
+      const db = window.__firestore;
+      const { collection, addDoc, serverTimestamp } = window.__fsModules;
+
+      const docRef = await addDoc(collection(db, 'jobs'), {
+        ...extractedData,
+        saved_at: serverTimestamp()
+      });
+
+      document.getElementById('docIdDisplay').textContent = 'Document ID: ' + docRef.id;
+      document.getElementById('firebaseSuccess').classList.add('visible');
+      btn.textContent = '✅ Saved!';
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#000';
+
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = '🔥 Save to Firebase Firestore';
+      setStatus('error', 'Firebase error: ' + err.message);
+    }
+  }
+
+  // Allow Enter key
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') extractData();
+  });
+</script>
+</body>
+</html>
