@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Details · SarkariJobs</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+    measurementId: "G-RRC3X485KQ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  async function loadJob() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (!id) {
+      showError('No job ID provided. <a href="govt2.html">← Go back</a>');
+      return;
+    }
+
+    try {
+      const snap = await getDoc(doc(db, 'jobs', id));
+      if (!snap.exists()) {
+        showError('Job not found. It may have been removed. <a href="govt2.html">← Go back</a>');
+        return;
+      }
+      renderJob({ id: snap.id, ...snap.data() });
+    } catch (e) {
+      showError('Error loading job: ' + e.message);
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('loading').innerHTML = `<div class="err-block">${msg}</div>`;
+  }
+
+  function v(val, fallback = '—') {
+    return (val && String(val).trim()) ? val : fallback;
+  }
+
+  function renderJob(job) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    document.title = (job.title || 'Job Details') + ' · SarkariJobs';
+
+    // Breadcrumb
+    document.getElementById('breadTitle').textContent = truncate(job.title || 'Job Details', 55);
+
+    // Hero section
+    document.getElementById('heroOrg').textContent = v(job.organization);
+    document.getElementById('heroTitle').textContent = v(job.title);
+    document.getElementById('heroPost').textContent = v(job.post_name);
+    document.getElementById('heroAdvt').textContent = job.advertisement_no ? 'Advt No: ' + job.advertisement_no : '';
+
+    // Deadline badge
+    const dl = job.application_end_date;
+    const daysLeft = getDaysLeft(dl);
+    const dlEl = document.getElementById('heroDl');
+    if (dl) {
+      const urgency = daysLeft !== null && daysLeft <= 5 ? 'red' : daysLeft !== null && daysLeft <= 10 ? 'warn' : 'ok';
+      dlEl.innerHTML = `Last Date: <strong>${dl}</strong> ${daysLeft !== null ? `<span class="dl-badge ${urgency}">${daysLeft} days left</span>` : ''}`;
+    }
+
+    // Quick stats strip
+    const stats = [
+      { icon: '👥', label: 'Total Posts', val: v(job.total_posts) },
+      { icon: '💰', label: 'Salary', val: v(job.salary) },
+      { icon: '📅', label: 'Apply Start', val: v(job.application_start_date) },
+      { icon: '⏰', label: 'Apply End', val: v(job.application_end_date) },
+      { icon: '🎓', label: 'Qualification', val: v(job.qualification) },
+      { icon: '🪪', label: 'Age Limit', val: v(job.age_limit) },
+    ];
+
+    document.getElementById('statsStrip').innerHTML = stats.map(s => `
+      <div class="stat-box">
+        <div class="stat-icon">${s.icon}</div>
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-val">${s.val}</div>
+      </div>
+    `).join('');
+
+    // Eligibility
+    setSection('secEligibility', 'eligibilityBody', buildList([
+      job.qualification && `<strong>Qualification:</strong> ${job.qualification}`,
+      job.age_limit && `<strong>Age Limit:</strong> ${job.age_limit}`,
+      job.eligibility_details,
+    ]));
+
+    // Selection Process
+    setSection('secSelection', 'selectionBody', job.selection_process
+      ? `<p>${job.selection_process}</p>`
+      : null
+    );
+
+    // Important Dates
+    const datesData = job.important_dates;
+    if (datesData && typeof datesData === 'object' && Object.keys(datesData).length > 0) {
+      document.getElementById('secDates').style.display = 'block';
+      document.getElementById('datesBody').innerHTML = Object.entries(datesData).map(([k, val]) => `
+        <div class="kv-row">
+          <span class="kv-key">${k}</span>
+          <span class="kv-val">${val}</span>
+        </div>
+      `).join('');
+    } else if (job.application_start_date || job.application_end_date) {
+      document.getElementById('secDates').style.display = 'block';
+      document.getElementById('datesBody').innerHTML = `
+        ${job.application_start_date ? `<div class="kv-row"><span class="kv-key">Application Start</span><span class="kv-val">${job.application_start_date}</span></div>` : ''}
+        ${job.application_end_date ? `<div class="kv-row"><span class="kv-key">Last Date to Apply</span><span class="kv-val highlight">${job.application_end_date}</span></div>` : ''}
+      `;
+    }
+
+    // Vacancy table
+    if (job.vacancy_by_category && job.vacancy_by_category.length > 0) {
+      document.getElementById('secVacancy').style.display = 'block';
+      document.getElementById('vacancyBody').innerHTML = `
+        <table class="detail-table">
+          <thead><tr><th>Category</th><th>Total Posts</th><th>Women (35%)</th></tr></thead>
+          <tbody>
+            ${job.vacancy_by_category.map(r => `
+              <tr class="${(r.category || '').toLowerCase().includes('total') ? 'total-row' : ''}">
+                <td>${r.category || '—'}</td>
+                <td>${r.total || '—'}</td>
+                <td>${r.women || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Application Fee
+    if (job.application_fee) {
+      document.getElementById('secFee').style.display = 'block';
+      document.getElementById('feeBody').innerHTML = `<p>${job.application_fee}</p>`;
+    }
+
+    // Extra notes
+    if (job.extra_notes) {
+      document.getElementById('secNotes').style.display = 'block';
+      document.getElementById('notesBody').innerHTML = `<p>${job.extra_notes}</p>`;
+    }
+
+    // Links
+    const applyLink = job.apply_link || (job.official_website ? 'https://' + job.official_website : null);
+    if (applyLink) {
+      const btn = document.getElementById('applyBtn');
+      btn.href = applyLink;
+      btn.style.display = 'inline-flex';
+    }
+    if (job.source_url) {
+      const src = document.getElementById('sourceBtn');
+      src.href = job.source_url;
+      src.style.display = 'inline-flex';
+    }
+
+    // Metadata footer
+    document.getElementById('metaWebsite').textContent = v(job.official_website);
+    document.getElementById('metaExtracted').textContent = job.extracted_at
+      ? new Date(job.extracted_at).toLocaleString('en-IN')
+      : '—';
+    document.getElementById('metaDocId').textContent = job.id;
+  }
+
+  function buildList(items) {
+    const valid = items.filter(Boolean);
+    if (!valid.length) return null;
+    return valid.map(i => `<div class="list-entry">→ ${i}</div>`).join('');
+  }
+
+  function setSection(secId, bodyId, html) {
+    if (html) {
+      document.getElementById(secId).style.display = 'block';
+      document.getElementById(bodyId).innerHTML = html;
+    }
+  }
+
+  function truncate(str, len) {
+    return str && str.length > len ? str.slice(0, len) + '…' : str;
+  }
+
+  function getDaysLeft(dateStr) {
+    if (!dateStr) return null;
+    const cleaned = dateStr.replace(/(\d{2})[-./](\d{2})[-./](\d{4})/, '$3-$2-$1');
+    const d = new Date(cleaned);
+    if (isNaN(d)) { const d2 = new Date(dateStr); if (isNaN(d2)) return null; }
+    const target = isNaN(d) ? new Date(dateStr) : d;
+    const diff = Math.ceil((target - Date.now()) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? diff : null;
+  }
+
+  loadJob();
+</script>
+
+<style>
+  :root {
+    --bg: #f7f4ee;
+    --surface: #ffffff;
+    --ink: #111118;
+    --muted: #6b6870;
+    --border: #e0dbd0;
+    --accent: #d4380d;
+    --accent2: #1a3a6b;
+    --green: #0d7a4e;
+    --gold: #b8860b;
+    --urgent: #c41230;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Topbar */
+  .topbar {
+    background: var(--ink);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .logo span { color: #f5a623; }
+
+  .back-link {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: #fff; }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    background: #e8e3d8;
+    padding: 10px 32px;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .breadcrumb a { color: var(--accent2); text-decoration: none; font-weight: 600; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .bc-sep { opacity: 0.4; }
+
+  /* Loading */
+  #loading {
+    text-align: center;
+    padding: 100px 20px;
+    color: var(--muted);
+  }
+
+  .load-spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err-block {
+    color: var(--accent);
+    font-size: 15px;
+    padding: 40px;
+  }
+
+  .err-block a { color: var(--accent2); }
+
+  /* Content */
+  #content { display: none; }
+
+  /* Hero */
+  .job-hero {
+    background: var(--accent2);
+    color: #fff;
+    padding: 44px 32px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .job-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; right: -30px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .hero-inner { max-width: 900px; margin: 0 auto; }
+
+  .hero-org {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f5a623;
+    margin-bottom: 10px;
+  }
+
+  .hero-advt {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 4px;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(22px, 4vw, 38px);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+
+  .hero-post {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    padding: 5px 14px;
+    border-radius: 2px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .hero-dl {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dl-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .dl-badge.ok { background: rgba(13,122,78,0.3); color: #5dffb8; }
+  .dl-badge.warn { background: rgba(184,134,11,0.3); color: #ffd54f; }
+  .dl-badge.red { background: rgba(196,18,48,0.4); color: #ff8a9b; animation: pulse 1.5s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* Stats strip */
+  .stats-strip {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+  }
+
+  #statsStrip {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+  }
+
+  .stat-box {
+    padding: 18px 16px;
+    border-right: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+
+  .stat-box:hover { background: #f0ece3; }
+  .stat-box:last-child { border-right: none; }
+
+  .stat-icon { font-size: 18px; margin-bottom: 5px; }
+
+  .stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .stat-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  /* Body */
+  .detail-body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Section cards */
+  .sec-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .sec-head {
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .sec-head .sec-icon { font-size: 16px; }
+
+  .sec-body { padding: 20px; }
+
+  .sec-body p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #333;
+  }
+
+  .list-entry {
+    padding: 8px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    border-bottom: 1px dashed var(--border);
+    color: #333;
+  }
+
+  .list-entry:last-child { border-bottom: none; }
+
+  /* KV rows */
+  .kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+    gap: 20px;
+  }
+
+  .kv-row:last-child { border-bottom: none; }
+  .kv-key { color: var(--muted); font-weight: 600; flex-shrink: 0; }
+  .kv-val { font-weight: 700; color: var(--ink); text-align: right; }
+  .kv-val.highlight { color: var(--urgent); }
+
+  /* Detail table */
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  .detail-table thead tr { background: #f0ece3; }
+
+  .detail-table thead th {
+    padding: 11px 16px;
+    text-align: left;
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .detail-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .detail-table tbody tr:hover { background: #faf7f2; }
+  .detail-table td { padding: 11px 16px; }
+  .detail-table td:not(:first-child) { text-align: center; font-weight: 600; }
+
+  .total-row td {
+    font-weight: 800 !important;
+    color: var(--accent2) !important;
+    background: #eef1f8 !important;
+    border-top: 2px solid var(--accent2) !important;
+  }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-apply-main {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 32px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .btn-apply-main:hover { background: #b82b00; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,56,13,0.3); }
+
+  .btn-source {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--accent2);
+    text-decoration: none;
+    padding: 14px 24px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    border: 2px solid var(--accent2);
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .btn-source:hover { background: var(--accent2); color: #fff; }
+
+  /* Meta footer */
+  .meta-footer {
+    background: #e8e3d8;
+    border-top: 1px solid var(--border);
+    padding: 20px 32px;
+  }
+
+  .meta-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .meta-item strong { color: var(--ink); font-size: 12px; font-family: monospace; }
+
+  @media (max-width: 700px) {
+    #statsStrip { grid-template-columns: repeat(3, 1fr); }
+    .job-hero, .breadcrumb, .meta-footer { padding-left: 16px; padding-right: 16px; }
+    .detail-body { padding: 24px 16px; }
+    .topbar { padding: 0 16px; }
+    .stats-strip { padding: 0 16px; }
+  }
+
+  @media (max-width: 480px) {
+    #statsStrip { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="logo">Sarkari<span>Jobs</span></div>
+  <a class="back-link" href="govt2.html">← All Jobs</a>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="govt2.html">Home</a>
+  <span class="bc-sep">/</span>
+  <a href="govt2.html">Jobs</a>
+  <span class="bc-sep">/</span>
+  <span id="breadTitle">Loading...</span>
+</div>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="load-spinner"></div>
+  <p>Fetching job details...</p>
+</div>
+
+<!-- Content -->
+<div id="content">
+
+  <!-- Hero -->
+  <div class="job-hero">
+    <div class="hero-inner">
+      <div class="hero-org" id="heroOrg"></div>
+      <h1 class="hero-title" id="heroTitle"></h1>
+      <div class="hero-post" id="heroPost"></div>
+      <div class="hero-advt" id="heroAdvt"></div>
+      <div class="hero-dl" id="heroDl"></div>
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stats-strip">
+    <div id="statsStrip"></div>
+  </div>
+
+  <!-- Detail body -->
+  <div class="detail-body">
+
+    <!-- Apply buttons -->
+    <div class="action-row">
+      <a class="btn-apply-main" id="applyBtn" href="#" target="_blank" rel="noopener">
+        Apply Online ↗
+      </a>
+      <a class="btn-source" id="sourceBtn" href="#" target="_blank" rel="noopener">
+        View Source Notification ↗
+      </a>
+    </div>
+
+    <!-- Eligibility -->
+    <div class="sec-card" id="secEligibility" style="display:none">
+      <div class="sec-head"><span class="sec-icon">🎓</span> Eligibility Criteria</div>
+      <div class="sec-body" id="eligibilityBody"></div>
+    </div>
+
+    <!-- Selection Process -->
+    <div class="sec-card" id="secSelection" style="display:none">
+      <div class="sec-head"><span class="sec-icon">📋</span> Selection Process</div>
+      <div class="sec-body" id="selectionBody"></div>
+    </div>
+
+    <!-- Important Dates -->
+    <div class="sec-card" id="secDates" style="display:none">
+      <div class="sec-head"><span class="sec-icon">📅</span> Important Dates</div>
+      <div class="sec-body" id="datesBody"></div>
+    </div>
+
+    <!-- Vacancy by Category -->
+    <div class="sec-card" id="secVacancy" style="display:none">
+      <div class="sec-head"><span class="sec-icon">👥</span> Category-wise Vacancy</div>
+      <div class="sec-body" style="padding:0" id="vacancyBody"></div>
+    </div>
+
+    <!-- Application Fee -->
+    <div class="sec-card" id="secFee" style="display:none">
+      <div class="sec-head"><span class="sec-icon">💳</span> Application Fee</div>
+      <div class="sec-body" id="feeBody"></div>
+    </div>
+
+    <!-- Extra Notes -->
+    <div class="sec-card" id="secNotes" style="display:none">
+      <div class="sec-head"><span class="sec-icon">📝</span> Additional Information</div>
+      <div class="sec-body" id="notesBody"></div>
+    </div>
+
+  </div>
+
+  <!-- Meta footer -->
+  <div class="meta-footer">
+    <div class="meta-inner">
+      <div class="meta-item">Official Website<strong id="metaWebsite"></strong></div>
+      <div class="meta-item">Extracted On<strong id="metaExtracted"></strong></div>
+      <div class="meta-item">Document ID<strong id="metaDocId"></strong></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
