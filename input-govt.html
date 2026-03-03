@@ -376,9 +376,9 @@
 
   <!-- Header -->
   <div class="hdr">
-    <div class="hdr-tag">// tool v1.0 · FreeJobAlert Extractor</div>
+    <div class="hdr-tag">// tool v2.0 · FreeJobAlert Extractor</div>
     <h1>Job Data <span>Extractor</span><br>→ Firebase</h1>
-    <p>Paste any FreeJobAlert article URL. Claude AI will extract all job details and save them directly to your Firestore database.</p>
+    <p>Paste any FreeJobAlert article URL. Claude AI fetches &amp; extracts all job details, then saves directly to your Firestore database.</p>
   </div>
 
   <!-- Input Card -->
@@ -463,33 +463,23 @@
     btn.disabled = true;
     document.getElementById('previewSection').classList.remove('visible');
     document.getElementById('firebaseSuccess').classList.remove('visible');
-    setStatus('loading', 'Fetching page and extracting with Claude AI...');
+    setStatus('loading', 'Claude AI is fetching and reading the page...');
 
     try {
-      // Use a CORS proxy to fetch the URL
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-      const pageRes = await fetch(proxyUrl);
-      const proxyData = await pageRes.json();
-      const htmlContent = proxyData.contents;
-
-      // Strip HTML tags to get plain text
-      const tmp = document.createElement('div');
-      tmp.innerHTML = htmlContent;
-      // Remove scripts and styles
-      tmp.querySelectorAll('script, style, nav, footer, .sidebar').forEach(e => e.remove());
-      const pageText = tmp.innerText || tmp.textContent;
-      const truncated = pageText.slice(0, 6000);
-
-      setStatus('loading', 'Claude AI is analyzing the content...');
-
-      // Call Claude API
+      // Send URL directly to Claude with web_search tool enabled.
+      // Claude fetches the page itself — no CORS proxy needed at all.
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are a job data extractor. Extract structured information from job recruitment page text and return ONLY valid JSON with no markdown, no backticks, no explanation. Return this exact structure:
+          max_tokens: 2000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: `You are a job data extractor. The user gives you a URL. Use the web_search tool to fetch and read the page at that URL, then extract all job details and return ONLY a single valid JSON object with no markdown, no backticks, no explanation whatsoever — just raw JSON. Use this exact structure:
 {
   "title": "",
   "organization": "",
@@ -506,29 +496,44 @@
   "selection_process": "",
   "eligibility_details": "",
   "application_fee": "",
-  "source_url": "",
-  "vacancy_by_category": [
-    {"category": "", "total": "", "women": ""}
-  ],
+  "vacancy_by_category": [{"category": "", "total": "", "women": ""}],
   "important_dates": {},
   "extra_notes": ""
 }
-Fill all fields as accurately as possible from the text. For vacancy_by_category, extract all category rows. Return ONLY JSON.`,
+Fill every field from the page content. For vacancy_by_category include all rows. Return ONLY the JSON object, nothing else.`,
           messages: [{
             role: 'user',
-            content: `Extract job details from this page. Source URL: ${url}\n\nPage content:\n${truncated}`
+            content: `Fetch this URL and extract all job recruitment details from it: ${url}`
           }]
         })
       });
 
+      if (!claudeRes.ok) {
+        const errBody = await claudeRes.text();
+        throw new Error(`Claude API error ${claudeRes.status}: ${errBody}`);
+      }
+
+      setStatus('loading', 'Claude AI is analyzing job details...');
+
       const claudeData = await claudeRes.json();
-      const rawText = claudeData.content.map(c => c.text || '').join('');
 
-      // Clean and parse JSON
-      let cleaned = rawText.trim();
-      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+      // Collect all text blocks from the response (may include tool_use blocks too)
+      const rawText = (claudeData.content || [])
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('');
 
-      extractedData = JSON.parse(cleaned);
+      if (!rawText.trim()) {
+        throw new Error('Claude returned no text. The page may be blocked or too dynamic to read.');
+      }
+
+      // Robustly extract JSON — handles any surrounding text
+      let jsonStr = rawText.trim();
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Could not find JSON in Claude response. Raw: ' + jsonStr.slice(0, 200));
+      jsonStr = jsonMatch[0];
+
+      extractedData = JSON.parse(jsonStr);
       extractedData.source_url = url;
       extractedData.extracted_at = new Date().toISOString();
 
@@ -538,7 +543,7 @@ Fill all fields as accurately as possible from the text. For vacancy_by_category
 
     } catch (err) {
       console.error(err);
-      setStatus('error', 'Error: ' + err.message + ' — Check console for details.');
+      setStatus('error', 'Error: ' + err.message);
     }
 
     btn.disabled = false;
