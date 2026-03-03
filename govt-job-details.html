@@ -340,160 +340,126 @@
   }
 </style>
 </head>
-<body>
-<div class="page">
-  <div class="header">
-    <div class="org-tag">Bihar Public Service Commission · Official Recruitment</div>
-    <h1 class="title">BPSC <span>Assistant Prosecution</span><br>Officer Recruitment 2026</h1>
-    <p class="subtitle">
-      Recruitment of 300 Assistant Prosecution Officer (Abhiyojan Padadhikari) posts under Home Department, Bihar.
-      Law Graduates (LLB) eligible for Advocate registration may apply online through the official BPSC portal.
-    </p>
-  </div>
+<body class="bg-slate-100 text-slate-900 min-h-screen page-govt-job-details">
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="bg-indigo-600 px-6 py-4">
+        <h1 id="jobDetailsTitle" class="text-2xl md:text-3xl font-black text-white">Government Job Details</h1>
+      </div>
 
-  <div class="badges">
-    <span class="badge badge-red">300 Posts</span>
-    <span class="badge badge-blue">Advt No: 13/2026</span>
-    <span class="badge badge-gold">Pay Level-9</span>
-    <span class="badge badge-outline">LLB Required</span>
-  </div>
+      <div class="p-6">
+        <div id="jobDetailsMessage" class="hidden mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
-  <div class="section-title">Overview</div>
-  <div class="overview-grid">
-    <div class="ov-item">
-      <div class="ov-label">Total Vacancies</div>
-      <div class="ov-value big">300</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Post Name</div>
-      <div class="ov-value">Assistant Prosecution Officer</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Organisation</div>
-      <div class="ov-value">Bihar Public Service Commission</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Qualification</div>
-      <div class="ov-value">LLB + Advocate eligibility</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Salary</div>
-      <div class="ov-value">Pay Level-9 (7th CPC)</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Age Limit</div>
-      <div class="ov-value">21–37 yrs (UR Male, relaxations apply)</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Official Website</div>
-      <div class="ov-value">bpsc.bihar.gov.in</div>
-    </div>
-    <div class="ov-item">
-      <div class="ov-label">Advertisement No</div>
-      <div class="ov-value">13/2026</div>
-    </div>
-  </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border border-slate-200 rounded-xl overflow-hidden">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="text-left text-sm font-bold text-slate-700 px-4 py-3 border-b border-slate-200 w-1/3">Field</th>
+                <th class="text-left text-sm font-bold text-slate-700 px-4 py-3 border-b border-slate-200">Details</th>
+              </tr>
+            </thead>
+            <tbody id="jobDetailsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <div class="section-title">Important Dates</div>
-  <div class="dates-banner">
-    <div class="date-box start">
-      <div class="d-label">Application Opens</div>
-      <div class="d-value">27 February 2026</div>
-      <div class="d-sub">Registration at bpsconline.bihar.gov.in</div>
-    </div>
-    <div class="date-box end">
-      <div class="d-label">Last Date to Apply</div>
-      <div class="d-value">20 March 2026</div>
-      <div class="d-sub">Online application closes — don't miss!</div>
-    </div>
-  </div>
+  <script>
+    const titleElement = document.getElementById("jobDetailsTitle");
+    const bodyElement = document.getElementById("jobDetailsBody");
+    const messageElement = document.getElementById("jobDetailsMessage");
 
-  <div class="section-title">Category-wise Vacancy</div>
-  <table class="vacancy-table">
-    <thead>
-      <tr>
-        <th>Category</th>
-        <th>Total Posts</th>
-        <th>Women (35% Horizontal)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="cat-dot" style="background:#1b4f8a"></span>Unreserved (UR)</td>
-        <td>129</td>
-        <td>41</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#c9983a"></span>EWS</td>
-        <td>29</td>
-        <td>10</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#5b2d8e"></span>SC</td>
-        <td>42</td>
-        <td>15</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#2d8e5b"></span>ST</td>
-        <td>07</td>
-        <td>02</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#b5451b"></span>EBC</td>
-        <td>64</td>
-        <td>22</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#888"></span>BC</td>
-        <td>25</td>
-        <td>09</td>
-      </tr>
-      <tr>
-        <td><span class="cat-dot" style="background:#d45c8e"></span>BC Women</td>
-        <td>04</td>
-        <td>—</td>
-      </tr>
-      <tr class="total-row">
-        <td>Total</td>
-        <td>300</td>
-        <td>99</td>
-      </tr>
-    </tbody>
-  </table>
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
 
-  <div class="info-row">
-    <div class="info-box">
-      <h3>Eligibility Criteria</h3>
-      <ul class="info-list">
-        <li>Law Graduate (LLB) from a recognized University</li>
-        <li>Must be eligible for registration as Advocate in Court</li>
-        <li>Age: Min 21 years | Max 37 years (UR Male) as on 01.08.2026</li>
-        <li>BC/EBC (M/F) & UR Female: up to 40 years</li>
-        <li>SC/ST (M/F): up to 42 years</li>
-        <li>Relaxations for Govt. servants, Ex-Servicemen, PwBD</li>
-      </ul>
-    </div>
-    <div class="info-box">
-      <h3>Selection Process</h3>
-      <ul class="info-list">
-        <li>Preliminary Exam — GS: 100 marks + Law: 150 marks (Objective)</li>
-        <li>Main Exam — 8 Descriptive Papers, Total 1000 marks</li>
-        <li>Interview — 100 marks</li>
-        <li>Final merit based on Main Exam + Interview only</li>
-        <li>No negative marking in Prelims (as per notification)</li>
-        <li>Only online applications accepted via BPSC portal</li>
-      </ul>
-    </div>
-  </div>
+    function humanizeKey(key) {
+      return key
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
 
-  <div class="footer">
-    <div class="footer-info">
-      <strong>Application Fee:</strong> ₹100 (General) + bank charges &nbsp;|&nbsp;
-      <strong>Mode:</strong> Online only &nbsp;|&nbsp;
-      <strong>Domicile:</strong> Bihar residents (for reservation)
-    </div>
-    <a class="apply-btn" href="https://bpsc.bihar.gov.in" target="_blank" rel="noopener noreferrer">Apply Online →</a>
-  </div>
-</div>
+    function formatDate(value) {
+      if (!value) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const d = new Date(`${value}T00:00:00`);
+        return d.toLocaleDateString();
+      }
+      return value;
+    }
+
+    function formatValue(value, key) {
+      if (value === null || value === undefined || value === "") return "N/A";
+      if (typeof value === "string" && /(date|deadline)/i.test(key)) return formatDate(value);
+      if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    function setMessage(text) {
+      messageElement.textContent = text;
+      messageElement.classList.remove("hidden");
+    }
+
+    function renderJobDetails(job) {
+      const postTitle = job.postName || job.jobTitle || "Government Job Details";
+      titleElement.textContent = postTitle;
+
+      const rows = Object.entries(job)
+        .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
+        .map(([key, value], index, list) => {
+          const borderClass = index === list.length - 1 ? "" : "border-b border-slate-200";
+          const displayValue = formatValue(value, key);
+
+          const renderedValue = /^(https?:\/\/)/i.test(displayValue)
+            ? `<a href="${escapeHtml(displayValue)}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline break-all">${escapeHtml(displayValue)}</a>`
+            : `<span class="whitespace-pre-line break-words">${escapeHtml(displayValue)}</span>`;
+
+          return `
+            <tr class="${borderClass}">
+              <td class="px-4 py-3 font-semibold align-top">${escapeHtml(humanizeKey(key))}</td>
+              <td class="px-4 py-3">${renderedValue}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      bodyElement.innerHTML = rows || `
+        <tr>
+          <td colspan="2" class="px-4 py-4 text-slate-500 text-sm">No additional details available for this job.</td>
+        </tr>
+      `;
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id") || "";
+      const savedJobRaw = sessionStorage.getItem("selectedGovtJob");
+
+      if (!savedJobRaw) {
+        setMessage("Job details are unavailable. Please go back and click See Details again.");
+      } else {
+        const savedJob = JSON.parse(savedJobRaw);
+        const savedJobId = String(savedJob.id || "");
+
+        if (requestedId && savedJobId && requestedId !== savedJobId) {
+          setMessage("Loaded details may not match the selected job. Please return and open details again.");
+        }
+
+        renderJobDetails(savedJob);
+      }
+    } catch (error) {
+      setMessage(`Failed to load job details: ${error.message}`);
+    }
+  </script>
 </body>
 </html>
