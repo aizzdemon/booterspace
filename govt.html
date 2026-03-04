@@ -175,9 +175,6 @@
         const organizationName = job.organizationName || job.organisationName || "N/A";
         const jobId = String(job.id || index);
 
-        const safeApplyLink = job.officialApplyLink ? escapeHtml(job.officialApplyLink) : "#";
-        const isApplyDisabled = !job.officialApplyLink;
-
         const card = document.createElement("article");
         card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
         card.innerHTML = `
@@ -186,7 +183,6 @@
               <h2 class="text-xl font-black text-slate-800">${escapeHtml(postTitle)}</h2>
               <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Government Vacancy</p>
             </div>
-            <a href="${safeApplyLink}" ${isApplyDisabled ? 'aria-disabled="true" tabindex="-1"' : 'target="_blank" rel="noopener noreferrer"'} class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition ${isApplyDisabled ? 'opacity-50 pointer-events-none' : ''}">Apply Officially</a>
           </div>
 
           <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
