@@ -1,709 +1,750 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Job Details · SarkariJobs</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-    authDomain: "kar-kardan.firebaseapp.com",
-    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kar-kardan",
-    storageBucket: "kar-kardan.firebasestorage.app",
-    messagingSenderId: "554147696994",
-    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
-    measurementId: "G-RRC3X485KQ"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  async function loadJob() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-
-    if (!id) {
-      showError('No job ID provided. <a href="govt2.html">← Go back</a>');
-      return;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a2744">
+  <title>Government Job Details</title>
+  <meta name="description" content="Official Government Recruitment Advertisement — View complete job details, eligibility, and application process.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --navy: #0f1f45;
+      --navy-mid: #1a2f5e;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --gold-pale: #f9f3e3;
+      --cream: #faf8f4;
+      --ink: #1c1c2e;
+      --slate: #4a5568;
+      --rule: #d4c5a0;
     }
 
-    try {
-      const snap = await getDoc(doc(db, 'jobs', id));
-      if (!snap.exists()) {
-        showError('Job not found. It may have been removed. <a href="govt2.html">← Go back</a>');
-        return;
-      }
-      renderJob({ id: snap.id, ...snap.data() });
-    } catch (e) {
-      showError('Error loading job: ' + e.message);
-    }
-  }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  function showError(msg) {
-    document.getElementById('loading').innerHTML = `<div class="err-block">${msg}</div>`;
-  }
-
-  function v(val, fallback = '—') {
-    return (val && String(val).trim()) ? val : fallback;
-  }
-
-  function renderJob(job) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    document.title = (job.title || 'Job Details') + ' · SarkariJobs';
-
-    // Breadcrumb
-    document.getElementById('breadTitle').textContent = truncate(job.title || 'Job Details', 55);
-
-    // Hero section
-    document.getElementById('heroOrg').textContent = v(job.organization);
-    document.getElementById('heroTitle').textContent = v(job.title);
-    document.getElementById('heroPost').textContent = v(job.post_name);
-    document.getElementById('heroAdvt').textContent = job.advertisement_no ? 'Advt No: ' + job.advertisement_no : '';
-
-    // Deadline badge
-    const dl = job.application_end_date;
-    const daysLeft = getDaysLeft(dl);
-    const dlEl = document.getElementById('heroDl');
-    if (dl) {
-      const urgency = daysLeft !== null && daysLeft <= 5 ? 'red' : daysLeft !== null && daysLeft <= 10 ? 'warn' : 'ok';
-      dlEl.innerHTML = `Last Date: <strong>${dl}</strong> ${daysLeft !== null ? `<span class="dl-badge ${urgency}">${daysLeft} days left</span>` : ''}`;
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
     }
 
-    // Quick stats strip
-    const stats = [
-      { icon: '👥', label: 'Total Posts', val: v(job.total_posts) },
-      { icon: '💰', label: 'Salary', val: v(job.salary) },
-      { icon: '📅', label: 'Apply Start', val: v(job.application_start_date) },
-      { icon: '⏰', label: 'Apply End', val: v(job.application_end_date) },
-      { icon: '🎓', label: 'Qualification', val: v(job.qualification) },
-      { icon: '🪪', label: 'Age Limit', val: v(job.age_limit) },
-    ];
-
-    document.getElementById('statsStrip').innerHTML = stats.map(s => `
-      <div class="stat-box">
-        <div class="stat-icon">${s.icon}</div>
-        <div class="stat-label">${s.label}</div>
-        <div class="stat-val">${s.val}</div>
-      </div>
-    `).join('');
-
-    // Eligibility
-    setSection('secEligibility', 'eligibilityBody', buildList([
-      job.qualification && `<strong>Qualification:</strong> ${job.qualification}`,
-      job.age_limit && `<strong>Age Limit:</strong> ${job.age_limit}`,
-      job.eligibility_details,
-    ]));
-
-    // Selection Process
-    setSection('secSelection', 'selectionBody', job.selection_process
-      ? `<p>${job.selection_process}</p>`
-      : null
-    );
-
-    // Important Dates
-    const datesData = job.important_dates;
-    if (datesData && typeof datesData === 'object' && Object.keys(datesData).length > 0) {
-      document.getElementById('secDates').style.display = 'block';
-      document.getElementById('datesBody').innerHTML = Object.entries(datesData).map(([k, val]) => `
-        <div class="kv-row">
-          <span class="kv-key">${k}</span>
-          <span class="kv-val">${val}</span>
-        </div>
-      `).join('');
-    } else if (job.application_start_date || job.application_end_date) {
-      document.getElementById('secDates').style.display = 'block';
-      document.getElementById('datesBody').innerHTML = `
-        ${job.application_start_date ? `<div class="kv-row"><span class="kv-key">Application Start</span><span class="kv-val">${job.application_start_date}</span></div>` : ''}
-        ${job.application_end_date ? `<div class="kv-row"><span class="kv-key">Last Date to Apply</span><span class="kv-val highlight">${job.application_end_date}</span></div>` : ''}
-      `;
+    h1, h2, h3, h4 {
+      font-family: 'EB Garamond', serif;
     }
 
-    // Vacancy table
-    if (job.vacancy_by_category && job.vacancy_by_category.length > 0) {
-      document.getElementById('secVacancy').style.display = 'block';
-      document.getElementById('vacancyBody').innerHTML = `
-        <table class="detail-table">
-          <thead><tr><th>Category</th><th>Total Posts</th><th>Women (35%)</th></tr></thead>
-          <tbody>
-            ${job.vacancy_by_category.map(r => `
-              <tr class="${(r.category || '').toLowerCase().includes('total') ? 'total-row' : ''}">
-                <td>${r.category || '—'}</td>
-                <td>${r.total || '—'}</td>
-                <td>${r.women || '—'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
+    /* ── Header ── */
+    .govt-header {
+      background: var(--navy);
+      border-bottom: 4px solid var(--gold);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
     }
 
-    // Application Fee
-    if (job.application_fee) {
-      document.getElementById('secFee').style.display = 'block';
-      document.getElementById('feeBody').innerHTML = `<p>${job.application_fee}</p>`;
+    .govt-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 10% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 90% 50%, rgba(201,168,76,0.06) 0%, transparent 60%);
+      pointer-events: none;
     }
 
-    // Extra notes
-    if (job.extra_notes) {
-      document.getElementById('secNotes').style.display = 'block';
-      document.getElementById('notesBody').innerHTML = `<p>${job.extra_notes}</p>`;
+    .govt-header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 32px 28px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
     }
 
-    // Links
-    const applyLink = job.apply_link || (job.official_website ? 'https://' + job.official_website : null);
-    if (applyLink) {
-      const btn = document.getElementById('applyBtn');
-      btn.href = applyLink;
-      btn.style.display = 'inline-flex';
-    }
-    if (job.source_url) {
-      const src = document.getElementById('sourceBtn');
-      src.href = job.source_url;
-      src.style.display = 'inline-flex';
+    .emblem {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
     }
 
-    // Metadata footer
-    document.getElementById('metaWebsite').textContent = v(job.official_website);
-    document.getElementById('metaExtracted').textContent = job.extracted_at
-      ? new Date(job.extracted_at).toLocaleString('en-IN')
-      : '—';
-    document.getElementById('metaDocId').textContent = job.id;
-  }
-
-  function buildList(items) {
-    const valid = items.filter(Boolean);
-    if (!valid.length) return null;
-    return valid.map(i => `<div class="list-entry">→ ${i}</div>`).join('');
-  }
-
-  function setSection(secId, bodyId, html) {
-    if (html) {
-      document.getElementById(secId).style.display = 'block';
-      document.getElementById(bodyId).innerHTML = html;
+    .header-text {
+      flex: 1;
     }
-  }
 
-  function truncate(str, len) {
-    return str && str.length > len ? str.slice(0, len) + '…' : str;
-  }
+    .ministry-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      margin-bottom: 6px;
+    }
 
-  function getDaysLeft(dateStr) {
-    if (!dateStr) return null;
-    const cleaned = dateStr.replace(/(\d{2})[-./](\d{2})[-./](\d{4})/, '$3-$2-$1');
-    const d = new Date(cleaned);
-    if (isNaN(d)) { const d2 = new Date(dateStr); if (isNaN(d2)) return null; }
-    const target = isNaN(d) ? new Date(dateStr) : d;
-    const diff = Math.ceil((target - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff >= 0 ? diff : null;
-  }
+    .job-title-main {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(22px, 4vw, 36px);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
 
-  loadJob();
-</script>
+    .advt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(201,168,76,0.15);
+      border: 1px solid rgba(201,168,76,0.35);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+    }
 
-<style>
-  :root {
-    --bg: #f7f4ee;
-    --surface: #ffffff;
-    --ink: #111118;
-    --muted: #6b6870;
-    --border: #e0dbd0;
-    --accent: #d4380d;
-    --accent2: #1a3a6b;
-    --green: #0d7a4e;
-    --gold: #b8860b;
-    --urgent: #c41230;
-  }
+    .advt-badge::before {
+      content: '◆';
+      font-size: 7px;
+      color: var(--gold);
+    }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── Main layout ── */
+    .main-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
 
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'Manrope', sans-serif;
-    min-height: 100vh;
-  }
+    /* ── Highlights strip ── */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 12px rgba(15,31,69,0.07);
+    }
 
-  /* Topbar */
-  .topbar {
-    background: var(--ink);
-    padding: 0 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+    .highlight-card {
+      background: #fff;
+      padding: 16px 18px;
+      position: relative;
+    }
 
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    color: #fff;
-  }
+    .highlight-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 18px;
+      right: 18px;
+      height: 2px;
+      background: var(--gold);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
 
-  .logo span { color: #f5a623; }
+    .highlight-card:hover::after { opacity: 1; }
 
-  .back-link {
-    color: #aaa;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: color 0.2s;
-  }
-  .back-link:hover { color: #fff; }
+    .highlight-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 5px;
+    }
 
-  /* Breadcrumb */
-  .breadcrumb {
-    background: #e8e3d8;
-    padding: 10px 32px;
-    font-size: 11px;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+    .highlight-value {
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.3;
+    }
 
-  .breadcrumb a { color: var(--accent2); text-decoration: none; font-weight: 600; }
-  .breadcrumb a:hover { text-decoration: underline; }
-  .bc-sep { opacity: 0.4; }
+    /* ── Content sections ── */
+    .section-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 6px rgba(15,31,69,0.05);
+    }
 
-  /* Loading */
-  #loading {
-    text-align: center;
-    padding: 100px 20px;
-    color: var(--muted);
-  }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      background: var(--navy);
+      border-bottom: 2px solid var(--gold);
+    }
 
-  .load-spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent2);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-  }
+    .section-header h2 {
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+    .section-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
 
-  .err-block {
-    color: var(--accent);
-    font-size: 15px;
-    padding: 40px;
-  }
+    /* ── Details table ── */
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
 
-  .err-block a { color: var(--accent2); }
+    .details-table tr {
+      border-bottom: 1px solid #f0ece3;
+      transition: background 0.15s;
+    }
 
-  /* Content */
-  #content { display: none; }
+    .details-table tr:last-child { border-bottom: none; }
+    .details-table tr:hover { background: #fdfbf7; }
 
-  /* Hero */
-  .job-hero {
-    background: var(--accent2);
-    color: #fff;
-    padding: 44px 32px 40px;
-    position: relative;
-    overflow: hidden;
-  }
+    .details-table td {
+      padding: 12px 20px;
+      font-size: 13.5px;
+      vertical-align: top;
+    }
 
-  .job-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -30px; right: -30px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.04);
-    pointer-events: none;
-  }
+    .details-table td:first-child {
+      width: 38%;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--slate);
+      padding-right: 12px;
+      padding-top: 14px;
+    }
 
-  .hero-inner { max-width: 900px; margin: 0 auto; }
+    .details-table td:last-child {
+      color: var(--ink);
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
 
-  .hero-org {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #f5a623;
-    margin-bottom: 10px;
-  }
+    .details-link {
+      color: var(--navy-mid);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px dashed var(--gold);
+      word-break: break-all;
+    }
+    .details-link:hover {
+      color: var(--gold);
+      border-bottom-style: solid;
+    }
 
-  .hero-advt {
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    margin-top: 4px;
-  }
+    /* ── Important dates ── */
+    .dates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0;
+    }
 
-  .hero-title {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(22px, 4vw, 38px);
-    font-weight: 800;
-    line-height: 1.15;
-    margin-bottom: 8px;
-  }
+    .date-item {
+      padding: 16px 20px;
+      border-right: 1px solid #f0ece3;
+      border-bottom: 1px solid #f0ece3;
+    }
 
-  .hero-post {
-    display: inline-block;
-    background: rgba(255,255,255,0.15);
-    padding: 5px 14px;
-    border-radius: 2px;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 16px;
-  }
+    .date-item:last-child,
+    .date-item:nth-last-child(-n+2):first-child {
+      border-right: none;
+    }
 
-  .hero-dl {
-    font-size: 13px;
-    color: rgba(255,255,255,0.75);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+    .date-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--slate);
+      margin-bottom: 4px;
+    }
 
-  .dl-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 2px;
-  }
+    .date-value {
+      font-family: 'EB Garamond', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--navy);
+    }
 
-  .dl-badge.ok { background: rgba(13,122,78,0.3); color: #5dffb8; }
-  .dl-badge.warn { background: rgba(184,134,11,0.3); color: #ffd54f; }
-  .dl-badge.red { background: rgba(196,18,48,0.4); color: #ff8a9b; animation: pulse 1.5s infinite; }
+    .date-value.urgent { color: #c0392b; }
 
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+    /* ── Apply CTA ── */
+    .apply-section {
+      background: var(--navy);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 28px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(15,31,69,0.12);
+      position: relative;
+      overflow: hidden;
+    }
 
-  /* Stats strip */
-  .stats-strip {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-  }
+    .apply-section::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.15);
+      pointer-events: none;
+    }
+    .apply-section::after {
+      content: '';
+      position: absolute;
+      top: -20px; right: -20px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.1);
+      pointer-events: none;
+    }
 
-  #statsStrip {
-    max-width: 900px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0;
-  }
+    .apply-text {
+      position: relative;
+      z-index: 1;
+    }
 
-  .stat-box {
-    padding: 18px 16px;
-    border-right: 1px solid var(--border);
-    transition: background 0.2s;
-  }
+    .apply-text h3 {
+      font-family: 'EB Garamond', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
 
-  .stat-box:hover { background: #f0ece3; }
-  .stat-box:last-child { border-right: none; }
+    .apply-text p {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+    }
 
-  .stat-icon { font-size: 18px; margin-bottom: 5px; }
+    .apply-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--gold);
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 13px 28px;
+      border-radius: 4px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+    }
 
-  .stat-label {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    margin-bottom: 4px;
-  }
+    .apply-btn:hover {
+      background: var(--gold-light);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(201,168,76,0.45);
+    }
 
-  .stat-val {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--ink);
-    line-height: 1.3;
-  }
+    .apply-btn:active { transform: translateY(0); }
 
-  /* Body */
-  .detail-body {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
+    /* ── Notice banner ── */
+    .notice-banner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #fffbeb;
+      border: 1px solid #f0d060;
+      border-left: 4px solid var(--gold);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #78600a;
+      line-height: 1.5;
+    }
 
-  /* Section cards */
-  .sec-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-  }
+    .notice-banner.hidden { display: none; }
+    .notice-icon { flex-shrink: 0; margin-top: 1px; }
 
-  .sec-head {
-    background: var(--ink);
-    color: #fff;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
+    /* ── Footer rule ── */
+    .page-footer {
+      max-width: 960px;
+      margin: 0 auto 40px;
+      padding: 0 16px;
+      border-top: 1px solid var(--rule);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
 
-  .sec-head .sec-icon { font-size: 16px; }
+    .footer-text {
+      font-size: 11px;
+      color: #9a8f7e;
+      letter-spacing: 0.06em;
+    }
 
-  .sec-body { padding: 20px; }
+    .official-stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.8;
+    }
+    .official-stamp::before { content: '⬡'; font-size: 12px; }
 
-  .sec-body p {
-    font-size: 14px;
-    line-height: 1.7;
-    color: #333;
-  }
+    /* ── Navbar placeholder ── */
+    #navbar { position: relative; z-index: 100; }
 
-  .list-entry {
-    padding: 8px 0;
-    font-size: 14px;
-    line-height: 1.6;
-    border-bottom: 1px dashed var(--border);
-    color: #333;
-  }
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-  .list-entry:last-child { border-bottom: none; }
+    .animate-in {
+      animation: fadeUp 0.4s ease forwards;
+      opacity: 0;
+    }
 
-  /* KV rows */
-  .kv-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13.5px;
-    gap: 20px;
-  }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.12s; }
+    .delay-3 { animation-delay: 0.19s; }
+    .delay-4 { animation-delay: 0.26s; }
+    .delay-5 { animation-delay: 0.33s; }
 
-  .kv-row:last-child { border-bottom: none; }
-  .kv-key { color: var(--muted); font-weight: 600; flex-shrink: 0; }
-  .kv-val { font-weight: 700; color: var(--ink); text-align: right; }
-  .kv-val.highlight { color: var(--urgent); }
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .govt-header-inner { flex-direction: column; align-items: center; text-align: center; }
+      .apply-section { flex-direction: column; text-align: center; }
+      .apply-btn { width: 100%; justify-content: center; }
+      .details-table td:first-child { width: 42%; }
+    }
 
-  /* Detail table */
-  .detail-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-  }
-
-  .detail-table thead tr { background: #f0ece3; }
-
-  .detail-table thead th {
-    padding: 11px 16px;
-    text-align: left;
-    font-family: 'Syne', sans-serif;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    border-bottom: 2px solid var(--border);
-  }
-
-  .detail-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
-  .detail-table tbody tr:hover { background: #faf7f2; }
-  .detail-table td { padding: 11px 16px; }
-  .detail-table td:not(:first-child) { text-align: center; font-weight: 600; }
-
-  .total-row td {
-    font-weight: 800 !important;
-    color: var(--accent2) !important;
-    background: #eef1f8 !important;
-    border-top: 2px solid var(--accent2) !important;
-  }
-
-  /* Action buttons */
-  .action-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .btn-apply-main {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    padding: 14px 32px;
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    border-radius: 3px;
-    transition: all 0.2s;
-  }
-
-  .btn-apply-main:hover { background: #b82b00; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,56,13,0.3); }
-
-  .btn-source {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    color: var(--accent2);
-    text-decoration: none;
-    padding: 14px 24px;
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    border: 2px solid var(--accent2);
-    border-radius: 3px;
-    transition: all 0.2s;
-  }
-
-  .btn-source:hover { background: var(--accent2); color: #fff; }
-
-  /* Meta footer */
-  .meta-footer {
-    background: #e8e3d8;
-    border-top: 1px solid var(--border);
-    padding: 20px 32px;
-  }
-
-  .meta-inner {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .meta-item { display: flex; flex-direction: column; gap: 3px; }
-  .meta-item strong { color: var(--ink); font-size: 12px; font-family: monospace; }
-
-  @media (max-width: 700px) {
-    #statsStrip { grid-template-columns: repeat(3, 1fr); }
-    .job-hero, .breadcrumb, .meta-footer { padding-left: 16px; padding-right: 16px; }
-    .detail-body { padding: 24px 16px; }
-    .topbar { padding: 0 16px; }
-    .stats-strip { padding: 0 16px; }
-  }
-
-  @media (max-width: 480px) {
-    #statsStrip { grid-template-columns: repeat(2, 1fr); }
-  }
-</style>
+    /* ── Decorative ornament ── */
+    .ornament {
+      text-align: center;
+      color: var(--rule);
+      font-size: 20px;
+      letter-spacing: 8px;
+      padding: 8px 0;
+      user-select: none;
+    }
+  </style>
 </head>
 <body>
 
-<!-- Topbar -->
-<nav class="topbar">
-  <div class="logo">Sarkari<span>Jobs</span></div>
-  <a class="back-link" href="govt2.html">← All Jobs</a>
-</nav>
+  <div id="navbar"></div>
+  <script>
+    if (typeof fetch !== 'undefined') {
+      fetch("navbar.html").then(r => r.text()).then(html => {
+        document.getElementById("navbar").innerHTML = html;
+        const s = document.createElement("script");
+        s.type = "module";
+        s.src = "public/js/navbar.js";
+        document.body.appendChild(s);
+      }).catch(() => {});
+    }
+  </script>
 
-<!-- Breadcrumb -->
-<div class="breadcrumb">
-  <a href="govt2.html">Home</a>
-  <span class="bc-sep">/</span>
-  <a href="govt2.html">Jobs</a>
-  <span class="bc-sep">/</span>
-  <span id="breadTitle">Loading...</span>
-</div>
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="govt-header">
+    <div class="govt-header-inner">
 
-<!-- Loading -->
-<div id="loading">
-  <div class="load-spinner"></div>
-  <p>Fetching job details...</p>
-</div>
+      <!-- Emblem SVG (generic govt seal) -->
+      <svg class="emblem" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Government Seal">
+        <circle cx="36" cy="36" r="34" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.4"/>
+        <circle cx="36" cy="36" r="29" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.3"/>
+        <!-- Star / wheel motif -->
+        <g transform="translate(36,36)">
+          <circle r="6" fill="#c9a84c" opacity="0.9"/>
+          <circle r="3" fill="#0f1f45"/>
+          <!-- Spokes -->
+          <g stroke="#c9a84c" stroke-width="1.2" opacity="0.7">
+            <line x1="0" y1="-9" x2="0" y2="-22"/>
+            <line x1="0" y1="9"  x2="0"  y2="22"/>
+            <line x1="-9" y1="0" x2="-22" y2="0"/>
+            <line x1="9" y1="0"  x2="22"  y2="0"/>
+            <line x1="-6.4" y1="-6.4" x2="-15.6" y2="-15.6"/>
+            <line x1="6.4"  y1="-6.4" x2="15.6"  y2="-15.6"/>
+            <line x1="-6.4" y1="6.4"  x2="-15.6" y2="15.6"/>
+            <line x1="6.4"  y1="6.4"  x2="15.6"  y2="15.6"/>
+          </g>
+          <!-- Outer dots -->
+          <g fill="#c9a84c" opacity="0.6">
+            <circle cx="0" cy="-26" r="1.5"/>
+            <circle cx="18.4" cy="-18.4" r="1.5"/>
+            <circle cx="26" cy="0" r="1.5"/>
+            <circle cx="18.4" cy="18.4" r="1.5"/>
+            <circle cx="0" cy="26" r="1.5"/>
+            <circle cx="-18.4" cy="18.4" r="1.5"/>
+            <circle cx="-26" cy="0" r="1.5"/>
+            <circle cx="-18.4" cy="-18.4" r="1.5"/>
+          </g>
+        </g>
+      </svg>
 
-<!-- Content -->
-<div id="content">
-
-  <!-- Hero -->
-  <div class="job-hero">
-    <div class="hero-inner">
-      <div class="hero-org" id="heroOrg"></div>
-      <h1 class="hero-title" id="heroTitle"></h1>
-      <div class="hero-post" id="heroPost"></div>
-      <div class="hero-advt" id="heroAdvt"></div>
-      <div class="hero-dl" id="heroDl"></div>
+      <div class="header-text">
+        <p class="ministry-label" id="headerMinistry">Official Recruitment Advertisement</p>
+        <h1 class="job-title-main" id="jobDetailsTitle">Government Job Details</h1>
+        <span class="advt-badge" id="headerAdvtNo">Loading…</span>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Stats strip -->
-  <div class="stats-strip">
-    <div id="statsStrip"></div>
-  </div>
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main-container">
 
-  <!-- Detail body -->
-  <div class="detail-body">
+    <!-- Notice / Warning -->
+    <div class="notice-banner hidden animate-in delay-1" id="jobDetailsMessage" role="alert">
+      <svg class="notice-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="jobDetailsMessageText"></span>
+    </div>
 
-    <!-- Apply buttons -->
-    <div class="action-row">
-      <a class="btn-apply-main" id="applyBtn" href="#" target="_blank" rel="noopener">
-        Apply Online ↗
+    <!-- Quick Highlights -->
+    <div class="highlights-grid animate-in delay-2" id="quickHighlights"></div>
+
+    <!-- Important Dates Section -->
+    <div class="section-card animate-in delay-3" id="datesSection" style="display:none">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <h2>Important Dates</h2>
+      </div>
+      <div class="dates-grid" id="datesGrid"></div>
+    </div>
+
+    <!-- Complete Details Section -->
+    <div class="section-card animate-in delay-3">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <h2>Vacancy Details</h2>
+      </div>
+      <table class="details-table" id="jobDetailsBody" aria-label="Job Details"></table>
+    </div>
+
+    <!-- Apply CTA -->
+    <div class="apply-section animate-in delay-4" id="applySection" style="display:none">
+      <div class="apply-text">
+        <h3>Apply for this Position</h3>
+        <p>Click below to open the official application portal</p>
+      </div>
+      <a id="applyLink" href="#" target="_blank" rel="noopener noreferrer" class="apply-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Apply Online
       </a>
-      <a class="btn-source" id="sourceBtn" href="#" target="_blank" rel="noopener">
-        View Source Notification ↗
-      </a>
     </div>
 
-    <!-- Eligibility -->
-    <div class="sec-card" id="secEligibility" style="display:none">
-      <div class="sec-head"><span class="sec-icon">🎓</span> Eligibility Criteria</div>
-      <div class="sec-body" id="eligibilityBody"></div>
-    </div>
+    <div class="ornament animate-in delay-5">◆ &nbsp; ◆ &nbsp; ◆</div>
+  </main>
 
-    <!-- Selection Process -->
-    <div class="sec-card" id="secSelection" style="display:none">
-      <div class="sec-head"><span class="sec-icon">📋</span> Selection Process</div>
-      <div class="sec-body" id="selectionBody"></div>
-    </div>
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="page-footer">
+    <p class="footer-text">© Government Recruitment Portal &nbsp;·&nbsp; All Rights Reserved</p>
+    <span class="official-stamp">Official Notice</span>
+  </footer>
 
-    <!-- Important Dates -->
-    <div class="sec-card" id="secDates" style="display:none">
-      <div class="sec-head"><span class="sec-icon">📅</span> Important Dates</div>
-      <div class="sec-body" id="datesBody"></div>
-    </div>
+  <!-- ═══════════════ SCRIPT ═══════════════ -->
+  <script>
+    /* ── helpers ── */
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
 
-    <!-- Vacancy by Category -->
-    <div class="sec-card" id="secVacancy" style="display:none">
-      <div class="sec-head"><span class="sec-icon">👥</span> Category-wise Vacancy</div>
-      <div class="sec-body" style="padding:0" id="vacancyBody"></div>
-    </div>
+    function humanize(key) {
+      return key.replace(/([a-z])([A-Z])/g,"$1 $2")
+                .replace(/[_-]+/g," ").trim()
+                .replace(/\b\w/g, c=>c.toUpperCase());
+    }
 
-    <!-- Application Fee -->
-    <div class="sec-card" id="secFee" style="display:none">
-      <div class="sec-head"><span class="sec-icon">💳</span> Application Fee</div>
-      <div class="sec-body" id="feeBody"></div>
-    </div>
+    function formatDate(val) {
+      if (!val) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        const d = new Date(val + "T00:00:00");
+        return d.toLocaleDateString("en-IN", {day:"2-digit", month:"long", year:"numeric"});
+      }
+      return val;
+    }
 
-    <!-- Extra Notes -->
-    <div class="sec-card" id="secNotes" style="display:none">
-      <div class="sec-head"><span class="sec-icon">📝</span> Additional Information</div>
-      <div class="sec-body" id="notesBody"></div>
-    </div>
+    function fmtVal(val, key) {
+      if (val === null || val === undefined || val === "") return "N/A";
+      if (typeof val === "string" && /(date|deadline|last)/i.test(key)) return formatDate(val);
+      if (Array.isArray(val)) return val.length ? val.join(", ") : "N/A";
+      if (typeof val === "object") return JSON.stringify(val, null, 2);
+      return String(val);
+    }
 
-  </div>
+    const isUrl = v => /^https?:\/\//i.test(v);
+    const isDateKey = k => /(date|deadline|last)/i.test(k);
 
-  <!-- Meta footer -->
-  <div class="meta-footer">
-    <div class="meta-inner">
-      <div class="meta-item">Official Website<strong id="metaWebsite"></strong></div>
-      <div class="meta-item">Extracted On<strong id="metaExtracted"></strong></div>
-      <div class="meta-item">Document ID<strong id="metaDocId"></strong></div>
-    </div>
-  </div>
+    /* ── date keys to surface in the dates section ── */
+    const DATE_KEYS = ["publishDate","startDate","lastDateApply","lastDate","examDate","admitCardDate","resultDate","interviewDate"];
 
-</div>
+    /* ── keys for highlights ── */
+    const HIGHLIGHT_KEYS = ["organizationName","organisationName","postName","jobTitle","totalVacancy","applicationFee","state","eligibility"];
+
+    /* ── excluded from details table ── */
+    const SKIP_KEYS = new Set(["id","createdAt","updatedAt"]);
+
+    /* ── apply URL keys ── */
+    const APPLY_KEYS = ["applyLink","applicationLink","applyUrl","officialWebsite","applicationUrl"];
+
+    /* ── render ── */
+    function render(job) {
+      /* Title */
+      const title = job.postName || job.jobTitle || "Government Vacancy";
+      document.getElementById("jobDetailsTitle").textContent = title;
+      document.title = title + " — Government Job Details";
+
+      /* Ministry label */
+      const org = job.organizationName || job.organisationName || job.department || "";
+      if (org) document.getElementById("headerMinistry").textContent = org;
+
+      /* Advt badge */
+      const advt = job.advtNo || job.advertisementNo || job.referenceNo || "";
+      document.getElementById("headerAdvtNo").textContent = advt ? "Advt No: " + advt : "Official Notification";
+
+      /* ── Highlights ── */
+      const hlEl = document.getElementById("quickHighlights");
+      const hlCards = HIGHLIGHT_KEYS.filter(k => k in job && String(job[k]||"").trim())
+        .slice(0, 6)
+        .map(k => `
+          <div class="highlight-card">
+            <div class="highlight-label">${esc(humanize(k))}</div>
+            <div class="highlight-value">${esc(fmtVal(job[k], k))}</div>
+          </div>`).join("");
+      hlEl.innerHTML = hlCards || `<div class="highlight-card"><div class="highlight-value">No highlights</div></div>`;
+
+      /* ── Dates section ── */
+      const dateEntries = DATE_KEYS.filter(k => k in job && String(job[k]||"").trim() && job[k] !== "N/A");
+      if (dateEntries.length) {
+        document.getElementById("datesSection").style.display = "";
+        const today = new Date(); today.setHours(0,0,0,0);
+        document.getElementById("datesGrid").innerHTML = dateEntries.map(k => {
+          const raw = String(job[k]);
+          const isUrgent = isDateKey(k) && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+            ? (new Date(raw+"T00:00:00") - today) / 864e5 < 7 : false;
+          return `
+            <div class="date-item">
+              <div class="date-label">${esc(humanize(k))}</div>
+              <div class="date-value${isUrgent?" urgent":""}">${esc(formatDate(raw))}</div>
+            </div>`;
+        }).join("");
+      }
+
+      /* ── Details table ── */
+      const tbody = document.getElementById("jobDetailsBody");
+      const rows = Object.entries(job)
+        .filter(([k]) => !SKIP_KEYS.has(k))
+        .map(([k, v]) => {
+          const display = fmtVal(v, k);
+          const cell = isUrl(display)
+            ? `<a class="details-link" href="${esc(display)}" target="_blank" rel="noopener noreferrer">${esc(display)}</a>`
+            : `<span>${esc(display)}</span>`;
+          return `<tr>
+            <td>${esc(humanize(k))}</td>
+            <td>${cell}</td>
+          </tr>`;
+        }).join("");
+      tbody.innerHTML = rows || `<tr><td colspan="2" style="padding:20px;color:#888;font-style:italic;">No details available.</td></tr>`;
+
+      /* ── Apply button ── */
+      let applyUrl = "";
+      for (const k of APPLY_KEYS) {
+        if (job[k] && isUrl(String(job[k]))) { applyUrl = String(job[k]); break; }
+      }
+      if (applyUrl) {
+        document.getElementById("applySection").style.display = "";
+        document.getElementById("applyLink").href = applyUrl;
+      }
+    }
+
+    function showMessage(text) {
+      const el = document.getElementById("jobDetailsMessage");
+      document.getElementById("jobDetailsMessageText").textContent = text;
+      el.classList.remove("hidden");
+    }
+
+    /* ── Boot ── */
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id") || "";
+      const raw = sessionStorage.getItem("selectedGovtJob");
+
+      if (!raw) {
+        /* Demo mode — render sample data so the page isn't blank */
+        render({
+          organizationName: "Ministry of Railways — Railway Recruitment Board",
+          advtNo: "RRB/2025/001",
+          postName: "Junior Engineer (Civil)",
+          department: "Civil Engineering Wing",
+          totalVacancy: "7943",
+          payScale: "₹ 35,400 – ₹ 1,12,400 (Level 6)",
+          qualification: "Bachelor of Engineering / B.Tech in Civil Engineering from a recognised University",
+          ageLimit: "18 – 33 Years (Relaxation as per Govt. norms)",
+          applicationFee: "₹ 500 (General) | ₹ 250 (SC/ST/PwD)",
+          state: "Pan India",
+          selectionProcess: "Computer Based Test (CBT) → Document Verification → Medical Examination",
+          publishDate: "2025-06-01",
+          lastDateApply: "2025-06-30",
+          examDate: "2025-09-15",
+          officialWebsite: "https://www.rrbapply.gov.in/",
+          applyLink: "https://www.rrbapply.gov.in/"
+        });
+        showMessage("Preview mode — actual job data will load from sessionStorage in production.");
+      } else {
+        const job = JSON.parse(raw);
+        if (requestedId && String(job.id||"") && requestedId !== String(job.id)) {
+          showMessage("Details shown may not match the selected vacancy. Please return and re-open.");
+        }
+        render(job);
+      }
+    } catch (e) {
+      showMessage("Failed to load job details: " + e.message);
+    }
+  </script>
 </body>
 </html>
