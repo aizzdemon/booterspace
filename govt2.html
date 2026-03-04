@@ -1,613 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sarkari Jobs · Live Listings</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <title>Government Jobs | State Emblems</title>
+  <meta name="description" content="Explore government job updates, recruitment notices, and exam opportunities with BooterSpace.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Continuous Scrolling Animation */
+    @keyframes scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .emblem-slider {
+      display: flex;
+      width: fit-content;
+      animation: scroll 40s linear infinite;
+    }
+    .emblem-container:hover .emblem-slider {
+      animation-play-state: paused;
+    }
+    .emblem-item {
+      flex: 0 0 auto;
+      width: 80px;
+      margin: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .emblem-item img {
+      height: 50px;
+      width: 50px;
+      object-fit: contain;
+      filter: grayscale(20%) contrast(110%);
+      transition: transform 0.3s ease;
+    }
+    .emblem-item:hover img {
+      transform: scale(1.1);
+      filter: grayscale(0%);
+    }
+    .emblem-item span {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      margin-top: 6px;
+      text-align: center;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen page-govt">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "public/js/navbar.js";
+      document.body.appendChild(s);
+    });
+  </script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- State Emblems Sliding Marquee -->
+  <div class="bg-white border-b border-slate-200 overflow-hidden py-4 emblem-container">
+    <div class="emblem-slider" id="emblemTrack">
+      <!-- Data will be populated by JS -->
+    </div>
+  </div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-    authDomain: "kar-kardan.firebaseapp.com",
-    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kar-kardan",
-    storageBucket: "kar-kardan.firebasestorage.app",
-    messagingSenderId: "554147696994",
-    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
-    measurementId: "G-RRC3X485KQ"
-  };
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl md:text-4xl font-black text-slate-800">Latest Government Jobs</h1>
+      <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+        <label for="stateFilter" class="text-sm font-semibold text-slate-700">Search jobs by state</label>
+        <select id="stateFilter" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">All States</option>
+          <option value="Andhra Pradesh">Andhra Pradesh</option>
+          <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+          <option value="Assam">Assam</option>
+          <option value="Bihar">Bihar</option>
+          <option value="Chhattisgarh">Chhattisgarh</option>
+          <option value="Goa">Goa</option>
+          <option value="Gujarat">Gujarat</option>
+          <option value="Haryana">Haryana</option>
+          <option value="Himachal Pradesh">Himachal Pradesh</option>
+          <option value="Jharkhand">Jharkhand</option>
+          <option value="Karnataka">Karnataka</option>
+          <option value="Kerala">Kerala</option>
+          <option value="Madhya Pradesh">Madhya Pradesh</option>
+          <option value="Maharashtra">Maharashtra</option>
+          <option value="Manipur">Manipur</option>
+          <option value="Meghalaya">Meghalaya</option>
+          <option value="Mizoram">Mizoram</option>
+          <option value="Nagaland">Nagaland</option>
+          <option value="Odisha">Odisha</option>
+          <option value="Punjab">Punjab</option>
+          <option value="Rajasthan">Rajasthan</option>
+          <option value="Sikkim">Sikkim</option>
+          <option value="Tamil Nadu">Tamil Nadu</option>
+          <option value="Telangana">Telangana</option>
+          <option value="Tripura">Tripura</option>
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Uttarakhand">Uttarakhand</option>
+          <option value="West Bengal">West Bengal</option>
+          <option value="Delhi">Delhi</option>
+        </select>
+        <button id="searchStateBtn" type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition">Search Jobs</button>
+      </div>
+    </div>
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    <div id="govtJobsList" class="grid gap-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-400 text-sm">Loading government jobs...</div>
+    </div>
+  </main>
 
-  async function loadJobs() {
-    try {
-      const q = query(collection(db, 'jobs'), orderBy('saved_at', 'desc'));
-      const snap = await getDocs(q);
-      const jobs = [];
-      snap.forEach(doc => jobs.push({ id: doc.id, ...doc.data() }));
-      renderJobs(jobs);
-    } catch (err) {
-      // Try without orderBy if index not set
-      try {
-        const snap = await getDocs(collection(db, 'jobs'));
-        const jobs = [];
-        snap.forEach(doc => jobs.push({ id: doc.id, ...doc.data() }));
-        renderJobs(jobs);
-      } catch (e) {
-        document.getElementById('loading').innerHTML = `<div class="err-msg">⚠ Could not load jobs: ${e.message}</div>`;
+  <script type="module">
+    // --- State Emblems Logic ---
+    const states = [
+      { name: "Andhra Pradesh", img: "https://upload.wikimedia.org/wikipedia/commons/3/37/Emblem_of_Andhra_Pradesh.svg" },
+      { name: "Bihar", img: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Emblem_of_Bihar.svg" },
+      { name: "Chhattisgarh", img: "https://upload.wikimedia.org/wikipedia/commons/5/5b/Emblem_of_Chhattisgarh.svg" },
+      { name: "Gujarat", img: "https://upload.wikimedia.org/wikipedia/commons/a/a0/Emblem_of_Gujarat.svg" },
+      { name: "Haryana", img: "https://upload.wikimedia.org/wikipedia/commons/6/6d/Emblem_of_Haryana.svg" },
+      { name: "Jharkhand", img: "https://upload.wikimedia.org/wikipedia/commons/c/c9/Emblem_of_Jharkhand.svg" },
+      { name: "Karnataka", img: "https://upload.wikimedia.org/wikipedia/commons/b/bb/Emblem_of_Karnataka.svg" },
+      { name: "Kerala", img: "https://upload.wikimedia.org/wikipedia/commons/5/5f/Emblem_of_Kerala.svg" },
+      { name: "Madhya Pradesh", img: "https://upload.wikimedia.org/wikipedia/commons/1/1b/Emblem_of_Madhya_Pradesh.svg" },
+      { name: "Maharashtra", img: "https://upload.wikimedia.org/wikipedia/commons/8/87/Emblem_of_Maharashtra.svg" },
+      { name: "Odisha", img: "https://upload.wikimedia.org/wikipedia/commons/3/3b/Emblem_of_Odisha.svg" },
+      { name: "Punjab", img: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Emblem_of_Punjab.svg" },
+      { name: "Rajasthan", img: "https://upload.wikimedia.org/wikipedia/commons/1/11/Emblem_of_Rajasthan.svg" },
+      { name: "Tamil Nadu", img: "https://upload.wikimedia.org/wikipedia/commons/8/81/Emblem_of_Tamil_Nadu.svg" },
+      { name: "Telangana", img: "https://upload.wikimedia.org/wikipedia/commons/e/e0/Emblem_of_Telangana.svg" },
+      { name: "Uttar Pradesh", img: "https://upload.wikimedia.org/wikipedia/commons/b/be/Emblem_of_Uttar_Pradesh.svg" },
+      { name: "West Bengal", img: "https://upload.wikimedia.org/wikipedia/commons/d/df/Emblem_of_West_Bengal.svg" },
+      { name: "Delhi", img: "https://upload.wikimedia.org/wikipedia/commons/e/ee/Emblem_of_Delhi.svg" }
+    ];
+
+    const track = document.getElementById('emblemTrack');
+    // Double the array for seamless infinite looping
+    const displayList = [...states, ...states];
+    
+    displayList.forEach(state => {
+      const item = document.createElement('div');
+      item.className = 'emblem-item';
+      item.innerHTML = `
+        <img src="${state.img}" alt="${state.name}" loading="lazy">
+        <span>${state.name}</span>
+      `;
+      track.appendChild(item);
+    });
+
+    // --- Original Firebase Logic ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+      authDomain: "kar-kardan.firebaseapp.com",
+      projectId: "kar-kardan",
+      storageBucket: "kar-kardan.firebasestorage.app",
+      messagingSenderId: "554147696994",
+      appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const govtJobsList = document.getElementById("govtJobsList");
+    const stateFilter = document.getElementById("stateFilter");
+    const searchStateBtn = document.getElementById("searchStateBtn");
+    let allJobs = [];
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const d = new Date(value + "T00:00:00");
+        return d.toLocaleDateString();
       }
-    }
-  }
-
-  function renderJobs(jobs) {
-    const loading = document.getElementById('loading');
-    const grid = document.getElementById('jobGrid');
-    const counter = document.getElementById('jobCount');
-
-    loading.style.display = 'none';
-    counter.textContent = jobs.length + ' Job' + (jobs.length !== 1 ? 's' : '') + ' Found';
-
-    if (jobs.length === 0) {
-      grid.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <h3>No jobs yet</h3>
-        <p>Use the extractor tool to add job listings.</p>
-      </div>`;
-      return;
+      return value;
     }
 
-    grid.innerHTML = jobs.map((job, i) => {
-      const deadline = job.application_end_date || '';
-      const isUrgent = isDeadlineSoon(deadline);
-      const daysLeft = getDaysLeft(deadline);
-      const posts = job.total_posts || '—';
-      const org = job.organization || 'Government of India';
-      const title = job.title || job.post_name || 'Untitled Job';
-      const qual = job.qualification || '—';
-      const salary = job.salary || '—';
-      const postName = job.post_name || '—';
+    const govtJobsQuery = query(collection(db, "govtJobs"), orderBy("createdAt", "desc"));
 
-      return `
-      <div class="job-card" style="animation-delay:${i * 60}ms" data-id="${job.id}">
-        <div class="card-top">
-          <div class="org-row">
-            <div class="org-avatar">${getInitials(org)}</div>
+    function renderJobs(jobs) {
+      if (!jobs.length) {
+        govtJobsList.innerHTML = '<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 text-sm">No government jobs posted yet.</div>';
+        return;
+      }
+      govtJobsList.innerHTML = "";
+      jobs.forEach((job, index) => {
+        const postTitle = job.postName || job.jobTitle || "Untitled Job";
+        const organizationName = job.organizationName || job.organisationName || "N/A";
+        const jobId = String(job.id || index);
+        const card = document.createElement("article");
+        card.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm";
+        card.innerHTML = `
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
             <div>
-              <div class="org-name">${org}</div>
-              ${job.advertisement_no ? `<div class="adv-no">Advt: ${job.advertisement_no}</div>` : ''}
+              <h2 class="text-xl font-black text-slate-800">${escapeHtml(postTitle)}</h2>
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mt-1">Organisation Name</p>
             </div>
           </div>
-          ${isUrgent ? '<div class="urgent-tag">⚡ Closing Soon</div>' : ''}
-        </div>
-
-        <h2 class="card-title">${title}</h2>
-        <div class="post-pill">${postName}</div>
-
-        <div class="card-meta">
-          <div class="meta-item">
-            <span class="meta-icon">👥</span>
-            <span><strong>${posts}</strong> Posts</span>
+          <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Publish Date</p>
+              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(formatDate(job.publishDate))}</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Organisation Name</p>
+              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(organizationName)}</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-400">Last Date of Apply</p>
+              <p class="font-semibold text-slate-700 mt-1">${escapeHtml(formatDate(job.lastDateApply))}</p>
+            </div>
           </div>
-          <div class="meta-item">
-            <span class="meta-icon">🎓</span>
-            <span>${truncate(qual, 40)}</span>
+          <div class="mb-1">
+            <button type="button" class="view-details-btn inline-flex items-center justify-center px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition" data-job-id="${escapeHtml(jobId)}">
+              See Details
+            </button>
           </div>
-          <div class="meta-item">
-            <span class="meta-icon">💰</span>
-            <span>${truncate(salary, 30)}</span>
-          </div>
-          <div class="meta-item ${isUrgent ? 'urgent' : ''}">
-            <span class="meta-icon">📅</span>
-            <span>${deadline ? 'Last Date: <strong>' + deadline + '</strong>' : 'Date not specified'}
-              ${daysLeft !== null ? `<span class="days-badge ${daysLeft <= 5 ? 'red' : daysLeft <= 10 ? 'warn' : ''}">${daysLeft}d left</span>` : ''}
-            </span>
-          </div>
-        </div>
+        `;
+        govtJobsList.appendChild(card);
+        card.querySelector(".view-details-btn").addEventListener("click", () => {
+          sessionStorage.setItem("selectedGovtJob", JSON.stringify(job));
+          window.location.href = `govt-job-details.html?id=${encodeURIComponent(jobId)}`;
+        });
+      });
+    }
 
-        <div class="card-footer">
-          <a class="btn-details" href="govt-job-detail2.html?id=${job.id}">
-            See Details <span class="arrow">→</span>
-          </a>
-          ${job.apply_link || job.official_website ? `
-            <a class="btn-apply" href="${job.apply_link || 'https://' + job.official_website}" target="_blank" rel="noopener">
-              Apply Now ↗
-            </a>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }
+    async function fetchJobsByState() {
+      const selectedState = stateFilter.value.trim();
+      if (!selectedState) { renderJobs(allJobs); return; }
+      govtJobsList.innerHTML = '<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-400 text-sm">Searching jobs...</div>';
+      try {
+        const stateJobsQuery = query(collection(db, "govtJobs"), where("state", "==", selectedState));
+        const stateSnapshot = await getDocs(stateJobsQuery);
+        const filteredJobs = stateSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        if (!filteredJobs.length) {
+          govtJobsList.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 text-sm">No jobs found for <span class="font-bold">${selectedState}</span>.</div>`;
+          return;
+        }
+        renderJobs(filteredJobs);
+      } catch (err) {
+        govtJobsList.innerHTML = `<div class="bg-white border border-red-200 rounded-2xl p-6 text-red-600 text-sm">Error: ${err.message}</div>`;
+      }
+    }
 
-  function getInitials(name) {
-    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  }
-
-  function truncate(str, len) {
-    return str && str.length > len ? str.slice(0, len) + '…' : str;
-  }
-
-  function isDeadlineSoon(dateStr) {
-    if (!dateStr) return false;
-    const d = parseDateStr(dateStr);
-    if (!d) return false;
-    const diff = (d - Date.now()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 10;
-  }
-
-  function getDaysLeft(dateStr) {
-    if (!dateStr) return null;
-    const d = parseDateStr(dateStr);
-    if (!d) return null;
-    const diff = Math.ceil((d - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff >= 0 ? diff : null;
-  }
-
-  function parseDateStr(str) {
-    // Handle DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY, "20 March 2026" etc.
-    if (!str) return null;
-    const cleaned = str.replace(/(\d{2})[-./](\d{2})[-./](\d{4})/, '$3-$2-$1');
-    const d = new Date(cleaned);
-    return isNaN(d) ? new Date(str) : d;
-  }
-
-  // Search filter
-  window.filterJobs = function() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    document.querySelectorAll('.job-card').forEach(card => {
-      card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+    searchStateBtn.addEventListener("click", fetchJobsByState);
+    onSnapshot(govtJobsQuery, snapshot => {
+      allJobs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      if (!stateFilter.value) renderJobs(allJobs);
+    }, err => {
+      govtJobsList.innerHTML = `<div class="bg-white border border-red-200 rounded-2xl p-6 text-red-600 text-sm">Error: ${err.message}</div>`;
     });
-  };
-
-  loadJobs();
-</script>
-
-<style>
-  :root {
-    --bg: #f7f4ee;
-    --surface: #ffffff;
-    --ink: #111118;
-    --muted: #6b6870;
-    --border: #e0dbd0;
-    --accent: #d4380d;
-    --accent2: #1a3a6b;
-    --green: #0d7a4e;
-    --gold: #b8860b;
-    --urgent: #c41230;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'Manrope', sans-serif;
-    min-height: 100vh;
-  }
-
-  /* Top nav */
-  .topbar {
-    background: var(--ink);
-    padding: 0 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-  }
-
-  .logo span { color: #f5a623; }
-
-  .nav-link {
-    color: #aaa;
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    transition: color 0.2s;
-  }
-  .nav-link:hover { color: #fff; }
-
-  /* Hero band */
-  .hero {
-    background: var(--accent2);
-    color: #fff;
-    padding: 48px 32px 40px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: 'SARKARI JOBS';
-    position: absolute;
-    right: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: 'Syne', sans-serif;
-    font-size: 100px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.04);
-    white-space: nowrap;
-    pointer-events: none;
-  }
-
-  .hero-inner { max-width: 1100px; margin: 0 auto; }
-
-  .hero h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(28px, 5vw, 48px);
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 10px;
-  }
-
-  .hero h1 em {
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    color: #f5a623;
-  }
-
-  .hero p {
-    color: rgba(255,255,255,0.65);
-    font-size: 14px;
-    margin-bottom: 24px;
-  }
-
-  /* Search */
-  .search-row {
-    display: flex;
-    gap: 10px;
-    max-width: 540px;
-  }
-
-  .search-input {
-    flex: 1;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 3px;
-    padding: 12px 18px;
-    color: #fff;
-    font-family: 'Manrope', sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .search-input::placeholder { color: rgba(255,255,255,0.4); }
-  .search-input:focus { border-color: #f5a623; }
-
-  /* Main content */
-  .main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
-
-  .list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 28px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--ink);
-  }
-
-  .list-header h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  #jobCount {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  /* Loading */
-  #loading {
-    text-align: center;
-    padding: 80px 20px;
-    color: var(--muted);
-  }
-
-  .loading-dots {
-    display: inline-flex;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-
-  .loading-dots span {
-    width: 8px; height: 8px;
-    background: var(--accent2);
-    border-radius: 50%;
-    animation: bounce 1s ease-in-out infinite;
-  }
-
-  .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
-  .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-  @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-    40% { transform: scale(1); opacity: 1; }
-  }
-
-  .err-msg { color: var(--accent); font-size: 14px; }
-
-  /* Job grid */
-  #jobGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
-  }
-
-  /* Job card */
-  .job-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    animation: fadeUp 0.5s ease both;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .job-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--accent2);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  .job-card:hover::before { transform: scaleX(1); }
-
-  .job-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-    border-color: var(--accent2);
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .org-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .org-avatar {
-    width: 38px; height: 38px;
-    background: var(--accent2);
-    color: #fff;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 800;
-    flex-shrink: 0;
-  }
-
-  .org-name {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent2);
-    line-height: 1.3;
-  }
-
-  .adv-no {
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .urgent-tag {
-    background: var(--urgent);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 2px;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
-
-  .card-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--ink);
-    line-height: 1.3;
-  }
-
-  .post-pill {
-    display: inline-block;
-    background: #eef1f8;
-    color: var(--accent2);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 2px;
-    width: fit-content;
-  }
-
-  .card-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .meta-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 12.5px;
-    color: #444;
-    line-height: 1.4;
-  }
-
-  .meta-item.urgent { color: var(--urgent); }
-  .meta-icon { flex-shrink: 0; font-size: 13px; }
-
-  .days-badge {
-    display: inline-block;
-    margin-left: 6px;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 2px;
-    background: #e8f5e9;
-    color: var(--green);
-    vertical-align: middle;
-  }
-
-  .days-badge.warn { background: #fff3e0; color: var(--gold); }
-  .days-badge.red { background: #fdecea; color: var(--urgent); }
-
-  .card-footer {
-    display: flex;
-    gap: 10px;
-    margin-top: auto;
-    padding-top: 4px;
-    border-top: 1px solid var(--border);
-  }
-
-  .btn-details {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--ink);
-    color: #fff;
-    text-decoration: none;
-    padding: 10px 18px;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    border-radius: 2px;
-    transition: background 0.2s, gap 0.2s;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .btn-details:hover { background: var(--accent2); gap: 10px; }
-  .arrow { transition: transform 0.2s; }
-  .btn-details:hover .arrow { transform: translateX(3px); }
-
-  .btn-apply {
-    display: inline-flex;
-    align-items: center;
-    background: transparent;
-    color: var(--accent);
-    text-decoration: none;
-    padding: 10px 14px;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    border: 1.5px solid var(--accent);
-    border-radius: 2px;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-apply:hover { background: var(--accent); color: #fff; }
-
-  /* Empty state */
-  .empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 80px 20px;
-    color: var(--muted);
-  }
-
-  .empty-icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 8px; }
-  .empty-state p { font-size: 14px; }
-
-  @media (max-width: 600px) {
-    .hero { padding: 32px 20px; }
-    .main { padding: 28px 16px; }
-    #jobGrid { grid-template-columns: 1fr; }
-    .topbar { padding: 0 16px; }
-  }
-</style>
-</head>
-<body>
-
-<!-- Top bar -->
-<nav class="topbar">
-  <div class="logo">Sarkari<span>Jobs</span></div>
-  <a class="nav-link" href="job-extractor.html">+ Add Job</a>
-</nav>
-
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-inner">
-    <h1>Latest <em>Government</em><br>Job Listings</h1>
-    <p>Automatically extracted & updated from official sources</p>
-    <div class="search-row">
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="Search by post, org, qualification..."
-        oninput="filterJobs()"
-      />
-    </div>
-  </div>
-</section>
-
-<!-- Main -->
-<main class="main">
-  <div class="list-header">
-    <h2>All Listings</h2>
-    <span id="jobCount">Loading...</span>
-  </div>
-
-  <div id="loading">
-    <div class="loading-dots">
-      <span></span><span></span><span></span>
-    </div>
-    <p>Fetching from Firebase...</p>
-  </div>
-
-  <div id="jobGrid"></div>
-</main>
-
+  </script>
 </body>
 </html>
