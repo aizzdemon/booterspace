@@ -232,33 +232,45 @@ async function init() {
   // 2. Govt Jobs Loader
   async function loadGovt() {
     try {
-      const q = query(collection(db, "govtJobs"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
+      let snap = await getDocs(query(collection(db, "govtJobs"), orderBy("createdAt", "desc"), limit(4)));
+
+      // Backward compatibility for older documents that used `timestamp`
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, "govtJobs"), orderBy("timestamp", "desc"), limit(4)));
+      }
+
       containers.govt.innerHTML = '';
-      if(snap.empty) {
+      if (snap.empty) {
         containers.govt.innerHTML = '<div class="p-8 text-center text-gray-500">No govt jobs found.</div>';
         return;
       }
+
       snap.forEach(docSnap => {
         const job = docSnap.data();
         const logo = job.companyImageUrl || "https://img.icons8.com/color/96/government-buildings.png";
+        const title = job.postName || job.jobTitle || job.title || "Government Vacancy";
+        const organization = job.organizationName || job.organisationName || job.companyName || "Govt Sector";
+
         containers.govt.innerHTML += `
-          <a href="job-detail.html?id=${docSnap.id}" class="group block p-4 hover:bg-orange-50/50 transition-all border-b border-gray-50 last:border-0 relative">
+          <a href="govt-job-details.html?id=${docSnap.id}" class="group block p-4 hover:bg-orange-50/50 transition-all border-b border-gray-50 last:border-0 relative">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
                 <img src="${logo}" class="w-6 h-6 object-contain">
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-bold text-gray-900 truncate">${job.title}</h3>
+                  <h3 class="text-sm font-bold text-gray-900 truncate">${title}</h3>
                   <span class="blink-new text-[9px] font-black text-orange-600 bg-orange-100 px-1 rounded">NEW</span>
                 </div>
-                <p class="text-xs text-orange-600 font-medium truncate">${job.companyName || "Govt Sector"}</p>
+                <p class="text-xs text-orange-600 font-medium truncate">${organization}</p>
               </div>
             </div>
           </a>`;
       });
-    } catch(e) { console.error("Govt Jobs Error:", e); }
+    } catch (e) {
+      console.error("Govt Jobs Error:", e);
+      containers.govt.innerHTML = '<div class="p-8 text-center text-red-500">Unable to load govt jobs right now.</div>';
+    }
   }
 
   // 3. Updates Loader
