@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Jobs – BooterSpace</title>
-  <meta name="description" content="Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.">
+<title>Latest Jobs in India | Remote, Fresher & Internship Openings | BooterSpace</title>
+  <meta name="description" content="Browse latest job updates including work from home jobs, remote jobs, fresher jobs, and internship opportunities on BooterSpace.">
   <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://aizzdemon.github.io/booterspace/jobs.html">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="BooterSpace">
-  <meta property="og:title" content="Jobs – BooterSpace">
-  <meta property="og:description" content="Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.">
+  <meta property="og:title" content="Latest Jobs in India | BooterSpace">
+  <meta property="og:description" content="Browse latest job updates including work from home jobs, remote jobs, fresher jobs, and internship opportunities on BooterSpace.">
   <meta property="og:url" content="https://aizzdemon.github.io/booterspace/jobs.html">
   <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Jobs – BooterSpace">
-  <meta name="twitter:description" content="Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.">
+  <meta name="twitter:title" content="Latest Jobs in India | BooterSpace">
+  <meta name="twitter:description" content="Browse latest job updates including work from home jobs, remote jobs, fresher jobs, and internship opportunities on BooterSpace.">
   <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
 
   <script type="application/ld+json">
@@ -25,7 +25,7 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "name": "Jobs \u2013 BooterSpace",
-  "description": "Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.",
+  "description": "Browse latest job updates including work from home jobs, remote jobs, fresher jobs, and internship opportunities on BooterSpace.",
   "url": "https://aizzdemon.github.io/booterspace/jobs.html",
   "isPartOf": {
     "@type": "WebSite",
@@ -126,6 +126,16 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   </div>
 </div>
 
+<section class="max-w-5xl mx-auto px-4 py-5">
+  <h2 class="text-lg font-bold text-slate-900">Explore Job Categories</h2>
+  <div class="mt-3 flex flex-wrap gap-2">
+    <a href="remote-jobs.html" class="px-3 py-1.5 bg-white border rounded-full text-sm font-semibold">Remote Jobs</a>
+    <a href="fresher-jobs.html" class="px-3 py-1.5 bg-white border rounded-full text-sm font-semibold">Fresher Jobs</a>
+    <a href="internships.html" class="px-3 py-1.5 bg-white border rounded-full text-sm font-semibold">Internship Jobs</a>
+    <a href="jobs/work-from-home-jobs.html" class="px-3 py-1.5 bg-white border rounded-full text-sm font-semibold">Work From Home Jobs</a>
+  </div>
+</section>
+
 <main class="max-w-5xl mx-auto px-4 py-10 flex-grow w-full">
   <div class="mb-8 border-b pb-4">
     <div>
@@ -211,7 +221,7 @@ function renderJobCard(job) {
 
   div.innerHTML = `
     <div class="relative shrink-0">
-      <img src="${logo}" class="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
+      <img src="${logo}" alt="${job.company || 'Company'} logo" loading="lazy" class="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
       ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
     </div>
     <div class="flex-grow">
@@ -232,9 +242,14 @@ function renderJobCard(job) {
         <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="💵" title="Copy salary emoji" aria-label="Copy salary emoji">💵</button>
         ${formatSalary(job.salary)}
       </div>
+      <div class="mt-2 flex flex-wrap gap-2 text-xs">
+        <span class="px-2 py-1 bg-slate-100 rounded-full">${job.jobType || 'Full-time'}</span>
+        <span class="px-2 py-1 bg-slate-100 rounded-full">Posted: ${job.timestamp ? job.timestamp.toDate().toLocaleDateString() : 'Recently'}</span>
+      </div>
     </div>
     <div class="flex sm:flex-col gap-2 w-full sm:w-auto shrink-0">
-      <button onclick="window.location.href='job-detail.html?id=${job.id}'" class="flex-grow bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">View Details</button>
+      <button onclick="window.location.href='job-detail.html?id=${job.id}'" class="flex-grow bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">View Details</button>
+      <a href="${job.applyLink || '#'}" target="_blank" rel="noopener" class="flex-grow text-center bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">Apply</a>
     </div>
   `;
   return div;
@@ -328,6 +343,7 @@ function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
   lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
   applyFilters();
+  injectJobListSchema(loadedJobs);
 
   const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
   if (snapshot.docs.length < currentLimit || isSearching) {
@@ -395,6 +411,35 @@ jobsList.addEventListener("click", (event) => {
   if (!copyButton) return;
   copyEmoji(copyButton.dataset.copyEmoji);
 });
+
+function buildJobPostingSchema(job) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    "title": job.title || "Job Opening",
+    "description": job.about || `${job.title || 'Job'} at ${job.company || 'a company'}`,
+    "datePosted": job.timestamp ? job.timestamp.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    "employmentType": job.jobType || "FULL_TIME",
+    "hiringOrganization": {"@type": "Organization", "name": job.company || "Confidential"},
+    "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": job.location || "Remote"}},
+    "baseSalary": {"@type": "MonetaryAmount", "currency": "INR", "value": {"@type": "QuantitativeValue", "value": (job.salary || "Not disclosed"), "unitText": "MONTH"}},
+    "applicantLocationRequirements": job.location?.toLowerCase().includes('remote') ? "Remote" : undefined,
+    "directApply": true,
+    "url": `https://aizzdemon.github.io/booterspace/job-detail.html?id=${job.id}`
+  };
+}
+
+function injectJobListSchema(jobs) {
+  const schema = jobs.slice(0, 10).map(buildJobPostingSchema);
+  let script = document.getElementById('jobListSchema');
+  if (!script) {
+    script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'jobListSchema';
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(schema);
+}
 
 // Initial Load
 window.onload = () => {
