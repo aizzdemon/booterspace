@@ -32,6 +32,18 @@
       <div class="p-6 space-y-6">
         <div id="jobDetailsMessage" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
+        <div id="officialApplyWrapper" class="hidden">
+          <a
+            id="officialApplyButton"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700"
+          >
+            Apply on Official Website
+          </a>
+        </div>
+
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickHighlights"></div>
 
         <div class="border border-slate-200 rounded-xl overflow-hidden">
@@ -49,6 +61,8 @@
     const bodyElement = document.getElementById("jobDetailsBody");
     const highlightsElement = document.getElementById("quickHighlights");
     const messageElement = document.getElementById("jobDetailsMessage");
+    const officialApplyWrapper = document.getElementById("officialApplyWrapper");
+    const officialApplyButton = document.getElementById("officialApplyButton");
 
     const quickHighlightKeys = [
       "organizationName",
@@ -99,6 +113,31 @@
       messageElement.classList.remove("hidden");
     }
 
+    function getOfficialApplyLink(job) {
+      const preferredKeys = [
+        "applyLink",
+        "officialWebsite",
+        "officialLink",
+        "applicationLink",
+        "applyOnline"
+      ];
+
+      for (const key of preferredKeys) {
+        const value = job[key];
+        if (typeof value === "string" && /^(https?:\/\/)/i.test(value.trim())) {
+          return value.trim();
+        }
+      }
+
+      for (const value of Object.values(job)) {
+        if (typeof value === "string" && /^(https?:\/\/)/i.test(value.trim())) {
+          return value.trim();
+        }
+      }
+
+      return "";
+    }
+
     function renderHighlights(job) {
       const seen = new Set();
       const cards = quickHighlightKeys
@@ -122,6 +161,15 @@
       const postTitle = job.postName || job.jobTitle || "Government Job Details";
       titleElement.textContent = postTitle;
       renderHighlights(job);
+
+      const officialApplyLink = getOfficialApplyLink(job);
+      if (officialApplyLink) {
+        officialApplyButton.href = officialApplyLink;
+        officialApplyWrapper.classList.remove("hidden");
+      } else {
+        officialApplyButton.href = "#";
+        officialApplyWrapper.classList.add("hidden");
+      }
 
       const cards = Object.entries(job)
         .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
