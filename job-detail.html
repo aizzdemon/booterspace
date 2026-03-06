@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Job Details – BooterSpace</title>
-  <meta name="description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+<title>Job Details | Apply for Latest Verified Openings | BooterSpace</title>
+  <meta name="description" content="Check job title, company, location, salary range, job type, posted date, and official apply link for verified openings on BooterSpace.">
   <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://aizzdemon.github.io/booterspace/job-detail.html">
@@ -11,13 +11,13 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="BooterSpace">
   <meta property="og:title" content="Job Details – BooterSpace">
-  <meta property="og:description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+  <meta property="og:description" content="Check job title, company, location, salary range, job type, posted date, and official apply link for verified openings on BooterSpace.">
   <meta property="og:url" content="https://aizzdemon.github.io/booterspace/job-detail.html">
   <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Job Details – BooterSpace">
-  <meta name="twitter:description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+  <meta name="twitter:description" content="Check job title, company, location, salary range, job type, posted date, and official apply link for verified openings on BooterSpace.">
   <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
 
   <script type="application/ld+json">
@@ -25,7 +25,7 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "name": "Job Details \u2013 BooterSpace",
-  "description": "Review complete role details, requirements, and application links for jobs listed on BooterSpace.",
+  "description": "Check job title, company, location, salary range, job type, posted date, and official apply link for verified openings on BooterSpace.",
   "url": "https://aizzdemon.github.io/booterspace/job-detail.html",
   "isPartOf": {
     "@type": "WebSite",
@@ -146,6 +146,13 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
         </button>
       </div>
     </div>
+
+    <div class="bg-white rounded-2xl shadow-md p-6 mt-6">
+      <h2 class="text-lg font-bold mb-3">Related Jobs</h2>
+      <div id="relatedJobs" class="space-y-2 text-sm">
+        <p class="text-gray-500">Loading related jobs...</p>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -167,7 +174,7 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
 <!-- ================= LOGIC ================= -->
 <script type="module">
 import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { doc, getDoc, collection, setDoc, deleteDoc, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const auth = window.auth;
 const db = window.db;
@@ -195,7 +202,11 @@ window.addEventListener("DOMContentLoaded",async()=>{
   const snap=await getDoc(doc(db,"jobs",currentJobId));
   if(!snap.exists()) return renderError("Job not found");
 
-  renderJob(snap.data());
+  const jobData = snap.data();
+  renderJob(jobData);
+  injectJobSchema(jobData);
+  loadRelatedJobs(jobData);
+  updateSeoMeta(jobData);
 });
 
 function renderJob(job){
@@ -228,9 +239,19 @@ function renderJob(job){
       </div>
     </div>
 
-    <div class="prose max-w-none text-gray-600 whitespace-pre-line mb-10 leading-relaxed text-base">
-      ${job.about||""}
-    </div>
+    <section class="mb-8">
+      <h2 class="text-xl font-bold mb-2">Job Description</h2>
+      <div class="prose max-w-none text-gray-600 whitespace-pre-line leading-relaxed text-base">
+        ${job.about||""}
+      </div>
+    </section>
+
+    <section class="mb-8 grid sm:grid-cols-2 gap-3">
+      <div class="p-3 bg-slate-50 rounded-xl"><h3 class="text-xs uppercase text-slate-500 font-bold">Job Type</h3><p class="font-semibold">${job.jobType || 'Full-time'}</p></div>
+      <div class="p-3 bg-slate-50 rounded-xl"><h3 class="text-xs uppercase text-slate-500 font-bold">Posted Date</h3><p class="font-semibold">${job.timestamp ? job.timestamp.toDate().toLocaleDateString() : 'Recently posted'}</p></div>
+      <div class="p-3 bg-slate-50 rounded-xl"><h3 class="text-xs uppercase text-slate-500 font-bold">Location</h3><p class="font-semibold">${job.location || 'Remote / Global'}</p></div>
+      <div class="p-3 bg-slate-50 rounded-xl"><h3 class="text-xs uppercase text-slate-500 font-bold">Salary Range</h3><p class="font-semibold">${job.salary || 'Undisclosed'}</p></div>
+    </section>
 
     <div class="flex flex-wrap items-center gap-3 border-t pt-8">
       <button onclick="applyJob('${job.applyLink||""}')"
@@ -249,6 +270,62 @@ function renderJob(job){
       </button>
     </div>
   `;
+}
+
+function updateSeoMeta(job){
+  const title = `${job.title || 'Job Opening'} at ${job.company || 'Company'} | BooterSpace`;
+  const description = `${job.title || 'Job'} in ${job.location || 'Remote'} with ${job.company || 'a company'}. Salary: ${job.salary || 'Undisclosed'}. Apply from official source.`;
+  document.title = title;
+  const descEl = document.querySelector('meta[name="description"]');
+  if (descEl) descEl.setAttribute('content', description);
+}
+
+function injectJobSchema(job){
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    "title": job.title || "Job Opening",
+    "description": job.about || `${job.title || 'Job'} role at ${job.company || 'company'}`,
+    "datePosted": job.timestamp ? job.timestamp.toDate().toISOString() : new Date().toISOString(),
+    "employmentType": job.jobType || "FULL_TIME",
+    "hiringOrganization": {"@type": "Organization", "name": job.company || "Confidential"},
+    "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": job.location || "Remote"}},
+    "baseSalary": {"@type": "MonetaryAmount", "currency": "INR", "value": {"@type": "QuantitativeValue", "value": job.salary || "Not disclosed", "unitText": "MONTH"}},
+    "validThrough": new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+    "url": window.location.href,
+    "directApply": true
+  };
+  let script = document.getElementById('jobPostingSchema');
+  if (!script) {
+    script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'jobPostingSchema';
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(schema);
+}
+
+async function loadRelatedJobs(job){
+  const el = document.getElementById('relatedJobs');
+  try {
+    const qRef = query(collection(db, 'jobs'), where('status','==','approved'), orderBy('timestamp','desc'), limit(4));
+    const snap = await getDocs(qRef);
+    if (snap.empty) { el.innerHTML = '<p class="text-gray-500">No related jobs available.</p>'; return; }
+    el.innerHTML = '';
+    snap.forEach((d)=>{
+      if (d.id === currentJobId) return;
+      const data = d.data();
+      const a = document.createElement('a');
+      a.href = `job-detail.html?id=${d.id}`;
+      a.className = 'block p-2 rounded-lg hover:bg-slate-50 border';
+      a.innerHTML = `<p class="font-semibold">${data.title || 'Job Opening'}</p><p class="text-xs text-slate-500">${data.company || 'Company'} • ${data.location || 'Remote'}</p>`;
+      el.appendChild(a);
+    });
+    if (!el.children.length) el.innerHTML = '<p class="text-gray-500">No related jobs available.</p>';
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = '<p class="text-red-500">Unable to load related jobs.</p>';
+  }
 }
 
 window.applyJob=(link)=>{
