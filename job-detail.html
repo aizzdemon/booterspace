@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Job Details – BooterSpace</title>
+  <meta name="description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/job-detail.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="Job Details – BooterSpace">
+  <meta property="og:description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/job-detail.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Job Details – BooterSpace">
+  <meta name="twitter:description" content="Review complete role details, requirements, and application links for jobs listed on BooterSpace.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Job Details \u2013 BooterSpace",
+  "description": "Review complete role details, requirements, and application links for jobs listed on BooterSpace.",
+  "url": "https://aizzdemon.github.io/booterspace/job-detail.html",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "BooterSpace",
+    "url": "https://aizzdemon.github.io/booterspace/"
+  }
+}
+  </script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="assets/css/shared.css">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RRC3X485KQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RRC3X485KQ');
+</script>
+
+<!-- ================= FIREBASE v10 ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import {
+  getFirestore, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+window.serverTimestamp = serverTimestamp;
+</script>
+
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="min-h-screen bg-gray-50 page-job-detail">
+
+<!-- ================= NAVBAR ================= -->
+<div id="navbar"></div>
+<script>
+fetch("navbar.html")
+  .then(r=>r.text())
+  .then(html=>{
+    document.getElementById("navbar").innerHTML=html;
+    const s=document.createElement("script");
+    s.type="module"; s.src="/booterspace/public/js/navbar.js";
+    document.body.appendChild(s);
+  });
+</script>
+
+<!-- ================= HEADER ================= -->
+<header class="bg-white border-b py-10">
+  <div class="max-w-7xl mx-auto px-4 text-center">
+    <h1 class="text-3xl font-black">
+      Booter<span class="text-blue-600">Space</span>
+    </h1>
+    <p class="mt-2 text-sm text-gray-500">
+      Explore your career opportunities and community posts
+    </p>
+  </div>
+</header>
+
+<!-- ================= MAIN ================= -->
+<main class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+  <!-- LEFT -->
+  <div class="lg:col-span-2">
+    <div id="jobDetailsContent" class="job-card gradient-border p-6 md:p-10 relative">
+      <div class="space-y-6">
+        <div class="h-6 w-1/2 shimmer rounded"></div>
+        <div class="h-4 w-1/3 shimmer rounded"></div>
+        <div class="h-40 shimmer rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="bg-white rounded-2xl shadow-md p-6 sticky top-24">
+      <h3 class="text-lg font-bold mb-3">
+        💙 Our Mission for Job<span class="text-blue-600">Seekers</span>
+      </h3>
+      <p class="text-sm text-gray-600 whitespace-pre-line mb-4">
+🚀 We are building this platform with one clear mission — to help job seekers find the right job, without any cost.
+
+🔍 This project is created with dedication, research, and continuous effort. We carefully research and list job opportunities so job seekers can apply from one place.
+
+💯 Our platform is 100% free, easy to use, reliable, and constantly improving.
+
+We built this website with Love ❤️ and hard work. In return, all we ask is your love ❤️ and support 🤝. Please share your valuable feedback and suggestions!
+      </p>
+
+      <button onclick="toggleFeedback()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">
+        💬 Give Feedback
+      </button>
+
+      <div id="feedbackBox" class="slide mt-4">
+        <input id="feedbackEmail" class="w-full border rounded-lg p-3 mb-2" placeholder="Your email">
+        <textarea id="feedbackText" rows="3" class="w-full border rounded-lg p-3 mb-3" placeholder="Write your feedback..."></textarea>
+        <button onclick="submitFeedback()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-bold">
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ================= LOGIN REQUIRED MODAL ================= -->
+<div id="alertModal" class="custom-modal">
+  <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl text-center">
+    <h3 id="alertTitle" class="text-lg font-bold mb-2"></h3>
+    <p id="alertMsg" class="text-gray-600 mb-6"></p>
+
+    <div id="authButtons" class="space-y-3 hidden">
+      <a href="login.html" class="block w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Sign In</a>
+      <a href="signup.html" class="block w-full border border-gray-300 py-3 rounded-xl font-bold">Sign Up</a>
+    </div>
+    
+    <button onclick="document.getElementById('alertModal').style.display='none'" class="mt-4 text-sm text-gray-400 font-medium">Close</button>
+  </div>
+</div>
+
+<!-- ================= LOGIC ================= -->
+<script type="module">
+import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const auth = window.auth;
+const db = window.db;
+let currentUser=null;
+let currentJobId=null;
+
+const feedbackBoxEl = document.getElementById("feedbackBox");
+const feedbackEmailEl = document.getElementById("feedbackEmail");
+const feedbackTextEl = document.getElementById("feedbackText");
+const alertModalEl = document.getElementById("alertModal");
+const alertTitleEl = document.getElementById("alertTitle");
+const alertMsgEl = document.getElementById("alertMsg");
+const authButtonsEl = document.getElementById("authButtons");
+
+onAuthStateChanged(auth,u=>{ currentUser=u; });
+
+function getJobId(){
+  return new URLSearchParams(window.location.search).get("id");
+}
+
+window.addEventListener("DOMContentLoaded",async()=>{
+  currentJobId=getJobId();
+  if(!currentJobId) return renderError("Invalid Job ID");
+
+  const snap=await getDoc(doc(db,"jobs",currentJobId));
+  if(!snap.exists()) return renderError("Job not found");
+
+  renderJob(snap.data());
+});
+
+function renderJob(job){
+  document.getElementById("jobDetailsContent").innerHTML=`
+    <h1 class="text-3xl font-black mb-1 leading-tight text-slate-900">${job.title}</h1>
+    <p class="text-blue-600 font-bold text-lg mb-6 flex items-center gap-2">
+      <i class="fa-solid fa-building text-sm opacity-50"></i> ${job.company}
+    </p>
+
+    <!-- REDESIGNED INFO BOXES -->
+    <div class="flex flex-wrap gap-4 mb-8">
+      <div class="flex items-center gap-3 bg-blue-50/50 border border-blue-100 px-4 py-3 rounded-2xl min-w-[160px]">
+        <div class="w-10 h-10 bg-white shadow-sm text-blue-600 rounded-xl flex items-center justify-center text-lg">
+          <i class="fa-solid fa-location-dot"></i>
+        </div>
+        <div>
+          <p class="text-[10px] uppercase tracking-wider text-blue-500 font-black leading-none mb-1">Location</p>
+          <p class="text-sm font-bold text-slate-700 leading-none">${job.location || "Remote / Global"}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 px-4 py-3 rounded-2xl min-w-[160px]">
+        <div class="w-10 h-10 bg-white shadow-sm text-emerald-600 rounded-xl flex items-center justify-center text-lg">
+          <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+        <div>
+          <p class="text-[10px] uppercase tracking-wider text-emerald-600 font-black leading-none mb-1">Salary</p>
+          <p class="text-sm font-bold text-slate-700 leading-none">${job.salary || "Undisclosed"}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="prose max-w-none text-gray-600 whitespace-pre-line mb-10 leading-relaxed text-base">
+      ${job.about||""}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 border-t pt-8">
+      <button onclick="applyJob('${job.applyLink||""}')"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-200 flex items-center gap-2">
+        Apply Now <i class="fa-solid fa-arrow-right text-xs"></i>
+      </button>
+
+      <button id="saveBtn" onclick="toggleSaveJob()"
+        class="border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 px-6 py-4 rounded-2xl font-bold transition-all text-gray-700 flex items-center gap-2">
+        <i class="fa-regular fa-bookmark"></i> Save
+      </button>
+
+      <button onclick="shareJob('${job.title}')"
+        class="border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 p-4 rounded-2xl font-bold transition-all text-gray-700" title="Share Job">
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+    </div>
+  `;
+}
+
+window.applyJob=(link)=>{
+  if(!currentUser) return showLoginPopup();
+  window.open(link,"_blank");
+};
+
+const LOCAL_SAVED_JOBS_KEY = "booterspace_saved_jobs";
+
+function getSavedJobs() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_SAVED_JOBS_KEY) || "[]");
+  } catch (_) {
+    return [];
+  }
+}
+
+function setSavedJobs(items) {
+  localStorage.setItem(LOCAL_SAVED_JOBS_KEY, JSON.stringify(items));
+}
+
+window.toggleSaveJob=async()=>{
+  if(!currentUser) return showLoginPopup();
+
+  const saved = new Set(getSavedJobs());
+  if (saved.has(currentJobId)) {
+    saved.delete(currentJobId);
+    setSavedJobs([...saved]);
+    showAlert("Removed","Job removed from your saved list");
+    return;
+  }
+
+  saved.add(currentJobId);
+  setSavedJobs([...saved]);
+  showAlert("Saved! ❤️","Job added to your browser saved list");
+};
+
+window.shareJob=(title)=>{
+  if(navigator.share) {
+    navigator.share({
+      title: title,
+      url: window.location.href
+    });
+  } else {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => showAlert("Link Copied","Job link copied to clipboard"))
+      .catch(() => showAlert("Share","Please copy this URL manually: " + window.location.href));
+  }
+};
+
+window.toggleFeedback=()=>feedbackBoxEl.classList.toggle("open");
+
+async function ensureFeedbackUser(){
+  if(currentUser) return currentUser;
+
+  const credential = await signInAnonymously(auth);
+  currentUser = credential.user;
+  return currentUser;
+}
+
+window.submitFeedback=async()=>{
+  const email = feedbackEmailEl.value.trim();
+  const feedback = feedbackTextEl.value.trim();
+
+  if(!email || !feedback){
+    showAlert("Missing Details","Please enter both your email and feedback.");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db,"feedback"), {
+      jobId: currentJobId,
+      userId: currentUser?.uid || null,
+      email,
+      feedback,
+      createdAt: window.serverTimestamp()
+    });
+
+    feedbackEmailEl.value = "";
+    feedbackTextEl.value = "";
+    feedbackBoxEl.classList.remove("open");
+    showAlert("Thank You ❤️","Your feedback has been saved successfully.");
+  } catch (error) {
+    showAlert("Feedback Unavailable","We could not submit feedback right now. Please try again later.");
+  }
+};
+
+function showLoginPopup(){
+  alertTitleEl.innerText="Login Required";
+  alertMsgEl.innerText="Please sign in or create an account to save jobs or apply.";
+  authButtonsEl.classList.remove("hidden");
+  alertModalEl.style.display="flex";
+}
+
+function showAlert(t,m){
+  alertTitleEl.innerText=t;
+  alertMsgEl.innerText=m;
+  authButtonsEl.classList.add("hidden");
+  alertModalEl.style.display="flex";
+}
+
+function renderError(msg){
+  document.getElementById("jobDetailsContent").innerHTML=
+    `<div class="text-center py-20">
+      <i class="fa-solid fa-circle-exclamation text-4xl text-red-100 mb-4"></i>
+      <p class="text-red-600 font-bold">${msg}</p>
+    </div>`;
+}
+</script>
+
+</body>
+</html>

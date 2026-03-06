@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a2744">
+  <title>Government Job Details</title>
+  <meta name="description" content="Official Government Recruitment Advertisement — View complete job details, eligibility, and application process.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --navy: #0f1f45;
+      --navy-mid: #1a2f5e;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --gold-pale: #f9f3e3;
+      --cream: #faf8f4;
+      --ink: #1c1c2e;
+      --slate: #4a5568;
+      --rule: #d4c5a0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'EB Garamond', serif;
+    }
+
+    /* ── Header ── */
+    .govt-header {
+      background: var(--navy);
+      border-bottom: 4px solid var(--gold);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .govt-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 10% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 90% 50%, rgba(201,168,76,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .govt-header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 32px 28px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .emblem {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+    }
+
+    .header-text {
+      flex: 1;
+    }
+
+    .ministry-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      margin-bottom: 6px;
+    }
+
+    .job-title-main {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(22px, 4vw, 36px);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .advt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(201,168,76,0.15);
+      border: 1px solid rgba(201,168,76,0.35);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+    }
+
+    .advt-badge::before {
+      content: '◆';
+      font-size: 7px;
+      color: var(--gold);
+    }
+
+    /* ── Main layout ── */
+    .main-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── Highlights strip ── */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 12px rgba(15,31,69,0.07);
+    }
+
+    .highlight-card {
+      background: #fff;
+      padding: 16px 18px;
+      position: relative;
+    }
+
+    .highlight-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 18px;
+      right: 18px;
+      height: 2px;
+      background: var(--gold);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .highlight-card:hover::after { opacity: 1; }
+
+    .highlight-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 5px;
+    }
+
+    .highlight-value {
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.3;
+    }
+
+    /* ── Content sections ── */
+    .section-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 6px rgba(15,31,69,0.05);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      background: var(--navy);
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .section-header h2 {
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+
+    .section-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* ── Details table ── */
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .details-table tr {
+      border-bottom: 1px solid #f0ece3;
+      transition: background 0.15s;
+    }
+
+    .details-table tr:last-child { border-bottom: none; }
+    .details-table tr:hover { background: #fdfbf7; }
+
+    .details-table td {
+      padding: 12px 20px;
+      font-size: 13.5px;
+      vertical-align: top;
+    }
+
+    .details-table td:first-child {
+      width: 38%;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--slate);
+      padding-right: 12px;
+      padding-top: 14px;
+    }
+
+    .details-table td:last-child {
+      color: var(--ink);
+      font-family: 'EB Garamond', serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .details-link {
+      color: var(--navy-mid);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px dashed var(--gold);
+      word-break: break-all;
+    }
+    .details-link:hover {
+      color: var(--gold);
+      border-bottom-style: solid;
+    }
+
+    /* ── Important dates ── */
+    .dates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0;
+    }
+
+    .date-item {
+      padding: 16px 20px;
+      border-right: 1px solid #f0ece3;
+      border-bottom: 1px solid #f0ece3;
+    }
+
+    .date-item:last-child,
+    .date-item:nth-last-child(-n+2):first-child {
+      border-right: none;
+    }
+
+    .date-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--slate);
+      margin-bottom: 4px;
+    }
+
+    .date-value {
+      font-family: 'EB Garamond', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .date-value.urgent { color: #c0392b; }
+
+    /* ── Apply CTA ── */
+    .apply-section {
+      background: var(--navy);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 28px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(15,31,69,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .apply-section::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.15);
+      pointer-events: none;
+    }
+    .apply-section::after {
+      content: '';
+      position: absolute;
+      top: -20px; right: -20px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.1);
+      pointer-events: none;
+    }
+
+    .apply-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    .apply-text h3 {
+      font-family: 'EB Garamond', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .apply-text p {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+    }
+
+    .apply-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--gold);
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 13px 28px;
+      border-radius: 4px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+    }
+
+    .apply-btn:hover {
+      background: var(--gold-light);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(201,168,76,0.45);
+    }
+
+    .apply-btn:active { transform: translateY(0); }
+
+    /* ── Notice banner ── */
+    .notice-banner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #fffbeb;
+      border: 1px solid #f0d060;
+      border-left: 4px solid var(--gold);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #78600a;
+      line-height: 1.5;
+    }
+
+    .notice-banner.hidden { display: none; }
+    .notice-icon { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Footer rule ── */
+    .page-footer {
+      max-width: 960px;
+      margin: 0 auto 40px;
+      padding: 0 16px;
+      border-top: 1px solid var(--rule);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: #9a8f7e;
+      letter-spacing: 0.06em;
+    }
+
+    .official-stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.8;
+    }
+    .official-stamp::before { content: '⬡'; font-size: 12px; }
+
+    /* ── Navbar placeholder ── */
+    #navbar { position: relative; z-index: 100; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeUp 0.4s ease forwards;
+      opacity: 0;
+    }
+
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.12s; }
+    .delay-3 { animation-delay: 0.19s; }
+    .delay-4 { animation-delay: 0.26s; }
+    .delay-5 { animation-delay: 0.33s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .govt-header-inner { flex-direction: column; align-items: center; text-align: center; }
+      .apply-section { flex-direction: column; text-align: center; }
+      .apply-btn { width: 100%; justify-content: center; }
+      .details-table td:first-child { width: 42%; }
+    }
+
+    /* ── Decorative ornament ── */
+    .ornament {
+      text-align: center;
+      color: var(--rule);
+      font-size: 20px;
+      letter-spacing: 8px;
+      padding: 8px 0;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+  <script>
+    if (typeof fetch !== 'undefined') {
+      fetch("navbar.html").then(r => r.text()).then(html => {
+        document.getElementById("navbar").innerHTML = html;
+        const s = document.createElement("script");
+        s.type = "module";
+        s.src = "public/js/navbar.js";
+        document.body.appendChild(s);
+      }).catch(() => {});
+    }
+  </script>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="govt-header">
+    <div class="govt-header-inner">
+
+      <!-- Emblem SVG (generic govt seal) -->
+      <svg class="emblem" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Government Seal">
+        <circle cx="36" cy="36" r="34" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.4"/>
+        <circle cx="36" cy="36" r="29" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.3"/>
+        <!-- Star / wheel motif -->
+        <g transform="translate(36,36)">
+          <circle r="6" fill="#c9a84c" opacity="0.9"/>
+          <circle r="3" fill="#0f1f45"/>
+          <!-- Spokes -->
+          <g stroke="#c9a84c" stroke-width="1.2" opacity="0.7">
+            <line x1="0" y1="-9" x2="0" y2="-22"/>
+            <line x1="0" y1="9"  x2="0"  y2="22"/>
+            <line x1="-9" y1="0" x2="-22" y2="0"/>
+            <line x1="9" y1="0"  x2="22"  y2="0"/>
+            <line x1="-6.4" y1="-6.4" x2="-15.6" y2="-15.6"/>
+            <line x1="6.4"  y1="-6.4" x2="15.6"  y2="-15.6"/>
+            <line x1="-6.4" y1="6.4"  x2="-15.6" y2="15.6"/>
+            <line x1="6.4"  y1="6.4"  x2="15.6"  y2="15.6"/>
+          </g>
+          <!-- Outer dots -->
+          <g fill="#c9a84c" opacity="0.6">
+            <circle cx="0" cy="-26" r="1.5"/>
+            <circle cx="18.4" cy="-18.4" r="1.5"/>
+            <circle cx="26" cy="0" r="1.5"/>
+            <circle cx="18.4" cy="18.4" r="1.5"/>
+            <circle cx="0" cy="26" r="1.5"/>
+            <circle cx="-18.4" cy="18.4" r="1.5"/>
+            <circle cx="-26" cy="0" r="1.5"/>
+            <circle cx="-18.4" cy="-18.4" r="1.5"/>
+          </g>
+        </g>
+      </svg>
+
+      <div class="header-text">
+        <p class="ministry-label" id="headerMinistry">Official Recruitment Advertisement</p>
+        <h1 class="job-title-main" id="jobDetailsTitle">Government Job Details</h1>
+        <span class="advt-badge" id="headerAdvtNo">Loading…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main-container">
+
+    <!-- Notice / Warning -->
+    <div class="notice-banner hidden animate-in delay-1" id="jobDetailsMessage" role="alert">
+      <svg class="notice-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="jobDetailsMessageText"></span>
+    </div>
+
+    <!-- Quick Highlights -->
+    <div class="highlights-grid animate-in delay-2" id="quickHighlights"></div>
+
+    <!-- Important Dates Section -->
+    <div class="section-card animate-in delay-3" id="datesSection" style="display:none">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <h2>Important Dates</h2>
+      </div>
+      <div class="dates-grid" id="datesGrid"></div>
+    </div>
+
+    <!-- Complete Details Section -->
+    <div class="section-card animate-in delay-3">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <h2>Vacancy Details</h2>
+      </div>
+      <table class="details-table" id="jobDetailsBody" aria-label="Job Details"></table>
+    </div>
+
+    <!-- Apply CTA -->
+    <div class="apply-section animate-in delay-4" id="applySection" style="display:none">
+      <div class="apply-text">
+        <h3>Apply for this Position</h3>
+        <p>Click below to open the official application portal</p>
+      </div>
+      <a id="applyLink" href="#" target="_blank" rel="noopener noreferrer" class="apply-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Apply Online
+      </a>
+    </div>
+
+    <div class="ornament animate-in delay-5">◆ &nbsp; ◆ &nbsp; ◆</div>
+  </main>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="page-footer">
+    <p class="footer-text">© Government Recruitment Portal &nbsp;·&nbsp; All Rights Reserved</p>
+    <span class="official-stamp">Official Notice</span>
+  </footer>
+
+  <!-- ═══════════════ SCRIPT ═══════════════ -->
+  <script>
+    /* ── helpers ── */
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+
+    function humanize(key) {
+      return key.replace(/([a-z])([A-Z])/g,"$1 $2")
+                .replace(/[_-]+/g," ").trim()
+                .replace(/\b\w/g, c=>c.toUpperCase());
+    }
+
+    function formatDate(val) {
+      if (!val) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        const d = new Date(val + "T00:00:00");
+        return d.toLocaleDateString("en-IN", {day:"2-digit", month:"long", year:"numeric"});
+      }
+      return val;
+    }
+
+    function fmtVal(val, key) {
+      if (val === null || val === undefined || val === "") return "N/A";
+      if (typeof val === "string" && /(date|deadline|last)/i.test(key)) return formatDate(val);
+      if (Array.isArray(val)) return val.length ? val.join(", ") : "N/A";
+      if (typeof val === "object") return JSON.stringify(val, null, 2);
+      return String(val);
+    }
+
+    const isUrl = v => /^https?:\/\//i.test(v);
+    const isDateKey = k => /(date|deadline|last)/i.test(k);
+
+    /* ── date keys to surface in the dates section ── */
+    const DATE_KEYS = ["publishDate","startDate","lastDateApply","lastDate","examDate","admitCardDate","resultDate","interviewDate"];
+
+    /* ── keys for highlights ── */
+    const HIGHLIGHT_KEYS = ["organizationName","organisationName","postName","jobTitle","totalVacancy","applicationFee","state","eligibility"];
+
+    /* ── excluded from details table ── */
+    const SKIP_KEYS = new Set(["id","createdAt","updatedAt"]);
+
+    /* ── apply URL keys ── */
+    const APPLY_KEYS = ["applyLink","applicationLink","applyUrl","officialWebsite","applicationUrl"];
+
+    /* ── render ── */
+    function render(job) {
+      /* Title */
+      const title = job.postName || job.jobTitle || "Government Vacancy";
+      document.getElementById("jobDetailsTitle").textContent = title;
+      document.title = title + " — Government Job Details";
+
+      /* Ministry label */
+      const org = job.organizationName || job.organisationName || job.department || "";
+      if (org) document.getElementById("headerMinistry").textContent = org;
+
+      /* Advt badge */
+      const advt = job.advtNo || job.advertisementNo || job.referenceNo || "";
+      document.getElementById("headerAdvtNo").textContent = advt ? "Advt No: " + advt : "Official Notification";
+
+      /* ── Highlights ── */
+      const hlEl = document.getElementById("quickHighlights");
+      const hlCards = HIGHLIGHT_KEYS.filter(k => k in job && String(job[k]||"").trim())
+        .slice(0, 6)
+        .map(k => `
+          <div class="highlight-card">
+            <div class="highlight-label">${esc(humanize(k))}</div>
+            <div class="highlight-value">${esc(fmtVal(job[k], k))}</div>
+          </div>`).join("");
+      hlEl.innerHTML = hlCards || `<div class="highlight-card"><div class="highlight-value">No highlights</div></div>`;
+
+      /* ── Dates section ── */
+      const dateEntries = DATE_KEYS.filter(k => k in job && String(job[k]||"").trim() && job[k] !== "N/A");
+      if (dateEntries.length) {
+        document.getElementById("datesSection").style.display = "";
+        const today = new Date(); today.setHours(0,0,0,0);
+        document.getElementById("datesGrid").innerHTML = dateEntries.map(k => {
+          const raw = String(job[k]);
+          const isUrgent = isDateKey(k) && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+            ? (new Date(raw+"T00:00:00") - today) / 864e5 < 7 : false;
+          return `
+            <div class="date-item">
+              <div class="date-label">${esc(humanize(k))}</div>
+              <div class="date-value${isUrgent?" urgent":""}">${esc(formatDate(raw))}</div>
+            </div>`;
+        }).join("");
+      }
+
+      /* ── Details table ── */
+      const tbody = document.getElementById("jobDetailsBody");
+      const rows = Object.entries(job)
+        .filter(([k]) => !SKIP_KEYS.has(k))
+        .map(([k, v]) => {
+          const display = fmtVal(v, k);
+          const cell = isUrl(display)
+            ? `<a class="details-link" href="${esc(display)}" target="_blank" rel="noopener noreferrer">${esc(display)}</a>`
+            : `<span>${esc(display)}</span>`;
+          return `<tr>
+            <td>${esc(humanize(k))}</td>
+            <td>${cell}</td>
+          </tr>`;
+        }).join("");
+      tbody.innerHTML = rows || `<tr><td colspan="2" style="padding:20px;color:#888;font-style:italic;">No details available.</td></tr>`;
+
+      /* ── Apply button ── */
+      let applyUrl = "";
+      for (const k of APPLY_KEYS) {
+        if (job[k] && isUrl(String(job[k]))) { applyUrl = String(job[k]); break; }
+      }
+      if (applyUrl) {
+        document.getElementById("applySection").style.display = "";
+        document.getElementById("applyLink").href = applyUrl;
+      }
+    }
+
+    function showMessage(text) {
+      const el = document.getElementById("jobDetailsMessage");
+      document.getElementById("jobDetailsMessageText").textContent = text;
+      el.classList.remove("hidden");
+    }
+
+    /* ── Boot ── */
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id") || "";
+      const raw = sessionStorage.getItem("selectedGovtJob");
+
+      if (!raw) {
+        /* Demo mode — render sample data so the page isn't blank */
+        render({
+          organizationName: "Ministry of Railways — Railway Recruitment Board",
+          advtNo: "RRB/2025/001",
+          postName: "Junior Engineer (Civil)",
+          department: "Civil Engineering Wing",
+          totalVacancy: "7943",
+          payScale: "₹ 35,400 – ₹ 1,12,400 (Level 6)",
+          qualification: "Bachelor of Engineering / B.Tech in Civil Engineering from a recognised University",
+          ageLimit: "18 – 33 Years (Relaxation as per Govt. norms)",
+          applicationFee: "₹ 500 (General) | ₹ 250 (SC/ST/PwD)",
+          state: "Pan India",
+          selectionProcess: "Computer Based Test (CBT) → Document Verification → Medical Examination",
+          publishDate: "2025-06-01",
+          lastDateApply: "2025-06-30",
+          examDate: "2025-09-15",
+          officialWebsite: "https://www.rrbapply.gov.in/",
+          applyLink: "https://www.rrbapply.gov.in/"
+        });
+        showMessage("Preview mode — actual job data will load from sessionStorage in production.");
+      } else {
+        const job = JSON.parse(raw);
+        if (requestedId && String(job.id||"") && requestedId !== String(job.id)) {
+          showMessage("Details shown may not match the selected vacancy. Please return and re-open.");
+        }
+        render(job);
+      }
+    } catch (e) {
+      showMessage("Failed to load job details: " + e.message);
+    }
+  </script>
+</body>
+</html>

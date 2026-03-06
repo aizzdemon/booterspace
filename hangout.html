@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Places to Hangout – BooterSpace</title>
+  <meta name="description" content="Discover recommended hangout places, cafes, and social spots shared by the BooterSpace community.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/hangout.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="Places to Hangout – BooterSpace">
+  <meta property="og:description" content="Discover recommended hangout places, cafes, and social spots shared by the BooterSpace community.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/hangout.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Places to Hangout – BooterSpace">
+  <meta name="twitter:description" content="Discover recommended hangout places, cafes, and social spots shared by the BooterSpace community.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Places to Hangout \u2013 BooterSpace",
+  "description": "Discover recommended hangout places, cafes, and social spots shared by the BooterSpace community.",
+  "url": "https://aizzdemon.github.io/booterspace/hangout.html",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "BooterSpace",
+    "url": "https://aizzdemon.github.io/booterspace/"
+  }
+}
+  </script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="assets/css/shared.css">
+
+<!-- Tailwind & Icons -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-gray-100 page-hangout">
+
+<!-- Navbar -->
+<div id="navbar"></div>
+<script>
+fetch("navbar.html").then(r=>r.text()).then(html=>{
+  document.getElementById("navbar").innerHTML=html;
+  const s=document.createElement("script");
+  s.type="module"; 
+  s.src="/booterspace/public/js/navbar.js"; 
+  document.body.appendChild(s);
+});
+</script>
+<!-- PAGE HEADER -->
+<header class="bg-purple-600 p-6 text-white text-center shadow">
+  <h1 class="text-3xl font-bold">Places to Hangout</h1>
+  <p class="text-sm opacity-90">Discover cafes, malls, hotels & fun places</p>
+</header>
+
+<!-- PLACES GRID -->
+<div id="placesContainer" class="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+
+<!-- ================= FIREBASE ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+window.app = app;
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+</script>
+<!-- ================= LOAD PLACES ================= -->
+
+</body>
+</html>
+

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="assets/css/shared.css">
+    <title>Admin Dashboard – KARDAN</title>
+  <meta name="description" content="Manage jobs, government posts, and platform content from the BooterSpace admin dashboard.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/admin.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="Admin Dashboard – KARDAN">
+  <meta property="og:description" content="Manage jobs, government posts, and platform content from the BooterSpace admin dashboard.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/admin.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Admin Dashboard – KARDAN">
+  <meta name="twitter:description" content="Manage jobs, government posts, and platform content from the BooterSpace admin dashboard.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Admin Dashboard \u2013 KARDAN",
+  "description": "Manage jobs, government posts, and platform content from the BooterSpace admin dashboard.",
+  "url": "https://aizzdemon.github.io/booterspace/admin.html",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "BooterSpace",
+    "url": "https://aizzdemon.github.io/booterspace/"
+  }
+}
+  </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900 page-admin">
+
+<!-- UNIVERSAL EDIT MODAL -->
+<div id="editModal" class="modal">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <h3 id="modalTitle" class="font-black text-slate-800">Edit Record</h3>
+            <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editDocId">
+                <input type="hidden" id="editCollectionName">
+                <div id="dynamicFields" class="space-y-4"></div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('editModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="saveBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Save to Firebase</button>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE JOB MODAL -->
+<div id="createJobModal" class="modal">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <div>
+                <h3 class="font-black text-slate-800">Create New Job Posting</h3>
+                <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Admin Entry</p>
+            </div>
+            <button onclick="closeModal('createJobModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="jobForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Title</label>
+                    <input id="jobTitle" type="text" placeholder="e.g. Senior Developer" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company Name</label>
+                        <input id="companyName" type="text" placeholder="Kardan Inc" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
+                        <input id="jobPlace" type="text" placeholder="Remote / Kabul" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Application Link</label>
+                    <input id="jobLink" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Description</label>
+                    <textarea id="jobDescription" rows="4" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('createJobModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="publishJobBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Publish Immediately</button>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE GOVT JOB MODAL -->
+<div id="createGovtJobModal" class="modal">
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <div>
+                <h3 class="font-black text-slate-800">Post Government Job</h3>
+                <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Govt Jobs Feed</p>
+            </div>
+            <button onclick="closeModal('createGovtJobModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <form id="govtJobForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post Name</label>
+                    <input id="govtPostName" type="text" placeholder="e.g. Assistant Loco Pilot" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">State</label>
+                    <input id="govtState" type="text" list="indiaStates" placeholder="Start typing a state..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <datalist id="indiaStates">
+                        <option value="Andhra Pradesh"></option>
+                        <option value="Arunachal Pradesh"></option>
+                        <option value="Assam"></option>
+                        <option value="Bihar"></option>
+                        <option value="Chhattisgarh"></option>
+                        <option value="Goa"></option>
+                        <option value="Gujarat"></option>
+                        <option value="Haryana"></option>
+                        <option value="Himachal Pradesh"></option>
+                        <option value="Jharkhand"></option>
+                        <option value="Karnataka"></option>
+                        <option value="Kerala"></option>
+                        <option value="Madhya Pradesh"></option>
+                        <option value="Maharashtra"></option>
+                        <option value="Manipur"></option>
+                        <option value="Meghalaya"></option>
+                        <option value="Mizoram"></option>
+                        <option value="Nagaland"></option>
+                        <option value="Odisha"></option>
+                        <option value="Punjab"></option>
+                        <option value="Rajasthan"></option>
+                        <option value="Sikkim"></option>
+                        <option value="Tamil Nadu"></option>
+                        <option value="Telangana"></option>
+                        <option value="Tripura"></option>
+                        <option value="Uttar Pradesh"></option>
+                        <option value="Uttarakhand"></option>
+                        <option value="West Bengal"></option>
+                    </datalist>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Organisation Name</label>
+                    <input id="govtOrganisationName" type="text" placeholder="e.g. Railway Recruitment Board" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">No of Posts</label>
+                        <input id="govtNoOfPosts" type="number" min="1" placeholder="e.g. 250" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Advt No</label>
+                        <input id="govtAdvtNo" type="text" placeholder="e.g. RRB/ALP/2026/01" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Salary</label>
+                    <input id="govtSalary" type="text" placeholder="e.g. ₹35,400 - ₹1,12,400" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Type</label>
+                        <select id="govtJobType" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Select Job Type</option>
+                            <option value="contract">Contract</option>
+                            <option value="permanent">Permanent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apply Mode</label>
+                        <select id="govtApplyMode" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Select Apply Mode</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                            <option value="online/offline">Online/Offline</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Publish Date</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <label class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <input type="radio" name="publishDateMode" value="calendar" checked>
+                            Calendar Date
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <input type="radio" name="publishDateMode" value="manual">
+                            Manual Text
+                        </label>
+                    </div>
+                    <input id="govtPublishDateCalendar" type="date" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input id="govtPublishDateManual" type="text" placeholder="e.g. 3rd Week of March 2026" class="hidden w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 mt-3">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Last Date of Apply</label>
+                    <input id="govtLastDate" type="date" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Qualification</label>
+                    <textarea id="govtQualification" rows="3" placeholder="e.g. Graduate in any discipline" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Selection Process</label>
+                    <textarea id="govtSelectionProcess" rows="3" placeholder="e.g. Written Exam, Interview, Document Verification" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Details</label>
+                    <textarea id="govtJobDetails" rows="5" placeholder="Add eligibility, post count, selection process, etc." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Official Link to Apply</label>
+                    <input id="govtApplyLink" type="url" placeholder="https://..." class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </form>
+        </div>
+        <div class="p-6 border-t bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeModal('createGovtJobModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button id="publishGovtJobBtn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition">Publish Govt Job</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginDiv" class="flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-indigo-600">KARDAN</h1>
+            <p class="text-slate-500 font-medium">Administrative Gateway</p>
+        </div>
+        <div class="space-y-4">
+            <input id="email" type="email" placeholder="admin@kardan.com" class="w-full p-3 border border-slate-300 rounded-lg outline-none"/>
+            <input id="password" type="password" placeholder="••••••••" class="w-full p-3 border border-slate-300 rounded-lg outline-none"/>
+            <button id="loginBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Authorize Access</button>
+            <p id="loginError" class="text-red-500 text-sm text-center mt-2 font-medium"></p>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="adminDiv" class="hidden pb-20">
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-black text-indigo-600">KARDAN</span>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold uppercase">Admin Console</span>
+            </div>
+            <button id="logoutBtn" class="text-sm font-bold text-slate-500 hover:text-red-600 transition">Logout</button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Members</p>
+                <h3 id="stat-totalUsers" class="text-3xl font-black text-slate-800">--</h3>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Jobs</p>
+                <h3 id="stat-totalJobs" class="text-3xl font-black text-slate-800">--</h3>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Approval</p>
+                <h3 id="stat-pendingJobs" class="text-3xl font-black text-slate-800">--</h3>
+            </div>
+        </div>
+
+        <!-- Consolidated Nav -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div id="jobsDropdown" class="relative dropdown">
+                <button id="jobsDropdownToggle" class="w-full bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center group">
+                    <span class="text-2xl">💼</span>
+                    <span class="text-sm font-bold mt-2">Jobs Management</span>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Active / Pending / Add</span>
+                </button>
+                <div class="dropdown-content border border-slate-200 shadow-xl">
+                    <button data-tab="jobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Approved Jobs</span>
+                        <span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black">ACTIVE</span>
+                    </button>
+                    <button data-tab="pendingJobs" class="nav-btn-tab w-full text-left px-6 py-4 hover:bg-slate-50 border-b flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Review Queue</span>
+                        <span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black">PENDING</span>
+                    </button>
+                    <button id="addJobDirect" class="w-full text-left px-6 py-4 hover:bg-indigo-50 text-indigo-600 font-black">
+                        + Post New Job
+                    </button>
+                    <button id="addGovtJobDirect" class="w-full text-left px-6 py-4 hover:bg-emerald-50 text-emerald-600 font-black border-t border-slate-100">
+                        + Post Govt Job
+                    </button>
+                </div>
+            </div>
+
+            <button data-tab="users" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">👥</span>
+                <span class="text-sm font-bold mt-2">Community Members</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Seekers & Providers</span>
+            </button>
+            <button data-tab="posts" class="nav-btn-tab bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center">
+                <span class="text-2xl">💬</span>
+                <span class="text-sm font-bold mt-2">Community Posts</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">Moderation</span>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+            <a href="input-govt.html" class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 transition text-center text-sm font-bold text-slate-700">
+                input govt
+            </a>
+            <a href="govt-job-detail2.html" class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 transition text-center text-sm font-bold text-slate-700">
+                details
+            </a>
+            <a href="govt2.html" class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 transition text-center text-sm font-bold text-slate-700">
+                govt2
+            </a>
+        </div>
+
+        <div id="content" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[400px]">
+            <div class="flex flex-col items-center justify-center h-64 text-slate-300">
+                <span class="text-5xl mb-4 opacity-50">📡</span>
+                <p class="font-bold uppercase tracking-widest text-xs">Awaiting Selection</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, orderBy, onSnapshot, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+let currentUnsub = null;
+let currentJobData = [];
+
+/* ============================
+   Helper Functions
+============================ */
+function downloadCSV(data, filename) {
+    if (!data.length) return alert("No data");
+    const headers = Object.keys(data[0]);
+    const csv = [headers.join(','), ...data.map(r => headers.map(h => `"${('' + (r[h] instanceof Timestamp ? r[h].toDate().toISOString() : (r[h]||''))).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const b = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = filename; a.click();
+}
+
+onAuthStateChanged(auth, u => {
+    if (u && u.uid === ADMIN_UID) {
+        document.getElementById("loginDiv").classList.add("hidden");
+        document.getElementById("adminDiv").classList.remove("hidden");
+        initStats();
+    } else {
+        document.getElementById("loginDiv").classList.remove("hidden");
+        document.getElementById("adminDiv").classList.add("hidden");
+    }
+});
+
+function initStats() {
+    onSnapshot(collection(db, "jobs"), snap => {
+        const d = snap.docs.map(x => x.data());
+        document.getElementById("stat-totalJobs").innerText = d.filter(j => j.status === 'approved').length;
+        document.getElementById("stat-pendingJobs").innerText = d.filter(j => j.status === 'pending').length;
+    });
+    onSnapshot(collection(db, "users"), snap => document.getElementById("stat-totalUsers").innerText = snap.size);
+}
+
+/* ============================
+   Tabs & Views
+============================ */
+function showUsersTab() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <h2 class="text-xl font-black text-slate-800">Community Members</h2>
+            <div class="flex items-center gap-2">
+                <button id="dlUsers" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider hover:bg-slate-200">Export Community CSV</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+            <div class="relative md:col-span-2">
+                <input type="date" id="userOnboardDate" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute left-3 top-2.5 text-slate-400">📅</span>
+            </div>
+            <div class="flex items-center justify-between md:justify-end gap-3">
+                <p id="userFilterSummary" class="text-[10px] font-black uppercase tracking-wider text-slate-400">Showing all members</p>
+                <button id="clearUserDateFilter" class="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800">Clear</button>
+            </div>
+        </div>
+        <div id="uList" class="grid grid-cols-1 md:grid-cols-2 gap-4">Loading members...</div>
+    `;
+
+    const userDateFilterInput = document.getElementById("userOnboardDate");
+    const userFilterSummary = document.getElementById("userFilterSummary");
+    const userList = document.getElementById("uList");
+
+    const normalizeDate = date => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const renderUsers = users => {
+        userList.innerHTML = "";
+
+        if (!users.length) {
+            userList.innerHTML = '<p class="text-sm text-slate-500">No members onboarded on the selected date.</p>';
+            return;
+        }
+
+        users.forEach(({ id, data }) => {
+            const u = data;
+            const role = u.role || 'jobSeeker';
+            const roleLabel = role === 'jobProvider' ? 'Job Provider' : 'Job Seeker';
+            const roleClass = role === 'jobProvider' ? 'role-badge-provider' : 'role-badge-seeker';
+            const canPost = u.canPostJobs === true;
+
+            const div = document.createElement('div');
+            div.className = "p-4 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition";
+            div.innerHTML = `
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-indigo-600">${(u.name || u.fullName || 'U').charAt(0)}</div>
+                        <div>
+                            <h4 class="font-black text-sm text-slate-800">${u.name || u.fullName || 'Anonymous Member'}</h4>
+                            <p class="text-[10px] text-slate-500 font-medium">${u.email || 'No email associated'}</p>
+                        </div>
+                    </div>
+                    <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${roleClass}">${roleLabel}</span>
+                </div>
+                
+                <div class="border-t border-slate-50 pt-3 mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <label class="switch">
+                            <input type="checkbox" ${canPost ? 'checked' : ''} onchange="toggleJobAllowance('${id}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="text-[10px] font-black uppercase text-slate-400">Post Jobs Allowance</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] font-black text-slate-300 uppercase">Read only</span>
+                    </div>
+                </div>
+            `;
+            userList.appendChild(div);
+        });
+    };
+
+    const applyUserDateFilter = allUsers => {
+        const selectedDate = userDateFilterInput.value;
+        let filteredUsers = allUsers;
+
+        if (selectedDate) {
+            filteredUsers = allUsers.filter(({ data }) => {
+                if (!data.createdAt?.toDate) return false;
+                return normalizeDate(data.createdAt.toDate()) === selectedDate;
+            });
+
+            userFilterSummary.textContent = `${filteredUsers.length} onboarded on ${selectedDate}`;
+        } else {
+            userFilterSummary.textContent = `Showing all members (${allUsers.length})`;
+        }
+
+        renderUsers(filteredUsers);
+    };
+
+    if (currentUnsub) currentUnsub();
+    currentUnsub = onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), snap => {
+        const raw = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const allUsers = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+        document.getElementById("dlUsers").onclick = () => downloadCSV(raw, "community_members.csv");
+        applyUserDateFilter(allUsers);
+
+        userDateFilterInput.onchange = () => applyUserDateFilter(allUsers);
+        document.getElementById("clearUserDateFilter").onclick = () => {
+            userDateFilterInput.value = "";
+            applyUserDateFilter(allUsers);
+        };
+    });
+}
+
+function showJobsTab(status = 'approved') {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h2 class="text-xl font-black text-slate-800">${status === 'approved' ? 'Active Listings' : 'Review Queue'}</h2>
+                <button id="dlJobs" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-black uppercase tracking-wider">Export List</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div class="relative">
+                    <input type="text" id="jobTitleSearch" placeholder="Search job title..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+                </div>
+                <div class="relative">
+                    <input type="date" id="jobDateFilter" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="absolute left-3 top-2.5 text-slate-400">📅</span>
+                </div>
+                <div class="flex items-center">
+                    <button id="clearFilters" class="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800 ml-2">Clear Filters</button>
+                </div>
+            </div>
+
+            <div id="jList" class="space-y-3">Loading jobs...</div>
+        </div>
+    `;
+
+    currentJobData = [];
+    if (currentUnsub) currentUnsub();
+    const q = query(collection(db, "jobs"), where("status", "==", status), orderBy("timestamp", "desc"));
+    
+    currentUnsub = onSnapshot(q, snap => {
+        currentJobData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        applyJobFilters(status);
+    });
+
+    document.getElementById('jobTitleSearch').addEventListener('input', () => applyJobFilters(status));
+    document.getElementById('jobDateFilter').addEventListener('change', () => applyJobFilters(status));
+    document.getElementById('clearFilters').addEventListener('click', () => {
+        document.getElementById('jobTitleSearch').value = '';
+        document.getElementById('jobDateFilter').value = '';
+        applyJobFilters(status);
+    });
+}
+
+function applyJobFilters(status) {
+    const list = document.getElementById("jList");
+    const searchTerm = document.getElementById('jobTitleSearch').value.toLowerCase();
+    const filterDate = document.getElementById('jobDateFilter').value;
+
+    let filtered = currentJobData;
+    if (searchTerm) {
+        filtered = filtered.filter(j => (j.title || '').toLowerCase().includes(searchTerm) || (j.company || '').toLowerCase().includes(searchTerm));
+    }
+    if (filterDate) {
+        filtered = filtered.filter(j => {
+            if (!j.timestamp) return false;
+            return j.timestamp.toDate().toISOString().split('T')[0] === filterDate;
+        });
+    }
+
+    list.innerHTML = filtered.length === 0 ? `<p class="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No matches found</p>` : "";
+
+    filtered.forEach(j => {
+        const dateStr = j.timestamp ? j.timestamp.toDate().toLocaleDateString() : 'N/A';
+        const div = document.createElement('div');
+        div.className = `p-4 border rounded-2xl flex justify-between items-center ${status === 'pending' ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'} hover:border-indigo-300 transition-colors`;
+        div.innerHTML = `
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <h4 class="font-black text-sm text-slate-800">${j.title}</h4>
+                    <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">${dateStr}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-bold">${j.company} • ${j.jobPlace || 'Remote'}</p>
+                <p class="text-[9px] text-indigo-500 font-black mt-1 uppercase">Posted By: ${j.userName || 'Admin'}</p>
+            </div>
+            <div class="flex gap-2">
+                ${status === 'pending' ? `<button onclick="updateJobStatus('${j.id}', 'approved')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Approve</button>` : ''}
+                <button onclick="duplicateJob('${j.id}')" class="text-[10px] font-black text-indigo-600 uppercase px-2">Duplicate</button>
+                <button onclick="openEditModal('jobs', '${j.id}')" class="text-[10px] font-black text-slate-400 uppercase px-2">Edit</button>
+                <button onclick="deleteJob('${j.id}')" class="text-[10px] font-black text-red-500 uppercase px-2">Delete</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+/* ============================
+   FIREBASE EDIT & SAVE SYSTEM
+============================ */
+async function openEditModal(col, id) {
+    const modal = document.getElementById("editModal");
+    const container = document.getElementById("dynamicFields");
+    document.getElementById("editDocId").value = id;
+    document.getElementById("editCollectionName").value = col;
+    
+    modal.classList.add("active");
+    container.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-bold animate-pulse">CONNECTING TO FIREBASE...</div>`;
+    
+    try {
+        const snap = await getDoc(doc(db, col, id));
+        if (snap.exists()) {
+            const data = snap.data();
+            container.innerHTML = "";
+            
+            // Generate inputs for all editable fields
+            Object.keys(data).forEach(key => {
+                const val = data[key];
+                
+                // Skip non-editable or complex objects (except Timestamps)
+                if (typeof val === 'object' && !(val instanceof Timestamp)) return;
+
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = "space-y-1";
+                
+                let inputHtml = "";
+                if (val instanceof Timestamp) {
+                    // For timestamps, show as read-only or handle carefully
+                    inputHtml = `<input type="text" data-key="${key}" value="${val.toDate().toLocaleString()}" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-100 text-slate-500 outline-none" readonly>`;
+                } else {
+                    inputHtml = `<input type="text" data-key="${key}" value="${val || ''}" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">`;
+                }
+
+                fieldDiv.innerHTML = `
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">${key}</label>
+                    ${inputHtml}
+                `;
+                container.appendChild(fieldDiv);
+            });
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="text-red-500 text-xs font-bold">Failed to load data: ${e.message}</div>`;
+    }
+}
+
+// THE SAVE FUNCTION - Writing back to Firebase
+document.getElementById("saveBtn").onclick = async () => {
+    const id = document.getElementById("editDocId").value;
+    const col = document.getElementById("editCollectionName").value;
+    const saveBtn = document.getElementById("saveBtn");
+    
+    const originalText = saveBtn.innerText;
+    saveBtn.innerText = "Saving...";
+    saveBtn.disabled = true;
+
+    const updates = {};
+    const inputs = document.querySelectorAll("#dynamicFields input:not([readonly])");
+    
+    inputs.forEach(input => {
+        const key = input.dataset.key;
+        let value = input.value;
+        
+        // Basic type conversion
+        if (value.toLowerCase() === 'true') value = true;
+        if (value.toLowerCase() === 'false') value = false;
+        if (!isNaN(value) && value.trim() !== '') value = Number(value);
+        
+        updates[key] = value;
+    });
+
+    if (col === "users") {
+        const allowedAdminKeys = ["jobPostAccess", "canPostJobs"];
+        const changed = Object.keys(updates);
+        const hasOnlyAllowed = changed.every((key) => allowedAdminKeys.includes(key));
+        if (!hasOnlyAllowed) {
+            alert("Users collection is restricted by rules. Only jobPostAccess/canPostJobs can be updated by admin.");
+            saveBtn.innerText = originalText;
+            saveBtn.disabled = false;
+            return;
+        }
+    }
+
+    try {
+        await updateDoc(doc(db, col, id), updates);
+        closeModal('editModal');
+    } catch (e) {
+        alert("Firebase Save Error: " + e.message);
+    } finally {
+        saveBtn.innerText = originalText;
+        saveBtn.disabled = false;
+    }
+};
+
+/* ============================
+   Init & Event Bindings
+============================ */
+document.getElementById("loginBtn").onclick = () => {
+    const e = document.getElementById("email").value;
+    const p = document.getElementById("password").value;
+    signInWithEmailAndPassword(auth, e, p).catch(err => document.getElementById("loginError").innerText = err.message);
+};
+document.getElementById("logoutBtn").onclick = () => signOut(auth);
+
+const jobsDropdown = document.getElementById("jobsDropdown");
+const jobsDropdownToggle = document.getElementById("jobsDropdownToggle");
+
+jobsDropdownToggle.onclick = (event) => {
+    event.stopPropagation();
+    jobsDropdown.classList.toggle("open");
+};
+
+document.addEventListener("click", event => {
+    if (!jobsDropdown.contains(event.target)) jobsDropdown.classList.remove("open");
+});
+
+document.getElementById("addJobDirect").onclick = () => {
+    jobsDropdown.classList.remove("open");
+    document.getElementById("createJobModal").classList.add("active");
+};
+
+const publishDateModeInputs = document.querySelectorAll('input[name="publishDateMode"]');
+const publishDateCalendarInput = document.getElementById("govtPublishDateCalendar");
+const publishDateManualInput = document.getElementById("govtPublishDateManual");
+
+publishDateModeInputs.forEach(input => {
+    input.addEventListener("change", () => {
+        const manualMode = input.value === "manual" && input.checked;
+        publishDateCalendarInput.classList.toggle("hidden", manualMode);
+        publishDateManualInput.classList.toggle("hidden", !manualMode);
+    });
+});
+
+document.getElementById("addGovtJobDirect").onclick = () => {
+    jobsDropdown.classList.remove("open");
+    document.getElementById("createGovtJobModal").classList.add("active");
+};
+
+document.getElementById("publishJobBtn").onclick = async () => {
+    if (!auth.currentUser) {
+        alert("Admin login is required.");
+        return;
+    }
+
+    const payload = {
+        userId: auth.currentUser.uid,
+        title: document.getElementById("jobTitle").value,
+        company: document.getElementById("companyName").value,
+        jobPlace: document.getElementById("jobPlace").value,
+        jobLink: document.getElementById("jobLink").value,
+        description: document.getElementById("jobDescription").value,
+        status: 'pending',
+        timestamp: serverTimestamp(),
+        likes: 0,
+        dislikes: 0,
+        userName: "Administrator",
+        userEmail: auth.currentUser?.email
+    };
+    const newJobRef = await addDoc(collection(db, "jobs"), payload);
+    await updateDoc(newJobRef, { status: "approved" });
+    document.getElementById("createJobModal").classList.remove("active");
+    document.getElementById("jobForm").reset();
+};
+
+document.getElementById("publishGovtJobBtn").onclick = async () => {
+    const publishMode = document.querySelector('input[name="publishDateMode"]:checked')?.value || 'calendar';
+    const publishDate = publishMode === 'manual'
+        ? publishDateManualInput.value.trim()
+        : publishDateCalendarInput.value;
+    const noOfPostsValue = document.getElementById("govtNoOfPosts").value.trim();
+
+    const payload = {
+        state: document.getElementById("govtState").value.trim(),
+        organisationName: document.getElementById("govtOrganisationName").value.trim(),
+        postName: document.getElementById("govtPostName").value.trim(),
+        noOfPosts: noOfPostsValue ? Number(noOfPostsValue) : null,
+        advtNo: document.getElementById("govtAdvtNo").value.trim(),
+        salary: document.getElementById("govtSalary").value.trim(),
+        jobType: document.getElementById("govtJobType").value,
+        applyMode: document.getElementById("govtApplyMode").value,
+        qualification: document.getElementById("govtQualification").value.trim(),
+        selectionProcess: document.getElementById("govtSelectionProcess").value.trim(),
+        publishDate,
+        publishDateMode: publishMode,
+        lastDateApply: document.getElementById("govtLastDate").value,
+        jobDetails: document.getElementById("govtJobDetails").value.trim(),
+        officialApplyLink: document.getElementById("govtApplyLink").value.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: auth.currentUser?.email || "admin"
+    };
+
+    await addDoc(collection(db, "govtJobs"), payload);
+    document.getElementById("createGovtJobModal").classList.remove("active");
+    document.getElementById("govtJobForm").reset();
+    publishDateCalendarInput.classList.remove("hidden");
+    publishDateManualInput.classList.add("hidden");
+    document.querySelector('input[name="publishDateMode"][value="calendar"]').checked = true;
+};
+
+document.querySelectorAll('.nav-btn-tab').forEach(btn => {
+    btn.onclick = () => {
+        const tab = btn.dataset.tab;
+        if (tab === 'jobs') showJobsTab('approved');
+        else if (tab === 'pendingJobs') showJobsTab('pending');
+        else if (tab === 'users') showUsersTab();
+        jobsDropdown.classList.remove("open");
+    };
+});
+
+window.closeModal = (id) => document.getElementById(id).classList.remove("active");
+window.deleteJob = async (id) => { if(confirm("Delete permanently?")) await deleteDoc(doc(db, "jobs", id)); };
+window.duplicateJob = async (id) => {
+    if (!auth.currentUser) {
+        alert("Admin login is required.");
+        return;
+    }
+
+    const sourceRef = doc(db, "jobs", id);
+    const sourceSnap = await getDoc(sourceRef);
+
+    if (!sourceSnap.exists()) {
+        alert("Original job could not be found.");
+        return;
+    }
+
+    const sourceData = sourceSnap.data();
+    const duplicatedPayload = {
+        ...sourceData,
+        userId: auth.currentUser.uid,
+        status: "pending",
+        likes: 0,
+        dislikes: 0,
+        timestamp: serverTimestamp(),
+        duplicatedFrom: id,
+        userName: auth.currentUser?.email ? "Administrator" : (sourceData.userName || "Admin")
+    };
+
+    const duplicatedRef = await addDoc(collection(db, "jobs"), duplicatedPayload);
+    await updateDoc(duplicatedRef, { status: "approved" });
+};
+window.updateJobStatus = async (id, status) => await updateDoc(doc(db, "jobs", id), { status });
+window.toggleJobAllowance = async (uid, allowed) => { await updateDoc(doc(db, "users", uid), { canPostJobs: allowed }); };
+window.openEditModal = openEditModal;
+
+</script>
+</body>
+</html>

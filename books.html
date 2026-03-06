@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="assets/css/shared.css">
+    <title>BOOTERSPACE – Buy Books Online</title>
+  <meta name="description" content="Find and buy useful books from the BooterSpace marketplace to support your learning and career growth.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/books.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="BOOTERSPACE – Buy Books Online">
+  <meta property="og:description" content="Find and buy useful books from the BooterSpace marketplace to support your learning and career growth.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/books.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BOOTERSPACE – Buy Books Online">
+  <meta name="twitter:description" content="Find and buy useful books from the BooterSpace marketplace to support your learning and career growth.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "BOOTERSPACE \u2013 Buy Books Online",
+  "description": "Find and buy useful books from the BooterSpace marketplace to support your learning and career growth.",
+  "url": "https://aizzdemon.github.io/booterspace/books.html",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "BooterSpace",
+    "url": "https://aizzdemon.github.io/booterspace/"
+  }
+}
+  </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-800 page-books">
+
+<!-- NAVIGATION -->
+<nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <a href="index.html" class="flex items-center group">
+                <img src="https://aizzdemon.github.io/kardan-job-portal/assets/images/booterspace.png" 
+                     alt="BooterSpace Logo" 
+                     class="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="hidden w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">B</div>
+            </a>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-blue-600 transition-colors">Home</a>
+                <a href="#" class="hover:text-blue-600 transition-colors">New Arrivals</a>
+                <a href="#" class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition-colors">My Library</a>
+            </div>
+            <button class="md:hidden p-2 text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO HEADER -->
+<header class="kardan-gradient text-white py-16 px-6 text-center">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Discover Your Next Favorite Book</h1>
+        <p class="text-lg opacity-90 max-w-2xl mx-auto font-light">
+            Welcome to BooterSpace. Browse our curated collection of Educational, Fiction, and Competitive Exam books.
+        </p>
+    </div>
+</header>
+
+<!-- SEARCH & MAIN CONTENT -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-20">
+    <div class="relative max-w-3xl mx-auto mb-12">
+        <div class="flex flex-col sm:flex-row gap-3 items-center bg-white p-2 rounded-2xl shadow-xl border border-slate-100">
+            <div class="relative flex-grow w-full">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input id="bookSearch" type="text" 
+                    placeholder="Search by title, author, or ISBN..."
+                    class="search-input w-full pl-11 pr-4 py-4 bg-transparent border-0 focus:ring-0 focus:outline-none text-lg text-slate-700"
+                />
+            </div>
+            <button onclick="executeSearch()" class="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search
+            </button>
+        </div>
+        <div id="suggestions" class="absolute w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-40 hidden overflow-hidden"></div>
+    </div>
+
+    <div id="loading" class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="mt-4 text-slate-500">Loading library...</p>
+    </div>
+
+    <div id="booksContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+    
+    <div id="emptyState" class="hidden text-center py-20">
+        <p class="text-slate-500 text-lg">No books found matching your search.</p>
+        <button onclick="resetSearch()" class="mt-4 text-blue-600 font-medium hover:underline">Clear all filters</button>
+    </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-slate-900 text-slate-400 py-12 px-6">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+        <div>
+            <div class="flex items-center justify-center md:justify-start gap-2 mb-4 text-white">
+                <img src="https://aizzdemon.github.io/kardan-job-portal/assets/images/booterspace.png" 
+                     alt="BooterSpace Logo" 
+                     class="h-8 w-auto object-contain mr-2">
+                <span class="text-lg font-bold">BOOTERSPACE</span>
+            </div>
+            <p class="text-sm">Your premium destination for academic excellence and literary adventure in India.</p>
+        </div>
+        <div class="flex flex-col space-y-2">
+            <h4 class="text-white font-semibold mb-2">Links</h4>
+            <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" class="hover:text-white transition-colors">Contact Us</a>
+        </div>
+        <div>
+            <h4 class="text-white font-semibold mb-2">Connect</h4>
+            <p class="text-sm">Email: support@booterspace.in</p>
+            <div class="mt-4 flex justify-center md:justify-start space-x-4">
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer">
+                    <span class="sr-only">Social</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-12 pt-8 border-t border-slate-800 text-center text-xs opacity-50">
+        © 2024 BooterSpace India. All rights reserved.
+    </div>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const booksContainer = document.getElementById("booksContainer");
+const searchInput = document.getElementById("bookSearch");
+const suggestionsBox = document.getElementById("suggestions");
+const loadingEl = document.getElementById("loading");
+const emptyStateEl = document.getElementById("emptyState");
+
+let allBooks = [];
+let keywords = new Set();
+
+const q = query(collection(db, "books"), orderBy("timestamp", "desc"));
+
+onSnapshot(q, (snap) => {
+    allBooks = [];
+    keywords.clear();
+    loadingEl.classList.add('hidden');
+    
+    if (snap.empty) {
+        booksContainer.innerHTML = "";
+        emptyStateEl.classList.remove('hidden');
+        return;
+    }
+
+    emptyStateEl.classList.add('hidden');
+    booksContainer.innerHTML = "";
+
+    snap.forEach(doc => {
+        const b = doc.data();
+        allBooks.push(b);
+        if (b.title) keywords.add(b.title);
+        if (b.author) keywords.add(b.author);
+        renderBook(b);
+    });
+}, (error) => {
+    console.error("Firestore error:", error);
+    loadingEl.innerHTML = `<p class="text-red-500">Failed to load books. Please refresh.</p>`;
+});
+
+function renderBook(b) {
+    let isNew = false;
+    if (b.timestamp) {
+        const postDate = b.timestamp.seconds ? new Date(b.timestamp.seconds * 1000) : new Date(b.timestamp);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        if (postDate > thirtyDaysAgo) {
+            isNew = true;
+        }
+    }
+
+    const card = document.createElement('div');
+    card.className = "book-card bg-white rounded-2xl border border-slate-100 overflow-hidden flex flex-col";
+    
+    card.innerHTML = `
+        <div class="relative overflow-hidden group h-64 bg-slate-50 book-image-container flex items-center justify-center">
+            <img src="${b.photo || 'https://images.unsplash.com/photo-1543004471-240ce445c43a?auto=format&fit=crop&q=80&w=400'}" 
+                 alt="${b.title}" 
+                 class="transition-transform duration-500 group-hover:scale-105">
+            ${isNew ? `
+            <div class="absolute top-3 right-3">
+                <span class="bg-blue-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-lg animate-pulse">New Arrival</span>
+            </div>` : ''}
+        </div>
+        <div class="p-5 flex flex-col flex-grow">
+            <div class="mb-auto">
+                <h3 class="font-bold text-lg text-slate-900 leading-tight mb-1 line-clamp-2">${b.title}</h3>
+                <p class="text-sm text-slate-500 font-medium">${b.author || 'Unknown Author'}</p>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <span class="text-xs text-slate-400 block uppercase font-semibold">Price</span>
+                        <span class="text-xl font-bold text-slate-900">₹${b.price || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="${b.link || '#'}" target="_blank" 
+                       class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center">
+                       Details
+                    </a>
+                    <a href="${b.link || '#'}" target="_blank" 
+                       class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                       </svg>
+                       Buy Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+    booksContainer.appendChild(card);
+}
+
+window.resetSearch = () => {
+    searchInput.value = "";
+    filterBooks("");
+};
+
+window.executeSearch = () => {
+    filterBooks(searchInput.value);
+    suggestionsBox.classList.add("hidden");
+};
+
+function filterBooks(v) {
+    const val = v.toLowerCase();
+    booksContainer.innerHTML = "";
+    
+    const filtered = allBooks.filter(b => 
+        (b.title && b.title.toLowerCase().includes(val)) || 
+        (b.author && b.author.toLowerCase().includes(val))
+    );
+
+    if (filtered.length === 0) {
+        emptyStateEl.classList.remove('hidden');
+    } else {
+        emptyStateEl.classList.add('hidden');
+        filtered.forEach(renderBook);
+    }
+}
+
+searchInput.addEventListener("input", () => {
+    const v = searchInput.value;
+    filterBooks(v);
+
+    if (!v) {
+        suggestionsBox.classList.add("hidden");
+        return;
+    }
+
+    const match = [...keywords].filter(k => k.toLowerCase().includes(v.toLowerCase()));
+    suggestionsBox.innerHTML = "";
+    
+    if (match.length > 0) {
+        match.slice(0, 6).forEach(k => {
+            const d = document.createElement("div");
+            d.className = "px-4 py-3 hover:bg-blue-50 cursor-pointer text-sm border-b border-slate-50 last:border-0 transition-colors";
+            d.textContent = k;
+            d.onclick = () => {
+                searchInput.value = k;
+                filterBooks(k);
+                suggestionsBox.classList.add("hidden");
+            };
+            suggestionsBox.appendChild(d);
+        });
+        suggestionsBox.classList.remove("hidden");
+    } else {
+        suggestionsBox.classList.add("hidden");
+    }
+});
+
+searchInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        window.executeSearch();
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.classList.add('hidden');
+    }
+});
+</script>
+
+</body>
+</html>

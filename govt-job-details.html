@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <title>Government Job Details</title>
+  <meta name="description" content="View complete government job details, important dates, and official application links on BooterSpace.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen page-govt-job-details">
+  <div id="navbar"></div>
+  <script>
+    fetch("navbar.html").then(r => r.text()).then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const s = document.createElement("script");
+      s.type = "module";
+      s.src = "public/js/navbar.js";
+      document.body.appendChild(s);
+    });
+  </script>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-6">
+        <p class="text-xs font-bold tracking-widest uppercase text-indigo-100">Government Vacancy</p>
+        <h1 id="jobDetailsTitle" class="text-2xl md:text-3xl font-black text-white mt-1">Government Job Details</h1>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div id="jobDetailsMessage" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickHighlights"></div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+            <h2 class="text-sm font-black uppercase tracking-wide text-slate-700">Complete Details</h2>
+          </div>
+          <div id="jobDetailsBody" class="divide-y divide-slate-200"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const titleElement = document.getElementById("jobDetailsTitle");
+    const bodyElement = document.getElementById("jobDetailsBody");
+    const highlightsElement = document.getElementById("quickHighlights");
+    const messageElement = document.getElementById("jobDetailsMessage");
+
+    const quickHighlightKeys = [
+      "organizationName",
+      "organisationName",
+      "publishDate",
+      "lastDateApply",
+      "state",
+      "applicationFee"
+    ];
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function humanizeKey(key) {
+      return key
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function formatDate(value) {
+      if (!value) return "N/A";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const d = new Date(`${value}T00:00:00`);
+        return d.toLocaleDateString();
+      }
+      return value;
+    }
+
+    function formatValue(value, key) {
+      if (value === null || value === undefined || value === "") return "N/A";
+      if (typeof value === "string" && /(date|deadline)/i.test(key)) return formatDate(value);
+      if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    function setMessage(text) {
+      messageElement.textContent = text;
+      messageElement.classList.remove("hidden");
+    }
+
+    function renderHighlights(job) {
+      const seen = new Set();
+      const cards = quickHighlightKeys
+        .filter((key) => {
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return key in job;
+        })
+        .map((key) => `
+          <article class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">${escapeHtml(humanizeKey(key))}</p>
+            <p class="text-sm font-semibold text-slate-700 mt-1 break-words">${escapeHtml(formatValue(job[key], key))}</p>
+          </article>
+        `)
+        .join("");
+
+      highlightsElement.innerHTML = cards || '<p class="text-sm text-slate-500">No quick highlights available.</p>';
+    }
+
+    function renderJobDetails(job) {
+      const postTitle = job.postName || job.jobTitle || "Government Job Details";
+      titleElement.textContent = postTitle;
+      renderHighlights(job);
+
+      const cards = Object.entries(job)
+        .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
+        .map(([key, value], index) => {
+          const displayValue = formatValue(value, key);
+          const renderedValue = /^(https?:\/\/)/i.test(displayValue)
+            ? `<a href="${escapeHtml(displayValue)}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline break-all">${escapeHtml(displayValue)}</a>`
+            : `<span class="whitespace-pre-line break-words">${escapeHtml(displayValue)}</span>`;
+
+          const borderClasses = [
+            "border-slate-200",
+            "p-4",
+            "md:border-b",
+            index % 2 === 0 ? "md:border-r" : ""
+          ].join(" ").trim();
+
+          return `
+            <div class="${borderClasses}">
+              <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">${escapeHtml(humanizeKey(key))}</p>
+              <div class="mt-1 text-sm text-slate-700">${renderedValue}</div>
+            </div>
+          `;
+        })
+        .join("");
+
+      bodyElement.innerHTML = cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>';
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id") || "";
+      const savedJobRaw = sessionStorage.getItem("selectedGovtJob");
+
+      if (!savedJobRaw) {
+        setMessage("Job details are unavailable. Please go back and click See Details again.");
+      } else {
+        const savedJob = JSON.parse(savedJobRaw);
+        const savedJobId = String(savedJob.id || "");
+
+        if (requestedId && savedJobId && requestedId !== savedJobId) {
+          setMessage("Loaded details may not match the selected job. Please return and open details again.");
+        }
+
+        renderJobDetails(savedJob);
+      }
+    } catch (error) {
+      setMessage(`Failed to load job details: ${error.message}`);
+    }
+  </script>
+</body>
+</html>
