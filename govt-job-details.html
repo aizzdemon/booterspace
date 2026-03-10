@@ -32,6 +32,8 @@
       <div class="p-6 space-y-6">
         <div id="jobDetailsMessage" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
 
+        <div id="importantDatesRow" class="hidden grid sm:grid-cols-2 gap-4"></div>
+
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickHighlights"></div>
 
         <div class="border border-slate-200 rounded-xl overflow-hidden">
@@ -49,14 +51,22 @@
     const bodyElement = document.getElementById("jobDetailsBody");
     const highlightsElement = document.getElementById("quickHighlights");
     const messageElement = document.getElementById("jobDetailsMessage");
+    const importantDatesElement = document.getElementById("importantDatesRow");
 
     const quickHighlightKeys = [
       "organizationName",
       "organisationName",
-      "publishDate",
-      "lastDateApply",
       "state",
       "applicationFee"
+    ];
+
+    const hiddenKeys = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "createdBy",
+      "publishDateMode",
+      "calendar"
     ];
 
     function escapeHtml(value) {
@@ -99,6 +109,50 @@
       messageElement.classList.remove("hidden");
     }
 
+    function firstValue(job, keys) {
+      for (const key of keys) {
+        if (job[key]) return job[key];
+      }
+      return "";
+    }
+
+    function renderImportantDates(job) {
+      const publishDate = firstValue(job, ["publishDate", "publishedDate", "postDate"]);
+      const lastDate = firstValue(job, ["lastDateApply", "lastDate", "closingDate"]);
+
+      if (!publishDate && !lastDate) {
+        importantDatesElement.classList.add("hidden");
+        importantDatesElement.innerHTML = "";
+        return;
+      }
+
+      importantDatesElement.classList.remove("hidden");
+      importantDatesElement.innerHTML = `
+        <article class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Publish Date</p>
+          <p class="text-sm font-semibold text-slate-700 mt-1 break-words">${escapeHtml(formatValue(publishDate, "publishDate"))}</p>
+        </article>
+        <article class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Last Date</p>
+          <p class="text-sm font-semibold text-slate-700 mt-1 break-words">${escapeHtml(formatValue(lastDate, "lastDateApply"))}</p>
+        </article>
+      `;
+    }
+
+    function findOfficialLink(job) {
+      const preferred = ["officialLink", "officialUrl", "officialWebsite", "applyLink", "applicationLink", "url"];
+      for (const key of preferred) {
+        const value = job[key];
+        if (typeof value === "string" && /^https?:\/\//i.test(value.trim())) return value.trim();
+      }
+
+      for (const value of Object.values(job)) {
+        if (typeof value === "string" && /^https?:\/\//i.test(value.trim())) return value.trim();
+      }
+
+      return "";
+    }
+
     function renderHighlights(job) {
       const seen = new Set();
       const cards = quickHighlightKeys
@@ -121,10 +175,13 @@
     function renderJobDetails(job) {
       const postTitle = job.postName || job.jobTitle || "Government Job Details";
       titleElement.textContent = postTitle;
+      renderImportantDates(job);
       renderHighlights(job);
 
+      const officialLink = findOfficialLink(job);
+
       const cards = Object.entries(job)
-        .filter(([key]) => !["id", "createdAt", "updatedAt"].includes(key))
+        .filter(([key]) => !hiddenKeys.includes(key))
         .map(([key, value], index) => {
           const displayValue = formatValue(value, key);
           const renderedValue = /^(https?:\/\/)/i.test(displayValue)
@@ -147,7 +204,12 @@
         })
         .join("");
 
-      bodyElement.innerHTML = cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>';
+      bodyElement.innerHTML = `${cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>'}
+        <div class="p-4 md:col-span-2 bg-slate-50">
+          ${officialLink
+            ? `<a href="${escapeHtml(officialLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition">Apply Now</a>`
+            : '<p class="text-sm text-slate-500">Official application link is not available for this post.</p>'}
+        </div>`;
     }
 
     try {
