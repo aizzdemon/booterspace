@@ -105,10 +105,22 @@ fetch("navbar.html")
 </header>
 
 <!-- ================= MAIN ================= -->
-<main class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+<main class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-  <!-- LEFT -->
-  <div class="lg:col-span-2">
+  <!-- LEFT: RECOMMENDED JOBS -->
+  <aside class="lg:col-span-3 bg-white rounded-2xl shadow-md p-6 h-fit lg:sticky lg:top-24">
+    <h3 class="text-lg font-bold mb-4">🔥 Recommended Jobs</h3>
+    <ul id="recommendedJobsList" class="space-y-3">
+      <li class="text-sm text-gray-500">Loading recommendations...</li>
+    </ul>
+
+    <a href="jobs.html" class="mt-4 inline-flex w-full items-center justify-center bg-slate-900 text-white py-3 rounded-xl font-semibold hover:bg-slate-800 transition">
+      Load More Jobs
+    </a>
+  </aside>
+
+  <!-- MIDDLE: JOB DETAILS -->
+  <div class="lg:col-span-6">
     <div id="jobDetailsContent" class="job-card gradient-border p-6 md:p-10 relative">
       <div class="space-y-6">
         <div class="h-6 w-1/2 shimmer rounded"></div>
@@ -118,13 +130,14 @@ fetch("navbar.html")
     </div>
   </div>
 
-  <!-- RIGHT -->
-  <div>
-    <div class="bg-white rounded-2xl shadow-md p-6 sticky top-24">
-      <h3 class="text-lg font-bold mb-3">
-        💙 Our Mission for Job<span class="text-blue-600">Seekers</span>
-      </h3>
-      <p class="text-sm text-gray-600 whitespace-pre-line mb-4">
+  <!-- RIGHT: FEEDBACK -->
+  <div class="lg:col-span-3">
+    <div class="sticky top-24">
+      <div class="bg-white rounded-2xl shadow-md p-6">
+        <h3 class="text-lg font-bold mb-3">
+          💙 Our Mission for Job<span class="text-blue-600">Seekers</span>
+        </h3>
+        <p class="text-sm text-gray-600 whitespace-pre-line mb-4">
 🚀 We are building this platform with one clear mission — to help job seekers find the right job, without any cost.
 
 🔍 This project is created with dedication, research, and continuous effort. We carefully research and list job opportunities so job seekers can apply from one place.
@@ -132,18 +145,19 @@ fetch("navbar.html")
 💯 Our platform is 100% free, easy to use, reliable, and constantly improving.
 
 We built this website with Love ❤️ and hard work. In return, all we ask is your love ❤️ and support 🤝. Please share your valuable feedback and suggestions!
-      </p>
+        </p>
 
-      <button onclick="toggleFeedback()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">
-        💬 Give Feedback
-      </button>
-
-      <div id="feedbackBox" class="slide mt-4">
-        <input id="feedbackEmail" class="w-full border rounded-lg p-3 mb-2" placeholder="Your email">
-        <textarea id="feedbackText" rows="3" class="w-full border rounded-lg p-3 mb-3" placeholder="Write your feedback..."></textarea>
-        <button onclick="submitFeedback()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-bold">
-          Submit
+        <button onclick="toggleFeedback()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">
+          💬 Give Feedback
         </button>
+
+        <div id="feedbackBox" class="slide mt-4">
+          <input id="feedbackEmail" class="w-full border rounded-lg p-3 mb-2" placeholder="Your email">
+          <textarea id="feedbackText" rows="3" class="w-full border rounded-lg p-3 mb-3" placeholder="Write your feedback..."></textarea>
+          <button onclick="submitFeedback()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-bold">
+            Submit
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -167,7 +181,7 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
 <!-- ================= LOGIC ================= -->
 <script type="module">
 import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { doc, getDoc, collection, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const auth = window.auth;
 const db = window.db;
@@ -196,7 +210,37 @@ window.addEventListener("DOMContentLoaded",async()=>{
   if(!snap.exists()) return renderError("Job not found");
 
   renderJob(snap.data());
+  await renderRecommendedJobs();
 });
+
+async function renderRecommendedJobs(){
+  const recommendedList = document.getElementById("recommendedJobsList");
+  if(!recommendedList) return;
+
+  try {
+    const jobsSnap = await getDocs(collection(db, "jobs"));
+    const jobs = jobsSnap.docs
+      .map((jobDoc) => ({ id: jobDoc.id, ...jobDoc.data() }))
+      .filter((job) => job.id !== currentJobId)
+      .slice(0, 5);
+
+    if(!jobs.length){
+      recommendedList.innerHTML = `<li class="text-sm text-gray-500">No recommended jobs found right now.</li>`;
+      return;
+    }
+
+    recommendedList.innerHTML = jobs.map((job)=>`
+      <li>
+        <a href="job-detail.html?id=${job.id}" class="block border border-gray-100 rounded-xl p-3 hover:bg-blue-50 transition">
+          <p class="font-semibold text-sm text-slate-800 leading-tight">${job.title || "Untitled Job"}</p>
+          <p class="text-xs text-gray-500 mt-1">${job.company || "Unknown Company"}</p>
+        </a>
+      </li>
+    `).join("");
+  } catch (_error) {
+    recommendedList.innerHTML = `<li class="text-sm text-red-500">Unable to load recommended jobs.</li>`;
+  }
+}
 
 function renderJob(job){
   document.getElementById("jobDetailsContent").innerHTML=`
@@ -319,9 +363,11 @@ window.submitFeedback=async()=>{
   }
 
   try {
+    const user = await ensureFeedbackUser();
+
     await addDoc(collection(db,"feedback"), {
       jobId: currentJobId,
-      userId: currentUser?.uid || null,
+      userId: user?.uid || null,
       email,
       feedback,
       createdAt: window.serverTimestamp()
