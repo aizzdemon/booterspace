@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({ appId: "ed502dbc-48ba-4e0e-9a22-f9965a27767a" });
+    });
+  </script>
+  <meta charset="UTF-8">
+  <title>BooterSpace</title>
+  <meta name="description" content="BooterSpace helps professionals discover jobs, government opportunities, communities, and career resources in one place.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="BooterSpace">
+  <meta property="og:description" content="BooterSpace helps professionals discover jobs, government opportunities, communities, and career resources in one place.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BooterSpace">
+  <meta name="twitter:description" content="BooterSpace helps professionals discover jobs, government opportunities, communities, and career resources in one place.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="public/js/env-config.js"></script>
+
+  <style>
+    :root {
+      --ink: #0a0f1e;
+      --ink-mid: #3d4663;
+      --ink-light: #8892b0;
+      --surface: #f8f9fc;
+      --white: #ffffff;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --green: #047857;
+      --green-soft: #ecfdf5;
+      --orange: #c2410c;
+      --orange-soft: #fff7ed;
+      --border: #e4e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    .site-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 40px 0 32px;
+      position: relative;
+    }
+    .site-header .inner {
+      position: relative;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .site-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.9rem, 5vw, 2.75rem);
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .site-header .subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 400;
+      color: #6b7280;
+      letter-spacing: 0.01em;
+    }
+
+
+
+    /* ── TABS ───────────────────────────────────── */
+    .tab-strip {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 24px 0;
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Syne', sans-serif;
+      letter-spacing: 0.02em;
+      color: var(--ink-mid);
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+      margin-bottom: -1px;
+      transition: all 0.18s ease;
+      background: transparent;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .tab-btn .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor; opacity: 0.4;
+      flex-shrink: 0;
+    }
+    .tab-btn:hover { background: var(--white); color: var(--ink); }
+    .tab-btn.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--border);
+      font-weight: 700;
+    }
+    .tab-btn.active .dot { opacity: 1; }
+    .tab-btn[data-tab="featured"].active .dot { background: var(--blue); }
+    .tab-btn[data-tab="govt"].active .dot { background: var(--orange); }
+    .tab-btn[data-tab="updates"].active .dot { background: var(--amber); }
+    .tab-btn[data-tab="community"].active .dot { background: var(--green); }
+
+    /* ── MAIN CONTENT ───────────────────────────── */
+    .main-content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── PANEL CARD ─────────────────────────────── */
+    .panel-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .panel-header .count-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--ink-light);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    /* ── JOB ROWS ───────────────────────────────── */
+    .job-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f1f3f8;
+      text-decoration: none;
+      transition: background 0.14s;
+      position: relative;
+    }
+    .job-row:last-of-type { border-bottom: none; }
+    .job-row:hover { background: #f7f9ff; }
+    .job-row:hover .job-title { color: var(--blue); }
+
+    .job-logo {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .job-logo-govt {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid #fed7aa;
+      background: var(--orange-soft);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .job-logo-govt img { width: 22px; height: 22px; object-fit: contain; }
+
+    .job-info { flex: 1; min-width: 0; }
+    .job-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .job-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: color 0.14s;
+    }
+    .job-company {
+      font-size: 12px;
+      color: var(--ink-light);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .job-company-govt { color: #c2410c; font-weight: 500; }
+
+    .badge-new {
+      flex-shrink: 0;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .badge-new-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-new-orange { background: #ffedd5; color: #c2410c; }
+    .badge-new-amber { background: #fef3c7; color: #b45309; }
+
+    .job-arrow {
+      color: var(--border);
+      font-size: 18px;
+      transition: color 0.14s, transform 0.14s;
+      flex-shrink: 0;
+    }
+    .job-row:hover .job-arrow { color: var(--blue); transform: translateX(2px); }
+
+    /* ── UPDATE ROWS ────────────────────────────── */
+    .update-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 15px 24px;
+      border-bottom: 1px solid #f1f3f8;
+      text-decoration: none;
+      transition: background 0.14s;
+    }
+    .update-row:last-of-type { border-bottom: none; }
+    .update-row:hover { background: #fffdf4; }
+    .update-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--amber-soft);
+      border: 1px solid #fde68a;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .update-title {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.45;
+      flex: 1;
+      min-width: 0;
+    }
+    .update-row:hover .update-title { color: var(--blue); }
+    .update-meta { font-size: 11px; color: var(--ink-light); margin-top: 3px; }
+
+    /* ── COMMUNITY ──────────────────────────────── */
+    .compose-area {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fbff;
+    }
+    .compose-area textarea {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      color: var(--ink);
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .compose-area textarea:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+    .compose-area textarea::placeholder { color: #b0b8d0; }
+    .compose-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .compose-footer .hint {
+      font-size: 11px;
+      color: var(--ink-light);
+    }
+
+    .community-post {
+      padding: 18px 24px;
+      border-bottom: 1px solid #f1f3f8;
+      transition: background 0.14s;
+    }
+    .community-post:last-of-type { border-bottom: none; }
+    .community-post:hover { background: #f9fbf9; }
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .post-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+    .post-author-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .post-content {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--ink-mid);
+      margin-bottom: 12px;
+    }
+    .post-actions {
+      display: flex;
+      gap: 16px;
+    }
+    .post-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-light);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      transition: all 0.14s;
+      background: none;
+    }
+    .post-action-btn:hover { background: var(--green-soft); color: var(--green); border-color: #a7f3d0; }
+
+    /* ── LOAD MORE ──────────────────────────────── */
+    .load-more-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    /* ── BUTTONS ────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.18s;
+    }
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-blue:hover { background: #1e40af; box-shadow: 0 4px 16px #1d4ed830; }
+    .btn-orange { background: var(--orange); color: #fff; }
+    .btn-orange:hover { background: #9a3412; box-shadow: 0 4px 16px #c2410c30; }
+    .btn-amber { background: var(--amber); color: #fff; }
+    .btn-amber:hover { background: #b45309; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { background: #065f46; box-shadow: 0 4px 16px #04785730; }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn svg { width: 14px; height: 14px; }
+
+    /* ── EMPTY / LOADING ────────────────────────── */
+    .state-msg {
+      padding: 40px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink-light);
+      font-style: italic;
+    }
+
+    /* ── FOOTER ─────────────────────────────────── */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px;
+      text-align: center;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .site-footer p {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #c8cfdf;
+    }
+
+    /* ── ANIMATIONS ─────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .tab-panel.active { animation: fadeUp 0.22s ease both; }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 0 #22c55e50;
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 #22c55e60; }
+      70%  { box-shadow: 0 0 0 6px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+
+    /* Shared: prevent any horizontal scroll */
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* ── TABLET  768px – 1024px ─────────────────── */
+    @media (max-width: 1024px) {
+      .site-header .inner,
+      .tab-strip,
+      .main-content,
+      .site-footer {
+        max-width: 100%;
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+    }
+
+    /* ── MOBILE  ≤ 767px ────────────────────────── */
+    @media (max-width: 767px) {
+
+      /* Header */
+      .site-header {
+        padding: 28px 0 22px;
+      }
+      .site-header .inner {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .site-header h1 {
+        font-size: 1.75rem;
+      }
+      .site-header .subtitle {
+        font-size: 12px;
+      }
+      .site-header .eyebrow {
+        font-size: 9px;
+      }
+
+
+      /* Tab strip — scrollable, no text truncation */
+      .tab-strip {
+        padding: 16px 0 0;
+        padding-left: 12px;
+        gap: 2px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .tab-strip::-webkit-scrollbar { display: none; }
+      .tab-btn {
+        padding: 9px 14px;
+        font-size: 11.5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Main content padding */
+      .main-content {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 40px;
+      }
+
+      /* Panel header */
+      .panel-header {
+        padding: 14px 16px 12px;
+      }
+      .panel-header h2 { font-size: 14px; }
+
+      /* Job rows */
+      .job-row {
+        padding: 13px 16px;
+        gap: 11px;
+      }
+      .job-logo { width: 36px; height: 36px; border-radius: 8px; }
+      .job-logo-govt { width: 36px; height: 36px; border-radius: 8px; }
+      .job-logo-govt img { width: 18px; height: 18px; }
+      .job-title { font-size: 13px; }
+      .job-company { font-size: 11.5px; }
+      .job-arrow { font-size: 16px; }
+
+      /* Update rows */
+      .update-row { padding: 13px 16px; gap: 11px; }
+      .update-icon { width: 28px; height: 28px; font-size: 12px; }
+      .update-title { font-size: 13px; }
+
+      /* Community compose */
+      .compose-area { padding: 14px 16px; }
+      .compose-area textarea { font-size: 13px; padding: 10px 12px; }
+      .compose-footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .compose-footer .hint { font-size: 11px; }
+      .compose-footer .btn { width: 100%; justify-content: center; }
+
+      /* Community posts */
+      .community-post { padding: 14px 16px; }
+      .post-content { font-size: 13px; }
+      .post-action-btn { font-size: 11px; padding: 3px 9px; }
+
+      /* Load more area */
+      .load-more-area {
+        padding: 12px 16px;
+      }
+      .load-more-area .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 18px;
+      }
+
+      /* Badge sizing */
+      .badge-new { font-size: 7.5px; padding: 2px 5px; }
+
+      /* State message */
+      .state-msg { padding: 28px 16px; font-size: 12px; }
+
+      /* Footer */
+      .site-footer { padding: 20px 16px; }
+    }
+
+    /* ── SMALL MOBILE  ≤ 380px ──────────────────── */
+    @media (max-width: 380px) {
+      .site-header h1 { font-size: 1.5rem; }
+      .tab-btn { padding: 8px 11px; font-size: 11px; }
+      .job-title { font-size: 12.5px; }
+      .stat-item .val { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div id="navbar"></div>
+<script>
+fetch("navbar.html").then(r=>r.text()).then(html=>{
+  document.getElementById("navbar").innerHTML = html;
+  const s = document.createElement("script");
+  s.type = "module";
+  s.src = "/booterspace/public/js/navbar.js";
+  document.body.appendChild(s);
+});
+</script>
+
+<!-- ── HEADER ──────────────────────────────────── -->
+<header class="site-header">
+  <div class="inner">
+    <h1>Booter<span style="color:#2563eb;">Space</span></h1>
+    <p class="subtitle">Explore your career opportunities and community posts</p>
+  </div>
+</header>
+
+
+
+<!-- ── TABS ───────────────────────────────────── -->
+<div class="tab-strip">
+  <button class="tab-btn active" data-tab="featured" onclick="switchTab('featured')">
+    <span class="dot"></span> Featured Jobs
+  </button>
+  <button class="tab-btn" data-tab="govt" onclick="switchTab('govt')">
+    <span class="dot"></span> Govt. Jobs
+  </button>
+  <button class="tab-btn" data-tab="updates" onclick="switchTab('updates')">
+    <span class="dot"></span> Updates
+  </button>
+  <button class="tab-btn" data-tab="community" onclick="switchTab('community')">
+    <span class="dot"></span> Community
+  </button>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- Featured Jobs -->
+  <div id="panel-featured" class="tab-panel active">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h2>Featured Opportunities</h2>
+        <span class="count-badge" id="featured-count">Loading…</span>
+      </div>
+      <div id="featured-jobs">
+        <div class="state-msg">Loading jobs…</div>
+      </div>
+      <div class="load-more-area">
+        <a href="jobs.html" class="btn btn-blue">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8l5 5 5-5"/></svg>
+          View All Jobs
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Govt Jobs -->
+  <div id="panel-govt" class="tab-panel">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h2>Government Vacancies</h2>
+        <span class="count-badge" id="govt-count">Loading…</span>
+      </div>
+      <div id="govt-jobs">
+        <div class="state-msg">Loading government jobs…</div>
+      </div>
+      <div class="load-more-area">
+        <a href="govt.html" class="btn btn-orange">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8l5 5 5-5"/></svg>
+          View All Govt. Jobs
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Updates -->
+  <div id="panel-updates" class="tab-panel">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h2>Latest Updates</h2>
+        <span class="count-badge"><span class="pulse-dot"></span> Live</span>
+      </div>
+      <div id="latest-updates">
+        <div class="state-msg">Loading updates…</div>
+      </div>
+      <div class="load-more-area">
+        <a href="updates.html" class="btn btn-amber">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8l5 5 5-5"/></svg>
+          All Updates
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Community -->
+  <div id="panel-community" class="tab-panel">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h2>Community</h2>
+        <span class="count-badge" id="community-count">Loading…</span>
+      </div>
+
+      <div class="compose-area">
+        <textarea id="postContent" rows="3" placeholder="Share something with the community…"></textarea>
+        <div class="compose-footer">
+          <span class="hint" id="compose-hint">Sign in to post</span>
+          <button id="postBtn" disabled class="btn btn-green">Publish Post</button>
+        </div>
+      </div>
+
+      <div id="community-posts">
+        <div class="state-msg">Loading community…</div>
+      </div>
+
+      <div class="load-more-area">
+        <a href="community.html" class="btn btn-green">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8l5 5 5-5"/></svg>
+          View All Posts
+        </a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── FOOTER ──────────────────────────────────── -->
+<footer>
+  <div class="site-footer">
+    <p>© 2026 BooterSpace · All rights reserved</p>
+  </div>
+</footer>
+
+<!-- ── SCRIPTS ──────────────────────────────────── -->
+<script>
+  window.switchTab = (tab) => {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  };
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+
+function getEnvVar(...keys) {
+  const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || {};
+  const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+  for (const key of keys) {
+    if (runtimeEnv[key]) return runtimeEnv[key];
+    if (processEnv[key]) return processEnv[key];
+  }
+  return "";
+}
+
+const firebaseConfig = {
+  apiKey: getEnvVar("VITE_FIREBASE_API_KEY","NEXT_PUBLIC_FIREBASE_API_KEY","REACT_APP_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN","NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN","REACT_APP_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID","NEXT_PUBLIC_FIREBASE_PROJECT_ID","REACT_APP_FIREBASE_PROJECT_ID"),
+  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET","NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET","REACT_APP_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID","NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID","REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar("VITE_FIREBASE_APP_ID","NEXT_PUBLIC_FIREBASE_APP_ID","REACT_APP_FIREBASE_APP_ID")
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+window.db = db;
+window.auth = auth;
+
+let currentUser = null;
+
+async function init() {
+  onAuthStateChanged(auth, user => {
+    currentUser = user || null;
+    const postBtn = document.getElementById("postBtn");
+    const hint = document.getElementById("compose-hint");
+    if (!postBtn) return;
+    const isAuthed = Boolean(user && !user.isAnonymous);
+    postBtn.disabled = !isAuthed;
+    if (hint) hint.textContent = isAuthed ? `Posting as ${user.displayName || 'you'}` : 'Sign in to post';
+  });
+
+  // Featured Jobs
+  async function loadFeatured() {
+    const el = document.getElementById("featured-jobs");
+    const countEl = document.getElementById("featured-count");
+    try {
+      const q = query(collection(db, "jobs"), where("status","==","approved"), orderBy("timestamp","desc"), limit(5));
+      const snap = await getDocs(q);
+      if (countEl) countEl.textContent = snap.size + ' listings';
+      el.innerHTML = '';
+      if (snap.empty) { el.innerHTML = '<div class="state-msg">No jobs found.</div>'; return; }
+      snap.forEach(docSnap => {
+        const job = docSnap.data();
+        const logo = job.logoUrl || job.companyImageUrl || job.icon || job.logo ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company||'C')}&background=dbeafe&color=1d4ed8&bold=true`;
+        el.innerHTML += `
+          <a href="job-detail.html?id=${docSnap.id}" class="job-row">
+            <img src="${logo}" class="job-logo" onerror="this.src='https://ui-avatars.com/api/?name=J&background=dbeafe&color=1d4ed8&bold=true'">
+            <div class="job-info">
+              <div class="job-top">
+                <span class="job-title">${job.title}</span>
+                <span class="badge-new badge-new-blue">New</span>
+              </div>
+              <span class="job-company">${job.company}</span>
+            </div>
+            <span class="job-arrow">›</span>
+          </a>`;
+      });
+    } catch(e) { console.error("Featured Error:", e); el.innerHTML = '<div class="state-msg">Unable to load jobs.</div>'; }
+  }
+
+  // Govt Jobs
+  async function loadGovt() {
+    const el = document.getElementById("govt-jobs");
+    const countEl = document.getElementById("govt-count");
+    try {
+      let snap = await getDocs(query(collection(db, "govtJobs"), orderBy("createdAt","desc"), limit(5)));
+      if (snap.empty) snap = await getDocs(query(collection(db, "govtJobs"), orderBy("timestamp","desc"), limit(5)));
+      if (countEl) countEl.textContent = snap.size + ' vacancies';
+      el.innerHTML = '';
+      if (snap.empty) { el.innerHTML = '<div class="state-msg">No government jobs found.</div>'; return; }
+      snap.forEach(docSnap => {
+        const job = docSnap.data();
+        const logo = job.companyImageUrl || "https://img.icons8.com/color/96/government-buildings.png";
+        const title = job.postName || job.jobTitle || job.title || "Government Vacancy";
+        const org = job.organizationName || job.organisationName || job.companyName || "Govt. Sector";
+        el.innerHTML += `
+          <a href="govt-job-details.html?id=${docSnap.id}" class="job-row">
+            <div class="job-logo-govt">
+              <img src="${logo}" onerror="this.src='https://img.icons8.com/color/96/government-buildings.png'">
+            </div>
+            <div class="job-info">
+              <div class="job-top">
+                <span class="job-title">${title}</span>
+                <span class="badge-new badge-new-orange">New</span>
+              </div>
+              <span class="job-company job-company-govt">${org}</span>
+            </div>
+            <span class="job-arrow">›</span>
+          </a>`;
+      });
+    } catch(e) { console.error("Govt Error:", e); el.innerHTML = '<div class="state-msg">Unable to load govt. jobs.</div>'; }
+  }
+
+  // Updates
+  async function loadUpdates() {
+    const el = document.getElementById("latest-updates");
+    try {
+      const snap = await getDocs(query(collection(db, "flashLinks"), orderBy("timestamp","desc"), limit(5)));
+      el.innerHTML = '';
+      if (snap.empty) { el.innerHTML = '<div class="state-msg">No updates found.</div>'; return; }
+      snap.forEach(docSnap => {
+        const item = docSnap.data();
+        el.innerHTML += `
+          <a href="${item.url}" target="_blank" rel="noopener" class="update-row">
+            <div class="update-icon">⚡</div>
+            <div style="flex:1;min-width:0;">
+              <div class="update-title">${item.title}</div>
+              <div class="update-meta">Official Update &nbsp;·&nbsp; <span class="badge-new badge-new-amber">New</span></div>
+            </div>
+            <span class="job-arrow" style="margin-left:8px;">›</span>
+          </a>`;
+      });
+    } catch(e) { console.error("Updates Error:", e); }
+  }
+
+  // Community
+  async function loadCommunity() {
+    const el = document.getElementById("community-posts");
+    const countEl = document.getElementById("community-count");
+    try {
+      const snap = await getDocs(query(collection(db, "communityPosts"), orderBy("timestamp","desc"), limit(5)));
+      if (countEl) countEl.textContent = snap.size + ' posts';
+      el.innerHTML = '';
+      if (snap.empty) { el.innerHTML = '<div class="state-msg">No community posts yet. Be the first!</div>'; return; }
+      snap.forEach(docSnap => {
+        const post = docSnap.data();
+        const initial = (post.userName || 'U').charAt(0).toUpperCase();
+        el.innerHTML += `
+          <div class="community-post">
+            <div class="post-author">
+              <div class="post-avatar">${initial}</div>
+              <span class="post-author-name">${post.userName || 'Anonymous'}</span>
+            </div>
+            <p class="post-content">${post.content}</p>
+            <div class="post-actions">
+              <button class="post-action-btn">👍 ${post.likes || 0}</button>
+              <button class="post-action-btn">👎 ${post.dislikes || 0}</button>
+            </div>
+          </div>`;
+      });
+    } catch(e) { console.error("Community Error:", e); }
+  }
+
+  await Promise.all([loadFeatured(), loadGovt(), loadUpdates(), loadCommunity()]);
+
+  // Post Button
+  document.getElementById("postBtn").addEventListener("click", async () => {
+    if (!currentUser) { alert("Please log in to post."); return; }
+    const content = document.getElementById("postContent").value.trim();
+    if (!content) return;
+    const btn = document.getElementById("postBtn");
+    try {
+      btn.disabled = true;
+      btn.textContent = "Publishing…";
+      await addDoc(collection(db, "communityPosts"), {
+        content,
+        userName: currentUser.displayName || "User_" + currentUser.uid.substring(0, 4),
+        userId: currentUser.uid,
+        timestamp: serverTimestamp(),
+        likes: 0,
+        dislikes: 0
+      });
+      document.getElementById("postContent").value = '';
+      await loadCommunity();
+    } catch(e) {
+      console.error("Post error:", e);
+      alert("Error publishing post.");
+    } finally {
+      btn.disabled = !(currentUser && !currentUser.isAnonymous);
+      btn.textContent = "Publish Post";
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
