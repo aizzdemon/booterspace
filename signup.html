@@ -141,12 +141,17 @@
           <div class="space-y-4 pt-2 border-t border-gray-100 hidden" id="providerFieldsGroup">
              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Company Details</p>
              <input id="company" placeholder="Company Name" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
+             <p id="companyError" class="error-msg hidden">⚠ Please fill out the Company Name field.</p>
              <div class="grid grid-cols-2 gap-3">
                <input id="gst" placeholder="GST Number" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
+               <p id="gstError" class="error-msg hidden col-span-2">⚠ Please fill out the GST Number field.</p>
                <input id="pan" placeholder="Company PAN" class="hidden w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-brand-500 text-sm" />
+               <p id="panError" class="error-msg hidden col-span-2">⚠ Please fill out the Company PAN field.</p>
              </div>
           </div>
         </div>
+
+        <p id="formError" class="error-msg hidden text-center"></p>
 
         <div class="space-y-3 pt-2">
           <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 focus:ring-4 focus:ring-brand-100">
@@ -164,116 +169,7 @@
 
   <p class="mt-8 text-xs text-gray-400">&copy; 2024 BooterSpace Inc.</p>
 
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan"
-});
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-let selectedRole = "";
-
-function selectRole(role) {
-  selectedRole = role;
-  document.getElementById("roleStep").classList.add("hidden");
-  document.getElementById("signupForm").classList.remove("hidden");
-  document.getElementById("formTitle").innerText = role === "jobSeeker" ? "Job Seeker Account" : "Job Provider Account";
-
-  const isProvider = (role === "jobProvider");
-  const isSeeker = (role === "jobSeeker");
-
-  const providerGroup = document.getElementById("providerFieldsGroup");
-  if(providerGroup) providerGroup.classList.toggle("hidden", !isProvider);
-
-  ["company","gst","pan"].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.toggle("hidden", !isProvider);
-  });
-
-  document.getElementById("gender").classList.toggle("hidden", !isSeeker);
-
-  const noteEl = document.getElementById("approvalNote");
-  if (isProvider) {
-      noteEl.innerText = "⚠ Job posting will be enabled after admin approval.";
-      noteEl.classList.remove("hidden");
-  } else {
-      noteEl.innerText = "";
-      noteEl.classList.add("hidden");
-  }
-}
-
-document.getElementById("signupForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const phoneEl = document.getElementById("phone");
-  const genderEl = document.getElementById("gender");
-  const phoneError = document.getElementById("phoneError");
-  const genderError = document.getElementById("genderError");
-
-  phoneError.classList.add("hidden");
-  genderError.classList.add("hidden");
-
-  let valid = true;
-
-  if (!phoneEl.value.trim()) {
-    phoneError.classList.remove("hidden");
-    valid = false;
-  }
-
-  if (selectedRole === 'jobSeeker' && !genderEl.value) {
-    genderError.classList.remove("hidden");
-    valid = false;
-  }
-
-  if (!valid) return;
-
-  const fullName = document.getElementById("name").value.trim();
-  const emailVal = document.getElementById("email").value.trim();
-  const phoneVal = phoneEl.value.trim();
-  const passwordVal = document.getElementById("password").value;
-  const genderVal = genderEl.value;
-
-  const companyVal = document.getElementById("company").value.trim();
-  const gstVal = document.getElementById("gst").value.trim();
-  const panVal = document.getElementById("pan").value.trim();
-
-  try {
-  const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
-
-  const fullName = document.getElementById("name").value.trim();
-
-  await db.collection("users").doc(cred.user.uid).set({
-    fullName: fullName,
-    fullNameLower: fullName.toLowerCase(),
-
-    email: emailVal,
-    emailLower: emailVal.toLowerCase(),
-
-    phone: phoneVal,
-    role: selectedRole,
-
-    jobPostAccess: selectedRole === "jobProvider" ? false : true,
-
-    gender: selectedRole === "jobSeeker" ? genderVal : "",
-
-    company: selectedRole === "jobProvider" ? companyVal : "",
-    gstNumber: selectedRole === "jobProvider" ? gstVal : "",
-    companyPAN: selectedRole === "jobProvider" ? panVal : "",
-
-    photoURL: cred.user.photoURL || "",
-
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  window.location.href = "index.html";
-
-} catch (err) {
-  alert(err.message);
-}
-});
-</script>
+<script src="public/js/signup.js"></script>
 
 </body>
 </html>
