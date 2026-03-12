@@ -18,7 +18,8 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-let selectedRole = "";
+// Use function-scoped state so inline onclick handlers can never hit TDZ during script parsing.
+var selectedRole = "";
 
 // Fix: explicit signup-flow flags prevent auth-state redirects before Firestore writes finish.
 let isSignupFlowInProgress = false;
