@@ -202,6 +202,92 @@
   .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--ink); color: #fff; padding: 0.8rem 1.2rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; z-index: 2000; display: flex; align-items: center; gap: 0.5rem; transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); max-width: 320px; box-shadow: var(--shadow-lg); }
   .toast.show { transform: translateY(0); opacity: 1; }
 
+  /* COMPANY AUTOCOMPLETE */
+  .company-suggest {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: #fff;
+    border: 1.5px solid var(--accent);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 8px 24px rgba(79,110,247,0.13);
+    z-index: 200;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .company-suggest.open { display: block; }
+  .suggest-item {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.6rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover, .suggest-item.active { background: var(--accent-light); }
+  .suggest-logo {
+    width: 26px; height: 26px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 800; color: white; flex-shrink: 0;
+  }
+  .suggest-name { font-weight: 600; color: var(--ink); flex: 1; }
+  .suggest-count { font-size: 0.72rem; color: var(--muted); }
+
+  /* COMPANY GROUP CARD */
+  .company-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: fadeUp 0.4s ease both;
+    transition: box-shadow 0.2s;
+  }
+  .company-group:hover { box-shadow: var(--shadow-md); }
+  .company-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .company-group-left { display: flex; align-items: center; gap: 1rem; }
+  .company-group-logo {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: 800; color: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  }
+  .company-group-name { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+  .company-group-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+  .company-group-right { display: flex; align-items: center; gap: 0.75rem; }
+  .company-avg-badge {
+    font-size: 1rem; font-weight: 800;
+    padding: 0.3rem 0.75rem; border-radius: 8px;
+  }
+  .company-review-count {
+    font-size: 0.78rem; color: var(--muted); font-weight: 500;
+  }
+  .company-toggle-btn {
+    background: none; border: 1.5px solid var(--border2);
+    border-radius: 6px; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--muted); font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .company-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .company-reviews-list { display: none; }
+  .company-reviews-list.open { display: block; }
+  .company-review-item {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .company-review-item:last-child { border-bottom: none; }
+  .company-review-item:hover { background: var(--surface2); }
+
   @media (max-width: 768px) {
     body { font-size: 15px; }
     .main-container { grid-template-columns: 1fr; }
@@ -210,6 +296,7 @@
     .form-row { grid-template-columns: 1fr; }
     .rating-cats { grid-template-columns: 1fr; }
     .hero-stats { gap: 1.5rem; }
+    .company-group-right { flex-direction: column; align-items: flex-end; gap: 0.4rem; }
   }
 </style>
 </head>
@@ -291,9 +378,11 @@
     </div>
     <div class="modal-body" id="modalBody">
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" style="position:relative">
           <label>Company Name *</label>
-          <input type="text" id="companyName" placeholder="e.g. Google, Infosys...">
+          <input type="text" id="companyName" placeholder="e.g. Google, Infosys..." autocomplete="off" oninput="onCompanyInput(this)" onblur="hideCompanySuggest()">
+          <div class="company-suggest" id="companySuggest"></div>
+        </div>
         </div>
         <div class="form-group">
           <label>Industry</label>
@@ -314,7 +403,75 @@
       <div class="form-row">
         <div class="form-group">
           <label>Your Role / Position *</label>
-          <input type="text" id="roleTitle" placeholder="e.g. Software Engineer">
+          <select id="roleTitleSelect" onchange="onRoleSelect(this)">
+            <option value="">— Select your role —</option>
+            <optgroup label="Engineering">
+              <option>Software Engineer</option>
+              <option>Senior Software Engineer</option>
+              <option>Lead Engineer</option>
+              <option>Principal Engineer</option>
+              <option>Frontend Developer</option>
+              <option>Backend Developer</option>
+              <option>Full Stack Developer</option>
+              <option>Mobile Developer (Android/iOS)</option>
+              <option>DevOps / SRE Engineer</option>
+              <option>Data Engineer</option>
+              <option>Machine Learning Engineer</option>
+              <option>QA / Test Engineer</option>
+            </optgroup>
+            <optgroup label="Product & Design">
+              <option>Product Manager</option>
+              <option>Senior Product Manager</option>
+              <option>Product Designer / UX Designer</option>
+              <option>UI Designer</option>
+              <option>UX Researcher</option>
+            </optgroup>
+            <optgroup label="Data & Analytics">
+              <option>Data Scientist</option>
+              <option>Data Analyst</option>
+              <option>Business Intelligence Analyst</option>
+            </optgroup>
+            <optgroup label="Management">
+              <option>Engineering Manager</option>
+              <option>Project Manager</option>
+              <option>Program Manager</option>
+              <option>Scrum Master</option>
+              <option>Technical Lead</option>
+              <option>CTO / VP Engineering</option>
+            </optgroup>
+            <optgroup label="Business & Operations">
+              <option>Business Analyst</option>
+              <option>Operations Manager</option>
+              <option>Strategy & Consulting</option>
+              <option>Growth Manager</option>
+              <option>Sales Manager</option>
+              <option>Account Manager</option>
+              <option>Customer Success Manager</option>
+            </optgroup>
+            <optgroup label="Marketing & Content">
+              <option>Marketing Manager</option>
+              <option>Digital Marketing Specialist</option>
+              <option>Content Writer / Creator</option>
+              <option>Brand Manager</option>
+              <option>SEO Specialist</option>
+            </optgroup>
+            <optgroup label="Finance & HR">
+              <option>Finance Analyst</option>
+              <option>Chartered Accountant</option>
+              <option>HR Manager</option>
+              <option>Talent Acquisition Specialist</option>
+              <option>Recruiter</option>
+            </optgroup>
+            <optgroup label="Internship">
+              <option>Software Engineering Intern</option>
+              <option>Product Management Intern</option>
+              <option>Data Science Intern</option>
+              <option>Marketing Intern</option>
+              <option>Business Development Intern</option>
+            </optgroup>
+            <option value="__other__">Other (type below)</option>
+          </select>
+          <input type="text" id="roleTitle" placeholder="Or type your role here..." style="margin-top:0.5rem">
         </div>
         <div class="form-group">
           <label>Employment Type</label>
@@ -365,7 +522,25 @@
       </div>
       <div class="form-group">
         <label>Review Title *</label>
-        <input type="text" id="reviewTitle" placeholder="Summarize your experience in one line">
+        <select id="reviewTitleSelect" onchange="onTitleSelect(this)">
+          <option value="">— Choose a title or type your own below —</option>
+          <option>Great place to work with excellent growth opportunities</option>
+          <option>Good work-life balance but limited career progression</option>
+          <option>Competitive salary and strong engineering culture</option>
+          <option>High pressure environment with poor work-life balance</option>
+          <option>Excellent learning opportunities but below-market pay</option>
+          <option>Strong brand value but slow promotions and bureaucracy</option>
+          <option>Innovative culture with high ownership and autonomy</option>
+          <option>Frequent restructuring makes long-term planning difficult</option>
+          <option>Supportive management and collaborative team culture</option>
+          <option>Good for freshers but not ideal for experienced professionals</option>
+          <option>Toxic management and unrealistic performance targets</option>
+          <option>Flexible work culture with good remote work options</option>
+          <option>Stable job but lacks innovation and modern tech stack</option>
+          <option>Great perks and benefits but high stress and long hours</option>
+          <option>Decent company overall with room for improvement</option>
+        </select>
+        <input type="text" id="reviewTitle" placeholder="Or type your own title here..." style="margin-top:0.5rem">
       </div>
       <div class="form-group">
         <label>What did you like? (Pros) *</label>
@@ -537,30 +712,67 @@
       return;
     }
 
-    list.innerHTML = filtered.map((r, idx) => `
-      <div class="review-card" style="animation-delay:${idx*0.06}s">
-        <div class="review-card-header">
-          <div class="company-info">
-            <div class="company-logo" style="background:${getLogoColor(r.company||'?')}">${getInitials(r.company||'?')}</div>
+    // Group reviews by company
+    const groups = {};
+    filtered.forEach(r => {
+      const key = (r.company || 'Unknown').trim();
+      if (!groups[key]) groups[key] = { reviews: [], industry: r.industry || '' };
+      groups[key].reviews.push(r);
+    });
+
+    // Sort groups by latest review date
+    const sortedGroups = Object.entries(groups).sort((a, b) => {
+      const aDate = a[1].reviews[0]?.createdAt?.toDate?.() || new Date(a[1].reviews[0]?.createdAt || 0);
+      const bDate = b[1].reviews[0]?.createdAt?.toDate?.() || new Date(b[1].reviews[0]?.createdAt || 0);
+      return bDate - aDate;
+    });
+
+    list.innerHTML = sortedGroups.map(([company, group], gIdx) => {
+      const reviews = group.reviews;
+      const avgRating = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+      const ratingClass = avgRating >= 4 ? 'good' : avgRating >= 3 ? 'okay' : 'bad';
+      const isOpen = reviews.length === 1; // auto-expand if only 1 review
+
+      const reviewItems = reviews.map((r, idx) => `
+        <div class="company-review-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
             <div>
-              <div class="company-name">${escHtml(r.company)}</div>
-              <div class="company-meta">${escHtml(r.industry||'')}${r.industry&&r.empType?' · ':''}${escHtml(r.empType||'')}</div>
+              <div class="review-role">${escHtml(r.role||'')}</div>
+              <div class="stars" style="margin-bottom:0">${renderStars(r.rating)}</div>
+            </div>
+            <div class="rating-badge ${getRatingClass(r.rating)}">★ ${r.rating}.0</div>
+          </div>
+          <div class="review-title" style="font-size:1rem;margin-bottom:0.65rem">"${escHtml(r.title||'')}"</div>
+          <div class="pros-cons">
+            <div class="pros"><div class="pros-label">👍 Pros</div>${escHtml(r.pros||'')}</div>
+            <div class="cons"><div class="cons-label">👎 Cons</div>${escHtml(r.cons||'Nothing mentioned.')}</div>
+          </div>
+          <div class="review-footer">
+            <div class="reviewer-info">By <span>Anonymous</span> · ${escHtml(r.empType||'')} · ${escHtml(r.city||'India')} · ${formatDate(r.createdAt)}</div>
+            <button class="helpful-btn" id="helpful-${r.id}" onclick="window.markHelpful('${r.id}')">👍 Helpful (${r.helpful||0})</button>
+          </div>
+        </div>`).join('');
+
+      return `
+        <div class="company-group" style="animation-delay:${gIdx*0.06}s">
+          <div class="company-group-header" onclick="toggleCompanyGroup(this)">
+            <div class="company-group-left">
+              <div class="company-group-logo" style="background:${getLogoColor(company)}">${getInitials(company)}</div>
+              <div>
+                <div class="company-group-name">${escHtml(company)}</div>
+                <div class="company-group-meta">${escHtml(group.industry)}${group.industry ? ' · ' : ''}${reviews.length} review${reviews.length !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            <div class="company-group-right">
+              <div class="company-avg-badge rating-badge ${ratingClass}">★ ${avgRating}</div>
+              <button class="company-toggle-btn" aria-label="Toggle reviews">${isOpen ? '▲' : '▼'}</button>
             </div>
           </div>
-          <div class="rating-badge ${getRatingClass(r.rating)}">★ ${r.rating}.0</div>
-        </div>
-        <div class="stars">${renderStars(r.rating)}</div>
-        <div class="review-role">${escHtml(r.role||'')}</div>
-        <div class="review-title">"${escHtml(r.title||'')}"</div>
-        <div class="pros-cons">
-          <div class="pros"><div class="pros-label">👍 Pros</div>${escHtml(r.pros||'')}</div>
-          <div class="cons"><div class="cons-label">👎 Cons</div>${escHtml(r.cons||'Nothing mentioned.')}</div>
-        </div>
-        <div class="review-footer">
-          <div class="reviewer-info">By <span>Anonymous</span> · ${escHtml(r.city||'India')} · ${formatDate(r.createdAt)}</div>
-          <button class="helpful-btn" id="helpful-${r.id}" onclick="window.markHelpful('${r.id}')">👍 Helpful (${r.helpful||0})</button>
-        </div>
-      </div>`).join('');
+          <div class="company-reviews-list ${isOpen ? 'open' : ''}">
+            ${reviewItems}
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function renderTopCompanies() {
@@ -646,11 +858,26 @@
       });
       // Reset
       ['companyName','roleTitle','reviewTitle','prosText','consText','reviewerCity'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('reviewTitleSelect').value = '';
+      document.getElementById('roleTitleSelect').value = '';
       Object.keys(ratings).forEach(k => ratings[k] = 0);
       document.querySelectorAll('.star-input,.mini-star').forEach(s => s.classList.remove('active'));
       document.getElementById('modalBody').style.display = 'none';
       document.getElementById('successMsg').classList.add('show');
       await loadReviews();
+      // Auto-expand the card for the company just reviewed
+      const groups = document.querySelectorAll('.company-group-name');
+      groups.forEach(el => {
+        if (el.textContent.trim() === company) {
+          const reviewsList = el.closest('.company-group').querySelector('.company-reviews-list');
+          const btn = el.closest('.company-group').querySelector('.company-toggle-btn');
+          if (reviewsList && !reviewsList.classList.contains('open')) {
+            reviewsList.classList.add('open');
+            if (btn) btn.textContent = '▲';
+          }
+          el.closest('.company-group').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
       setTimeout(closeModal, 2800);
     } catch (e) {
       console.error(e);
@@ -701,6 +928,8 @@
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('modalBody').style.display = 'block';
     document.getElementById('successMsg').classList.remove('show');
+    document.getElementById('reviewTitleSelect').value = '';
+    document.getElementById('roleTitleSelect').value = '';
     document.body.style.overflow = 'hidden';
   };
   window.closeModal = () => {
@@ -712,6 +941,102 @@
   };
 
   // ── STAR RATINGS ───────────────────────────────────────────────────────────
+  // ── COMPANY GROUP TOGGLE ───────────────────────────────────────────────────
+  window.toggleCompanyGroup = (header) => {
+    const reviewsList = header.nextElementSibling;
+    const btn = header.querySelector('.company-toggle-btn');
+    const isOpen = reviewsList.classList.toggle('open');
+    btn.textContent = isOpen ? '▲' : '▼';
+  };
+
+  // ── COMPANY AUTOCOMPLETE ───────────────────────────────────────────────────
+  window.onCompanyInput = (input) => {
+    const q = input.value.trim().toLowerCase();
+    const box = document.getElementById('companySuggest');
+    if (!q) { box.classList.remove('open'); return; }
+
+    // Get unique companies from loaded reviews
+    const companyMap = {};
+    allReviews.forEach(r => {
+      if (!r.company) return;
+      const key = r.company.trim();
+      if (!companyMap[key]) companyMap[key] = 0;
+      companyMap[key]++;
+    });
+
+    const matches = Object.entries(companyMap)
+      .filter(([name]) => name.toLowerCase().includes(q))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+
+    // Check if typed value exactly matches an existing company
+    const exactMatch = Object.keys(companyMap).some(
+      name => name.toLowerCase() === q
+    );
+
+    let html = matches.map(([name, count]) => `
+      <div class="suggest-item" onmousedown="selectCompany('${escHtml(name)}')">
+        <div class="suggest-logo" style="background:${getLogoColor(name)}">${getInitials(name)}</div>
+        <span class="suggest-name">${escHtml(name)}</span>
+        <span class="suggest-count">${count} review${count !== 1 ? 's' : ''}</span>
+      </div>`).join('');
+
+    // Show "new company" option if typed name doesn't match any existing company
+    if (!exactMatch) {
+      const typed = input.value.trim();
+      html += `
+        <div class="suggest-item" style="border-top:1px dashed var(--border2)" onmousedown="selectNewCompany('${escHtml(typed)}')">
+          <div class="suggest-logo" style="background:var(--accent)">+</div>
+          <span class="suggest-name" style="color:var(--accent)">Add "${escHtml(typed)}"</span>
+          <span class="suggest-count" style="color:var(--accent)">New company</span>
+        </div>`;
+    }
+
+    box.innerHTML = html;
+    box.classList.add('open');
+  };
+
+  window.selectCompany = (name) => {
+    document.getElementById('companyName').value = name;
+    document.getElementById('companySuggest').classList.remove('open');
+    // Auto-fill industry from existing reviews of that company
+    const existing = allReviews.find(r => r.company === name && r.industry);
+    if (existing) document.getElementById('industry').value = existing.industry;
+  };
+
+  window.selectNewCompany = (name) => {
+    document.getElementById('companyName').value = name;
+    document.getElementById('companySuggest').classList.remove('open');
+    showToast(`✨ "${name}" will get its own card after you submit`);
+  };
+
+  window.hideCompanySuggest = () => {
+    setTimeout(() => document.getElementById('companySuggest').classList.remove('open'), 150);
+  };
+
+  // ── TITLE DROPDOWN ─────────────────────────────────────────────────────────
+  window.onTitleSelect = (sel) => {
+    const input = document.getElementById('reviewTitle');
+    if (sel.value) {
+      input.value = sel.value;
+      input.style.borderColor = 'var(--accent)';
+      input.style.background = '#fff';
+    }
+  };
+
+  // ── ROLE DROPDOWN ──────────────────────────────────────────────────────────
+  window.onRoleSelect = (sel) => {
+    const input = document.getElementById('roleTitle');
+    if (sel.value && sel.value !== '__other__') {
+      input.value = sel.value;
+      input.style.borderColor = 'var(--accent)';
+      input.style.background = '#fff';
+    } else if (sel.value === '__other__') {
+      input.value = '';
+      input.focus();
+    }
+  };
+
   window.setRating = val => {
     ratings.overall = val;
     document.querySelectorAll('#overallStars .star-input').forEach((s,i) => s.classList.toggle('active', i < val));
