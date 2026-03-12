@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkVoice — Company Reviews</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --surface2: #f8f9ff;
+    --border: #e2e7f5;
+    --border2: #d0d8f0;
+    --ink: #1a1f3a;
+    --ink2: #3d4566;
+    --muted: #7b83a6;
+    --accent: #4f6ef7;
+    --accent-hover: #3a57e8;
+    --accent-light: #eef1ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --yellow: #f59e0b;
+    --yellow-bg: #fffbeb;
+    --shadow-sm: 0 1px 4px rgba(79,110,247,0.07);
+    --shadow-md: 0 4px 20px rgba(79,110,247,0.1);
+    --shadow-lg: 0 8px 40px rgba(79,110,247,0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #4f6ef7 0%, #6c8fff 50%, #9bb5ff 100%);
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 50% 0%, rgba(255,255,255,0.18), transparent);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+    bottom: -200px; right: -100px;
+    border-radius: 50%;
+  }
+  .hero-eyebrow { font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.8); font-weight: 600; margin-bottom: 1rem; position: relative; z-index: 1; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 5.5vw, 4rem); color: #fff; line-height: 1.1; max-width: 680px; margin: 0 auto 1.25rem; position: relative; z-index: 1; text-shadow: 0 2px 20px rgba(0,0,50,0.15); }
+  .hero h1 em { font-style: italic; color: #ffe066; }
+  .hero p { color: rgba(255,255,255,0.82); font-size: 1rem; max-width: 460px; margin: 0 auto 2.5rem; line-height: 1.7; position: relative; z-index: 1; }
+  .hero-search { display: flex; max-width: 520px; margin: 0 auto; position: relative; z-index: 1; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+  .hero-search input {
+    flex: 1; padding: 0.9rem 1.2rem;
+    border: none; border-right: 1px solid var(--border2);
+    background: #fff; color: var(--ink);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    border-radius: 8px 0 0 8px; outline: none;
+  }
+  .hero-search input::placeholder { color: #aab; }
+  .hero-search button {
+    padding: 0 1.5rem; background: var(--ink); color: white; border: none;
+    border-radius: 0 8px 8px 0; font-family: 'DM Sans', sans-serif;
+    font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; white-space: nowrap;
+  }
+  .hero-search button:hover { background: #2d3460; }
+  .hero-stats { display: flex; justify-content: center; gap: 3rem; margin-top: 3rem; padding-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.25); position: relative; z-index: 1; }
+  .stat-item { text-align: center; }
+  .stat-number { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: #fff; font-weight: 700; }
+  .stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.7); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.2rem; }
+
+  /* MAIN */
+  .main-container {
+    max-width: 1100px; margin: 0 auto;
+    padding: 2.5rem 2rem;
+    display: grid; grid-template-columns: 1fr 330px; gap: 2.5rem; align-items: start;
+  }
+  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--border2); }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--ink); }
+  .section-count { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+
+  .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .filter-chip { padding: 0.38rem 0.9rem; border: 1.5px solid var(--border2); border-radius: 20px; font-size: 0.8rem; font-weight: 500; color: var(--muted); background: var(--surface); cursor: pointer; transition: all 0.15s; }
+  .filter-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .filter-chip.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+  /* REVIEW CARDS */
+  .reviews-list { display: flex; flex-direction: column; gap: 1rem; }
+  .review-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .review-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: var(--border2); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .review-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+  .company-info { display: flex; align-items: center; gap: 0.75rem; }
+  .company-logo { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: white; flex-shrink: 0; font-family: 'Playfair Display', serif; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .company-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+  .company-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+  .rating-badge { display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.82rem; font-weight: 700; }
+  .rating-badge.good { background: var(--green-bg); color: var(--green); border: 1px solid #bbf7d0; }
+  .rating-badge.okay { background: var(--yellow-bg); color: #92400e; border: 1px solid #fde68a; }
+  .rating-badge.bad { background: var(--red-bg); color: var(--red); border: 1px solid #fecaca; }
+  .review-role { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); margin-bottom: 0.35rem; }
+  .review-title { font-family: 'Playfair Display', serif; font-size: 1.08rem; font-weight: 700; margin-bottom: 0.75rem; line-height: 1.35; color: var(--ink); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  .pros { background: var(--green-bg); border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem; font-size: 0.84rem; line-height: 1.55; color: #166534; }
+  .cons { background: var(--red-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem; font-size: 0.84rem; line-height: 1.55; color: #991b1b; }
+  .pros-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--green); margin-bottom: 0.35rem; }
+  .cons-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--red); margin-bottom: 0.35rem; }
+  .stars { display: flex; gap: 2px; margin-bottom: 0.5rem; }
+  .star { color: #d1d5db; font-size: 0.85rem; }
+  .star.filled { color: var(--yellow); }
+  .review-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border); margin-top: 0.25rem; }
+  .reviewer-info { font-size: 0.78rem; color: var(--muted); }
+  .reviewer-info span { color: var(--ink2); font-weight: 600; }
+  .helpful-btn { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .helpful-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .helpful-btn.voted { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* LOADING */
+  .loading-state { text-align: center; padding: 3rem; color: var(--muted); }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+  /* SIDEBAR */
+  .sidebar { position: sticky; top: 80px; }
+  .write-review-card { background: linear-gradient(135deg, #4f6ef7, #7b93ff); border-radius: 12px; padding: 1.75rem; margin-bottom: 1.25rem; position: relative; overflow: hidden; box-shadow: var(--shadow-md); }
+  .write-review-card::before { content: '✍'; position: absolute; right: -10px; top: -10px; font-size: 6rem; opacity: 0.1; }
+  .write-review-card h3 { font-family: 'Playfair Display', serif; color: #fff; font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .write-review-card p { color: rgba(255,255,255,0.78); font-size: 0.84rem; margin-bottom: 1.25rem; line-height: 1.55; }
+  .btn-write { display: block; width: 100%; padding: 0.8rem; background: #fff; color: var(--accent); border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; letter-spacing: 0.02em; text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .btn-write:hover { background: #f0f4ff; transform: translateY(-1px); }
+  .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.4rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm); }
+  .widget-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); color: var(--ink); }
+  .top-company { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.15s; border-radius: 6px; }
+  .top-company:last-child { border-bottom: none; }
+  .top-company:hover { background: var(--accent-light); padding-left: 0.75rem; }
+  .tc-logo { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; color: white; flex-shrink: 0; }
+  .tc-name { font-size: 0.83rem; font-weight: 500; flex: 1; color: var(--ink2); }
+  .tc-rating { font-size: 0.78rem; font-weight: 700; color: var(--green); background: var(--green-bg); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid #bbf7d0; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,31,58,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 24px 60px rgba(26,31,58,0.2); }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal-header { background: linear-gradient(135deg, #4f6ef7, #7b93ff); padding: 1.5rem 2rem; border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h2 { font-family: 'Playfair Display', serif; color: #fff; font-size: 1.25rem; }
+  .modal-header-sub { font-size: 0.78rem; color: rgba(255,255,255,0.72); margin-top: 0.2rem; }
+  .modal-close { background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 1.1rem; cursor: pointer; line-height: 1; transition: background 0.15s; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: rgba(255,255,255,0.3); }
+  .modal-body { padding: 1.75rem 2rem; background: var(--surface); }
+  .form-group { margin-bottom: 1.1rem; }
+  label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.35rem; }
+  input[type="text"], select, textarea { width: 100%; padding: 0.7rem 1rem; border: 1.5px solid var(--border2); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--ink); background: var(--surface2); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,110,247,0.12); background: #fff; }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .star-rating-input { display: flex; gap: 6px; margin-top: 0.25rem; }
+  .star-input { font-size: 1.6rem; cursor: pointer; color: #d1d5db; transition: color 0.1s, transform 0.1s; user-select: none; }
+  .star-input:hover, .star-input.active { color: var(--yellow); transform: scale(1.1); }
+  .rating-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.1rem; background: var(--surface2); border-radius: 10px; padding: 1rem; border: 1px solid var(--border); }
+  .rating-cat-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
+  .mini-stars { display: flex; gap: 3px; }
+  .mini-star { font-size: 1.1rem; cursor: pointer; color: #d1d5db; transition: color 0.1s; user-select: none; }
+  .mini-star.active { color: var(--yellow); }
+  .btn-submit { width: 100%; padding: 0.9rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; letter-spacing: 0.03em; margin-top: 0.5rem; box-shadow: 0 4px 14px rgba(79,110,247,0.3); }
+  .btn-submit:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,110,247,0.4); }
+  .btn-submit:disabled { background: #c7d0f5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .privacy-note { font-size: 0.74rem; color: var(--muted); text-align: center; margin-top: 0.75rem; line-height: 1.5; }
+  .success-msg { display: none; text-align: center; padding: 2.5rem 2rem; }
+  .success-msg.show { display: block; }
+  .success-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .success-msg h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--ink); }
+  .success-msg p { color: var(--muted); font-size: 0.9rem; }
+
+  /* AUTH WALL */
+  .auth-wall { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; text-align: center; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm); }
+  .auth-wall h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.4rem; color: var(--ink); }
+  .auth-wall p { color: var(--muted); font-size: 0.84rem; margin-bottom: 1.25rem; line-height: 1.55; }
+  .auth-wall-btns { display: flex; flex-direction: column; gap: 0.6rem; }
+  .btn-auth { display: block; width: 100%; padding: 0.72rem; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.87rem; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; transition: all 0.2s; }
+  .btn-auth.primary { background: var(--accent); color: white; border: none; box-shadow: 0 4px 12px rgba(79,110,247,0.25); }
+  .btn-auth.primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-auth.secondary { background: transparent; color: var(--ink2); border: 1.5px solid var(--border2); }
+  .btn-auth.secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--ink); color: #fff; padding: 0.8rem 1.2rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; z-index: 2000; display: flex; align-items: center; gap: 0.5rem; transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); max-width: 320px; box-shadow: var(--shadow-lg); }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 768px) {
+    body { font-size: 15px; }
+    .main-container { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .pros-cons { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .rating-cats { grid-template-columns: 1fr; }
+    .hero-stats { gap: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Trusted by professionals</div>
+  <h1>Know before you<br><em>join.</em></h1>
+  <p>Real reviews from real employees. Find out what it's actually like to work somewhere.</p>
+  <div class="hero-search">
+    <input type="text" id="searchInput" placeholder="Search company name..." oninput="filterReviews()">
+    <button onclick="filterReviews()">Search</button>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-number" id="totalReviewsStat">—</div>
+      <div class="stat-label">Reviews</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" id="totalCompaniesStat">—</div>
+      <div class="stat-label">Companies</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" id="avgRatingStat">—</div>
+      <div class="stat-label">Avg Rating</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="main-container">
+  <main>
+    <div class="section-header">
+      <h2 class="section-title">Latest Reviews</h2>
+      <span class="section-count" id="reviewCount">Loading...</span>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-chip active" onclick="filterByRating('all',this)">All Ratings</div>
+      <div class="filter-chip" onclick="filterByRating('positive',this)">Positive (4–5 ★)</div>
+      <div class="filter-chip" onclick="filterByRating('mixed',this)">Mixed (3 ★)</div>
+      <div class="filter-chip" onclick="filterByRating('critical',this)">Critical (1–2 ★)</div>
+    </div>
+    <div class="reviews-list" id="reviewsList">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div>Loading reviews...</div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <!-- Auth-aware write card -->
+    <div id="sidebarWriteCard">
+      <!-- Filled by JS based on auth state -->
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">🏆 Top Rated Companies</div>
+      <div id="topCompaniesList"><div style="color:var(--muted);font-size:0.85rem">Loading...</div></div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">📊 Rating Breakdown</div>
+      <div id="ratingBreakdown"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- WRITE REVIEW MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>Write a Company Review</h2>
+        <div class="modal-header-sub" id="modalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company Name *</label>
+          <input type="text" id="companyName" placeholder="e.g. Google, Infosys...">
+        </div>
+        <div class="form-group">
+          <label>Industry</label>
+          <select id="industry">
+            <option value="">Select industry</option>
+            <option>Technology / IT</option>
+            <option>Finance & Banking</option>
+            <option>Healthcare</option>
+            <option>E-Commerce / Retail</option>
+            <option>Manufacturing</option>
+            <option>Consulting</option>
+            <option>Education</option>
+            <option>Media & Entertainment</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Your Role / Position *</label>
+          <input type="text" id="roleTitle" placeholder="e.g. Software Engineer">
+        </div>
+        <div class="form-group">
+          <label>Employment Type</label>
+          <select id="empType">
+            <option>Full-time</option>
+            <option>Part-time</option>
+            <option>Contract</option>
+            <option>Intern</option>
+            <option>Former Employee</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Overall Rating *</label>
+        <div class="star-rating-input" id="overallStars">
+          <span class="star-input" onclick="setRating(1)">★</span>
+          <span class="star-input" onclick="setRating(2)">★</span>
+          <span class="star-input" onclick="setRating(3)">★</span>
+          <span class="star-input" onclick="setRating(4)">★</span>
+          <span class="star-input" onclick="setRating(5)">★</span>
+        </div>
+      </div>
+      <div class="rating-cats">
+        <div>
+          <div class="rating-cat-label">Work-Life Balance</div>
+          <div class="mini-stars" id="wlbStars">
+            <span class="mini-star" onclick="setMini('wlb',1)">★</span><span class="mini-star" onclick="setMini('wlb',2)">★</span><span class="mini-star" onclick="setMini('wlb',3)">★</span><span class="mini-star" onclick="setMini('wlb',4)">★</span><span class="mini-star" onclick="setMini('wlb',5)">★</span>
+          </div>
+        </div>
+        <div>
+          <div class="rating-cat-label">Salary & Benefits</div>
+          <div class="mini-stars" id="salStars">
+            <span class="mini-star" onclick="setMini('sal',1)">★</span><span class="mini-star" onclick="setMini('sal',2)">★</span><span class="mini-star" onclick="setMini('sal',3)">★</span><span class="mini-star" onclick="setMini('sal',4)">★</span><span class="mini-star" onclick="setMini('sal',5)">★</span>
+          </div>
+        </div>
+        <div>
+          <div class="rating-cat-label">Job Security</div>
+          <div class="mini-stars" id="jsStars">
+            <span class="mini-star" onclick="setMini('js',1)">★</span><span class="mini-star" onclick="setMini('js',2)">★</span><span class="mini-star" onclick="setMini('js',3)">★</span><span class="mini-star" onclick="setMini('js',4)">★</span><span class="mini-star" onclick="setMini('js',5)">★</span>
+          </div>
+        </div>
+        <div>
+          <div class="rating-cat-label">Career Growth</div>
+          <div class="mini-stars" id="cgStars">
+            <span class="mini-star" onclick="setMini('cg',1)">★</span><span class="mini-star" onclick="setMini('cg',2)">★</span><span class="mini-star" onclick="setMini('cg',3)">★</span><span class="mini-star" onclick="setMini('cg',4)">★</span><span class="mini-star" onclick="setMini('cg',5)">★</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Review Title *</label>
+        <input type="text" id="reviewTitle" placeholder="Summarize your experience in one line">
+      </div>
+      <div class="form-group">
+        <label>What did you like? (Pros) *</label>
+        <textarea id="prosText" placeholder="Good work culture, learning opportunities..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>What could be better? (Cons)</label>
+        <textarea id="consText" placeholder="Work pressure, limited growth..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>City / Location</label>
+        <input type="text" id="reviewerCity" placeholder="e.g. Bangalore">
+      </div>
+      <button class="btn-submit" id="submitBtn" onclick="submitReview()">Submit Review →</button>
+      <p class="privacy-note">🔒 Submitted as your account name. Reviews are public.</p>
+    </div>
+    <div class="success-msg" id="successMsg">
+      <div class="success-icon">🎉</div>
+      <h3>Review Published!</h3>
+      <p>Thank you for helping the community.<br>Your review is now live on Firebase.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, doc, updateDoc,
+    query, orderBy, serverTimestamp, increment, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    authDomain: "kar-kardan.firebaseapp.com",
+    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kar-kardan",
+    storageBucket: "kar-kardan.firebasestorage.app",
+    messagingSenderId: "554147696994",
+    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
+    measurementId: "G-RRC3X485KQ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let currentUser = null;
+  let allReviews = [];
+  let currentFilter = 'all';
+  let currentSearch = '';
+  const ratings = { overall: 0, wlb: 0, sal: 0, js: 0, cg: 0 };
+
+  const LOGO_COLORS = ['#1a73e8','#e8450a','#2d7a4f','#9333ea','#c9973a','#0f9d58','#db4437','#4285f4'];
+
+  // ── AUTH STATE ─────────────────────────────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    updateSidebarCard(user);
+    if (user) {
+      document.getElementById('modalSubtitle').textContent = `Signed in as ${user.displayName || user.email}`;
+    }
+  });
+
+  function updateHeaderUI(user) {
+    const pill = document.getElementById('userPill');
+    const avatar = document.getElementById('userAvatar');
+    const nameEl = document.getElementById('userName');
+    const signoutBtn = document.getElementById('btnSignout');
+    const signinBtn = document.getElementById('btnSigninHeader');
+    if (user) {
+      const name = user.displayName || user.email.split('@')[0];
+      avatar.textContent = name[0].toUpperCase();
+      nameEl.textContent = name;
+      pill.style.display = 'flex';
+      signoutBtn.style.display = 'block';
+      signinBtn.style.display = 'none';
+    } else {
+      pill.style.display = 'none';
+      signoutBtn.style.display = 'none';
+      signinBtn.style.display = 'block';
+    }
+  }
+
+  function updateSidebarCard(user) {
+    const card = document.getElementById('sidebarWriteCard');
+    if (user) {
+      card.innerHTML = `
+        <div class="write-review-card">
+          <h3>Share Your Experience</h3>
+          <p>Your honest review helps millions of job seekers make better decisions.</p>
+          <button class="btn-write" onclick="window.openModal()">✍ Write a Review</button>
+        </div>`;
+    } else {
+      card.innerHTML = `
+        <div class="auth-wall">
+          <h3>Share Your Experience</h3>
+          <p>Sign in to write a review and help the community make better career decisions.</p>
+          <div class="auth-wall-btns">
+            <a href="signin.html" class="btn-auth primary">Sign In to Write a Review</a>
+            <a href="signup.html" class="btn-auth secondary">Create Account</a>
+          </div>
+        </div>`;
+    }
+  }
+
+  // ── LOAD REVIEWS FROM FIRESTORE ────────────────────────────────────────────
+  async function loadReviews() {
+    try {
+      const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderReviews();
+      renderTopCompanies();
+      renderBreakdown();
+      updateStats();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('reviewsList').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <div>Could not load reviews. Check Firestore rules.</div>
+        </div>`;
+    }
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  function getLogoColor(name) {
+    let h = 0;
+    for (let c of name) h = (h * 31 + c.charCodeAt(0)) % LOGO_COLORS.length;
+    return LOGO_COLORS[h];
+  }
+  function getInitials(name) {
+    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  }
+  function renderStars(n) {
+    return Array.from({length:5},(_,i)=>`<span class="star ${i<n?'filled':''}">★</span>`).join('');
+  }
+  function getRatingClass(r) {
+    return r >= 4 ? 'good' : r >= 3 ? 'okay' : 'bad';
+  }
+
+  function getFilteredReviews() {
+    return allReviews.filter(r => {
+      const matchSearch = !currentSearch ||
+        (r.company || '').toLowerCase().includes(currentSearch) ||
+        (r.role || '').toLowerCase().includes(currentSearch);
+      const matchFilter =
+        currentFilter === 'all' ||
+        (currentFilter === 'positive' && r.rating >= 4) ||
+        (currentFilter === 'mixed' && r.rating === 3) ||
+        (currentFilter === 'critical' && r.rating <= 2);
+      return matchSearch && matchFilter;
+    });
+  }
+
+  function renderReviews() {
+    const list = document.getElementById('reviewsList');
+    const filtered = getFilteredReviews();
+    document.getElementById('reviewCount').textContent = `${filtered.length} review${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div style="font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:0.5rem">No reviews found</div><div style="font-size:0.85rem">Try a different filter or be the first to review!</div></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map((r, idx) => `
+      <div class="review-card" style="animation-delay:${idx*0.06}s">
+        <div class="review-card-header">
+          <div class="company-info">
+            <div class="company-logo" style="background:${getLogoColor(r.company||'?')}">${getInitials(r.company||'?')}</div>
+            <div>
+              <div class="company-name">${escHtml(r.company)}</div>
+              <div class="company-meta">${escHtml(r.industry||'')}${r.industry&&r.empType?' · ':''}${escHtml(r.empType||'')}</div>
+            </div>
+          </div>
+          <div class="rating-badge ${getRatingClass(r.rating)}">★ ${r.rating}.0</div>
+        </div>
+        <div class="stars">${renderStars(r.rating)}</div>
+        <div class="review-role">${escHtml(r.role||'')}</div>
+        <div class="review-title">"${escHtml(r.title||'')}"</div>
+        <div class="pros-cons">
+          <div class="pros"><div class="pros-label">👍 Pros</div>${escHtml(r.pros||'')}</div>
+          <div class="cons"><div class="cons-label">👎 Cons</div>${escHtml(r.cons||'Nothing mentioned.')}</div>
+        </div>
+        <div class="review-footer">
+          <div class="reviewer-info">By <span>Anonymous</span> · ${escHtml(r.city||'India')} · ${formatDate(r.createdAt)}</div>
+          <button class="helpful-btn" id="helpful-${r.id}" onclick="window.markHelpful('${r.id}')">👍 Helpful (${r.helpful||0})</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderTopCompanies() {
+    const map = {};
+    allReviews.forEach(r => {
+      if (!r.company) return;
+      if (!map[r.company]) map[r.company] = { total: 0, count: 0 };
+      map[r.company].total += r.rating;
+      map[r.company].count++;
+    });
+    const sorted = Object.entries(map)
+      .map(([name, d]) => ({ name, avg: (d.total/d.count).toFixed(1) }))
+      .sort((a,b) => b.avg - a.avg).slice(0, 5);
+
+    document.getElementById('topCompaniesList').innerHTML = sorted.length === 0
+      ? '<div style="color:var(--muted);font-size:0.85rem">No reviews yet</div>'
+      : sorted.map(c => `
+          <div class="top-company" onclick="searchCompany('${escHtml(c.name)}')">
+            <div class="tc-logo" style="background:${getLogoColor(c.name)}">${getInitials(c.name)}</div>
+            <div class="tc-name">${escHtml(c.name)}</div>
+            <div class="tc-rating">★ ${c.avg}</div>
+          </div>`).join('');
+  }
+
+  function renderBreakdown() {
+    const counts = [5,4,3,2,1].map(n => ({ n, count: allReviews.filter(r=>r.rating===n).length }));
+    const max = Math.max(...counts.map(c=>c.count), 1);
+    document.getElementById('ratingBreakdown').innerHTML = counts.map(c => `
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+        <span style="font-size:0.78rem;font-weight:600;width:16px;text-align:right">${c.n}</span>
+        <span style="color:var(--yellow);font-size:0.8rem">★</span>
+        <div style="flex:1;background:#f0ede8;border-radius:3px;height:8px;overflow:hidden">
+          <div style="width:${(c.count/max)*100}%;background:${c.n>=4?'var(--green)':c.n===3?'var(--yellow)':'var(--red)'};height:100%;border-radius:3px;transition:width 0.6s ease"></div>
+        </div>
+        <span style="font-size:0.78rem;color:var(--muted);width:16px">${c.count}</span>
+      </div>`).join('');
+  }
+
+  function updateStats() {
+    document.getElementById('totalReviewsStat').textContent = allReviews.length;
+    const companies = new Set(allReviews.map(r=>r.company)).size;
+    document.getElementById('totalCompaniesStat').textContent = companies;
+    const avg = allReviews.length ? (allReviews.reduce((s,r)=>s+r.rating,0)/allReviews.length).toFixed(1) : '—';
+    document.getElementById('avgRatingStat').textContent = avg + (allReviews.length ? '★' : '');
+  }
+
+  // ── SUBMIT REVIEW ──────────────────────────────────────────────────────────
+  window.submitReview = async () => {
+    if (!currentUser) {
+      window.location.href = 'signin.html';
+      return;
+    }
+    const company = document.getElementById('companyName').value.trim();
+    const role = document.getElementById('roleTitle').value.trim();
+    const title = document.getElementById('reviewTitle').value.trim();
+    const pros = document.getElementById('prosText').value.trim();
+    if (!company || !role || !title || !pros || ratings.overall === 0) {
+      showToast('⚠️ Please fill required fields and set a rating');
+      return;
+    }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        company,
+        industry: document.getElementById('industry').value || 'Other',
+        role,
+        empType: document.getElementById('empType').value,
+        rating: ratings.overall,
+        title,
+        pros,
+        cons: document.getElementById('consText').value.trim() || '',
+        city: document.getElementById('reviewerCity').value.trim() || 'India',
+        reviewerName: 'Anonymous',
+        reviewerUID: currentUser.uid,
+        helpful: 0,
+        wlb: ratings.wlb || 3,
+        sal: ratings.sal || 3,
+        js: ratings.js || 3,
+        cg: ratings.cg || 3,
+        createdAt: serverTimestamp()
+      });
+      // Reset
+      ['companyName','roleTitle','reviewTitle','prosText','consText','reviewerCity'].forEach(id => document.getElementById(id).value = '');
+      Object.keys(ratings).forEach(k => ratings[k] = 0);
+      document.querySelectorAll('.star-input,.mini-star').forEach(s => s.classList.remove('active'));
+      document.getElementById('modalBody').style.display = 'none';
+      document.getElementById('successMsg').classList.add('show');
+      await loadReviews();
+      setTimeout(closeModal, 2800);
+    } catch (e) {
+      console.error(e);
+      showToast('❌ Error saving review. Check Firestore rules.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit Review →';
+    }
+  };
+
+  // ── HELPFUL ────────────────────────────────────────────────────────────────
+  window.markHelpful = async (id) => {
+    if (!currentUser) { showToast('Sign in to mark reviews helpful'); return; }
+    const btn = document.getElementById(`helpful-${id}`);
+    if (btn.classList.contains('voted')) return;
+    btn.classList.add('voted');
+    try {
+      await updateDoc(doc(db, 'reviews', id), { helpful: increment(1) });
+      const r = allReviews.find(x => x.id === id);
+      if (r) { r.helpful = (r.helpful || 0) + 1; btn.innerHTML = `✓ Helpful (${r.helpful})`; }
+      showToast('Thanks for your feedback!');
+    } catch(e) { btn.classList.remove('voted'); }
+  };
+
+  // ── FILTER / SEARCH ────────────────────────────────────────────────────────
+  window.filterByRating = (type, el) => {
+    currentFilter = type;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderReviews();
+  };
+  window.filterReviews = () => {
+    currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+    renderReviews();
+  };
+  window.searchCompany = name => {
+    document.getElementById('searchInput').value = name;
+    currentSearch = name.toLowerCase();
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-chip').forEach((c,i) => c.classList.toggle('active', i===0));
+    renderReviews();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ── MODAL ──────────────────────────────────────────────────────────────────
+  window.openModal = () => {
+    if (!currentUser) { window.location.href = 'signin.html'; return; }
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalBody').style.display = 'block';
+    document.getElementById('successMsg').classList.remove('show');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeModal = () => {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  window.closeModalOutside = e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  };
+
+  // ── STAR RATINGS ───────────────────────────────────────────────────────────
+  window.setRating = val => {
+    ratings.overall = val;
+    document.querySelectorAll('#overallStars .star-input').forEach((s,i) => s.classList.toggle('active', i < val));
+  };
+  window.setMini = (type, val) => {
+    ratings[type] = val;
+    const map = { wlb:'wlbStars', sal:'salStars', js:'jsStars', cg:'cgStars' };
+    document.querySelectorAll(`#${map[type]} .mini-star`).forEach((s,i) => s.classList.toggle('active', i < val));
+  };
+
+  // ── HELPERS ────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function formatDate(ts) {
+    if (!ts) return 'Just now';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── SEED DATA ─────────────────────────────────────────────────────────────
+  // isSeeded: true  →  find & delete easily in Firebase Console
+  // To delete: Firestore Console → reviews collection → filter where isSeeded == true → delete
+  const SEED_REVIEWS = [
+    // ── IT GIANTS ────────────────────────────────────────────────────────────
+    { company:'Tata Consultancy Services', industry:'Technology / IT', role:'Senior Software Engineer', empType:'Full-time', rating:4, title:'Stable career with great learning, but promotions move at a glacial pace', pros:'Exceptional job security — layoffs are virtually unheard of. Massive exposure to enterprise-scale systems across banking, retail, and government. Strong global brand that opens doors worldwide. Sponsored certifications and a solid internal learning platform.', cons:'Salary hikes are consistently below market, especially after year 3. Promotions depend more on tenure than merit. Bench periods feel stagnant. Decision-making is painfully slow due to thick hierarchy.', city:'Pune', helpful:47, wlb:3, sal:3, js:5, cg:3, createdAt:new Date('2025-02-10') },
+    { company:'Tata Consultancy Services', industry:'Technology / IT', role:'Business Analyst', empType:'Full-time', rating:3, title:'Great first job, but plan your exit after 3 years', pros:'Excellent structured onboarding for freshers. Predictable work with well-documented processes. Decent leave policy, PF, and medical coverage.', cons:'Tech stack is often a decade behind — COBOL and mainframe still alive. Growth is purely seniority-based. WFO policy is rigid with zero flexibility.', city:'Chennai', helpful:29, wlb:4, sal:2, js:4, cg:2, createdAt:new Date('2025-01-15') },
+    { company:'Infosys', industry:'Technology / IT', role:'Systems Engineer', empType:'Full-time', rating:3, title:'Mysore training is world-class, but project experience is a lottery', pros:'The Mysore Global Education Centre induction is genuinely impressive. Good work-life balance on internal projects. Some teams get great global client exposure.', cons:'Pay is not competitive vs product companies. Variable pay frequently withheld. Manager quality varies wildly — it really is the luck of the draw. Internal transfers require months of paperwork.', city:'Bangalore', helpful:38, wlb:4, sal:2, js:4, cg:3, createdAt:new Date('2025-02-20') },
+    { company:'Wipro', industry:'Technology / IT', role:'Project Manager', empType:'Full-time', rating:3, title:'Stable and predictable — ideal if work-life balance matters most to you', pros:'Rarely work past 6pm. Decent health insurance and PF. International travel on client-facing projects. Good job security.', cons:'Salary growth is very slow. Bloated middle management resists any change. Most projects are maintenance — innovation is near zero.', city:'Hyderabad', helpful:22, wlb:5, sal:2, js:4, cg:2, createdAt:new Date('2024-11-30') },
+    { company:'HCLTech', industry:'Technology / IT', role:'Lead Engineer', empType:'Full-time', rating:3, title:'Better pay than TCS/Infosys, but culture is uneven across BUs', pros:'Compensation is noticeably better than other tier-1 IT firms. Good R&D investment in labs and innovation centers. Decent internal mobility between business units.', cons:'Culture varies drastically — some BUs are great, others feel toxic. Work pressure on infrastructure projects can be very high. Brand perception is weaker than TCS or Infosys for global mobility.', city:'Noida', helpful:31, wlb:3, sal:3, js:4, cg:3, createdAt:new Date('2025-01-18') },
+    { company:'Accenture India', industry:'Consulting', role:'Technology Analyst', empType:'Full-time', rating:3, title:'Good consulting foundation, but it can feel like a body-shopping factory', pros:'Huge variety across industries — banking one year, pharma the next. Frequent international travel. Strong and genuinely helpful alumni network.', cons:'Work feels like mass-production consulting with little innovation. Bench time can stretch to months. Pay is far below product companies for equivalent skills.', city:'Mumbai', helpful:27, wlb:3, sal:2, js:3, cg:3, createdAt:new Date('2025-01-08') },
+
+    // ── PRODUCT / FAANG-IN-INDIA ──────────────────────────────────────────────
+    { company:'Google India', industry:'Technology / IT', role:'Staff Software Engineer', empType:'Full-time', rating:5, title:'The gold standard for tech companies — exceptional in nearly every dimension', pros:'World-class peers who are thought leaders in their domains. Incredible perks — gourmet meals, gym, health insurance, generous parental leave. Strong internal mobility across Search, Cloud, and Maps. Compensation is market-leading at senior levels. Genuine freedom to work on problems that excite you.', cons:'Hiring process is exhaustive and can stretch months. Internal bureaucracy intensifies with seniority. Hyderabad office energy does not match Mountain View. Impact can feel diffuse given the size of the org.', city:'Hyderabad', helpful:89, wlb:4, sal:5, js:5, cg:5, createdAt:new Date('2025-02-01') },
+    { company:'Microsoft India', industry:'Technology / IT', role:'Principal Program Manager', empType:'Full-time', rating:5, title:'Satya\'s cultural transformation is real — a genuinely great place to grow', pros:'Growth mindset culture is not a slogan here — managers actively invest in your development. Exceptional work-life balance for a top-tier company. Best-in-class health benefits including mental wellness support. Mobility across Azure, Teams, Xbox, and Office is seamless.', cons:'Decision velocity is slower than startups. Matrix org can complicate cross-team work. Some legacy teams still carry old siloed habits.', city:'Hyderabad', helpful:72, wlb:5, sal:5, js:5, cg:5, createdAt:new Date('2025-02-14') },
+    { company:'Amazon India', industry:'Technology / IT', role:'SDE II', empType:'Full-time', rating:3, title:'The LP framework drives excellence but also serious burnout', pros:'Leadership Principles create a genuinely high-bar culture. Enormous scale — systems touching hundreds of millions of users. Strong brand, great resume value, and excellent internal transfer opportunities globally.', cons:'Work-life balance is a myth at L5+. PIP culture creates fear rather than growth. Compensation is below Google/Microsoft at equivalent levels. On-call burden is heavy.', city:'Bangalore', helpful:84, wlb:2, sal:3, js:3, cg:4, createdAt:new Date('2025-01-25') },
+    { company:'Adobe India', industry:'Technology / IT', role:'Senior Computer Scientist', empType:'Full-time', rating:5, title:'Best kept secret in Bangalore tech — world-class work with great balance', pros:'Genuinely interesting creative technology problems. Work-life balance is outstanding — no glorification of hustle. Extremely competitive compensation. Very respectful and collaborative culture with low politics.', cons:'Growth can feel slower than high-growth startups. Some product areas feel mature with less greenfield work. Smaller India presence than Google or Microsoft means fewer networking events.', city:'Bangalore', helpful:58, wlb:5, sal:5, js:5, cg:4, createdAt:new Date('2025-02-08') },
+    { company:'Atlassian India', industry:'Technology / IT', role:'Senior Software Engineer', empType:'Full-time', rating:5, title:'TEAM Anywhere policy is not just marketing — genuinely remote-first culture', pros:'Full remote flexibility with no forced return to office. Incredibly strong engineering culture and high ownership. Excellent compensation in USD. Inclusive and psychologically safe environment.', cons:'Async-heavy culture can feel isolating at times. Time-zone overlap with Australia requires some late-night meetings. Fewer India-specific events than companies with larger local presence.', city:'Remote', helpful:46, wlb:5, sal:5, js:5, cg:4, createdAt:new Date('2025-01-30') },
+
+    // ── FINTECH ───────────────────────────────────────────────────────────────
+    { company:'Razorpay', industry:'Fintech', role:'Product Manager', empType:'Full-time', rating:5, title:'Best startup experience — high ownership, smart people, and real impact', pros:'True ownership — you control your roadmap end to end. Smartest colleagues you will encounter in Indian fintech. Competitive comp with meaningful ESOPs. Flat hierarchy means ideas actually reach Harshil and Shashank.', cons:'Work-life balance suffers badly during quarter-ends and major launches. Processes still maturing — chaos is real. High expectations can overwhelm new joiners.', city:'Bangalore', helpful:63, wlb:3, sal:5, js:4, cg:5, createdAt:new Date('2025-01-28') },
+    { company:'PhonePe', industry:'Fintech', role:'Backend Engineer', empType:'Full-time', rating:4, title:'Processing India\'s UPI at scale — genuinely hard and rewarding problems', pros:'300M+ transactions per month means the engineering problems are legitimately interesting. Very strong backend culture. Solid compensation post-Walmart separation. Flexible WFH policy.', cons:'High pressure during product launches and RBI regulatory cycles. Fast team growth means onboarding support lags. Fewer senior ICs to learn from compared to Google or Microsoft.', city:'Bangalore', helpful:56, wlb:3, sal:4, js:4, cg:4, createdAt:new Date('2025-02-05') },
+    { company:'Groww', industry:'Fintech', role:'iOS Engineer', empType:'Full-time', rating:4, title:'Rocketship growth, strong product thinking, and a genuinely mission-driven culture', pros:'Mission to democratise investing resonates and drives real motivation. Very fast career growth as the company scales. Strong product and design culture. Competitive salaries with meaningful ESOPs.', cons:'The pace of growth creates process gaps — things break and get rebuilt constantly. WFB policy is still evolving. Some teams stretched thin due to aggressive hiring plans.', city:'Bangalore', helpful:39, wlb:3, sal:4, js:3, cg:5, createdAt:new Date('2025-02-18') },
+    { company:'CRED', industry:'Fintech', role:'Design Lead', empType:'Full-time', rating:4, title:'The design bar is the highest in Indian consumer tech — period', pros:'Design is treated as a core product discipline, not decoration. Kunal\'s product instincts are exceptional and he is deeply involved. Beautiful office, great perks, and competitive compensation. Culture of excellence is infectious.', cons:'High pressure to maintain the quality bar — not for everyone. Pivots happen fast and without much warning. India market is still proving unit economics.', city:'Bangalore', helpful:52, wlb:3, sal:4, js:3, cg:4, createdAt:new Date('2025-01-12') },
+    { company:'HDFC Bank', industry:'Finance & Banking', role:'Relationship Manager', empType:'Full-time', rating:3, title:'Prestigious brand and stability, but aggressive targets drain you', pros:'One of the most trusted brands in Indian banking — clients respond immediately. Good salary structure with performance bonuses. Strong training programs.', cons:'Sales targets are relentless and non-negotiable. Extreme pressure during month-end. Very traditional culture with near-zero WFH flexibility.', city:'Mumbai', helpful:18, wlb:2, sal:3, js:4, cg:3, createdAt:new Date('2024-12-05') },
+
+    // ── E-COMMERCE & QUICK COMMERCE ──────────────────────────────────────────
+    { company:'Flipkart', industry:'E-Commerce / Retail', role:'SDE III', empType:'Full-time', rating:4, title:'Billion-user scale problems with a strong, collaborative engineering culture', pros:'Scale is genuinely massive — supply chain, recommendations, and bidding systems are legitimately hard. Great peer group and collaborative culture. Good ESOP program.', cons:'Post-Walmart energy is different — some feel the startup ambition has faded. Promotion cycles are long. Some legacy codebases are a nightmare.', city:'Bangalore', helpful:44, wlb:3, sal:4, js:4, cg:4, createdAt:new Date('2025-01-20') },
+    { company:'Meesho', industry:'E-Commerce / Retail', role:'Product Manager', empType:'Full-time', rating:4, title:'India-first product thinking at massive scale — exciting and meaningful', pros:'Serving Bharat (Tier-2 and Tier-3 India) makes the mission feel real. Very fast-moving product culture. Strong leadership team that is accessible. Competitive comp and ESOPs.', cons:'Profitability pressure has slowed some long-term bets. Processes are still catching up with scale. Some ambiguity around role ownership in newer teams.', city:'Bangalore', helpful:37, wlb:3, sal:4, js:3, cg:4, createdAt:new Date('2025-02-03') },
+    { company:'Swiggy', industry:'E-Commerce / Retail', role:'Senior Data Scientist', empType:'Full-time', rating:4, title:'Real data at scale — demand forecasting and delivery optimisation are fascinating problems', pros:'Demand forecasting, fraud detection, delivery ETA — all genuinely hard DS problems. Talented and collaborative team. Good comp with ESOPs. Freedom to experiment.', cons:'Constant pivots mean projects get shelved before shipping. IPO prep pressure affected culture. Office location is inconvenient for most of the team.', city:'Bangalore', helpful:35, wlb:3, sal:4, js:3, cg:4, createdAt:new Date('2025-01-05') },
+    { company:'Zomato', industry:'E-Commerce / Retail', role:'Growth Marketing Manager', empType:'Full-time', rating:4, title:'Most creative marketing culture in India — fast, bold, and genuinely fun', pros:'Campaigns go from idea to live in days. Deepinder and leadership are accessible and encourage bold bets. Great cafeteria, office perks, and a fun culture.', cons:'Burnout is real during major campaigns. Pay is slightly below market for mid-senior roles. Blinkit acquisition changed culture significantly.', city:'Gurgaon', helpful:33, wlb:3, sal:3, js:3, cg:4, createdAt:new Date('2024-12-28') },
+    { company:'Zepto', industry:'E-Commerce / Retail', role:'Operations Manager', empType:'Full-time', rating:2, title:'Exciting brand, brutal hours, and management that runs on adrenaline not strategy', pros:'Unmatched exposure to high-velocity q-commerce operations. Competitive compensation. CV-worthy brand for your next role.', cons:'Weekends are not real — expect calls at 11pm Sunday. High attrition means constant firefighting. Investor pressure leads to knee-jerk decisions. No room to push back.', city:'Mumbai', helpful:51, wlb:1, sal:4, js:2, cg:3, createdAt:new Date('2024-11-12') },
+    { company:'BigBasket', industry:'E-Commerce / Retail', role:'Supply Chain Manager', empType:'Full-time', rating:3, title:'Solid grocer-tech but growth has plateaued post-Tata acquisition', pros:'Good operational depth in grocery supply chain. Job security improved post Tata acquisition. Decent pay and benefits.', cons:'Startup energy is largely gone post-acquisition. Bureaucracy has increased. Innovation has slowed — most work is optimisation, not new products.', city:'Bangalore', helpful:21, wlb:3, sal:3, js:4, cg:2, createdAt:new Date('2024-12-15') },
+
+    // ── EDTECH ────────────────────────────────────────────────────────────────
+    { company:'BYJU\'S', industry:'Education', role:'Content Developer', empType:'Full-time', rating:1, title:'Worst professional experience of my career — avoid at all costs', pros:'The initial onboarding presentation is impressive and the mission sounds great on paper. Some smart content colleagues.', cons:'Salary delays of 2–3 months became routine. Leadership in complete denial about business problems. High-pressure aggressive sales culture bleeds into every function. Severance promises not honoured during layoffs.', city:'Bangalore', helpful:97, wlb:1, sal:1, js:1, cg:1, createdAt:new Date('2024-10-01') },
+    { company:'Unacademy', industry:'Education', role:'Engineering Manager', empType:'Full-time', rating:2, title:'Great mission, poor execution, and a culture of fear at management level', pros:'Edtech mission is genuinely motivating. Some excellent engineers in the org. Good initial compensation package.', cons:'Massive layoffs with very little transparency. Management communicates through press leaks rather than town halls. Projects pivot every few months. Promises made during hiring rarely materialised.', city:'Bangalore', helpful:64, wlb:2, sal:2, js:1, cg:2, createdAt:new Date('2024-11-05') },
+    { company:'upGrad', industry:'Education', role:'Senior Product Manager', empType:'Full-time', rating:3, title:'Working model in edtech with real career outcomes, but intense sales pressure', pros:'Actually delivering outcomes for learners — NPS is improving. Good B2B enterprise business gaining traction. Decent comp for senior PMs.', cons:'Consumer sales culture is extremely aggressive. Refund disputes with learners create ethical discomfort. Middle management layer is thick and slows decisions.', city:'Mumbai', helpful:29, wlb:3, sal:3, js:3, cg:3, createdAt:new Date('2025-01-22') },
+
+    // ── OLA / MOBILITY / SaaS ─────────────────────────────────────────────────
+    { company:'Ola', industry:'Technology / IT', role:'Android Developer', empType:'Full-time', rating:2, title:'Constant restructuring makes it impossible to build anything that ships', pros:'Interesting mobile engineering problems around maps and real-time tracking. Decent initial comp. Diverse product exposure.', cons:'Frequent layoffs and restructuring destroy continuity. Projects are abandoned mid-way. Leadership decisions arrive via newspaper headlines. ESOPs have diluted to near-worthlessness.', city:'Bangalore', helpful:60, wlb:2, sal:3, js:1, cg:2, createdAt:new Date('2024-10-22') },
+    { company:'Freshworks', industry:'SaaS', role:'Senior Software Engineer', empType:'Full-time', rating:4, title:'Proof that world-class SaaS can be built from Chennai — great engineering culture', pros:'Chennai-headquartered product company with a global customer base. Engineering quality bar is high. Good work-life balance with flexible WFH. Strong sense of mission and pride in being a homegrown success.', cons:'Comp is below Bay Area SaaS norms. Post-IPO growth pressure has increased stress. Some bureaucracy has crept in as the company scaled past 5000 people.', city:'Chennai', helpful:48, wlb:4, sal:3, js:4, cg:4, createdAt:new Date('2025-01-16') },
+    { company:'Zoho', industry:'SaaS', role:'Software Engineer', empType:'Full-time', rating:4, title:'Sustainable, profitable, and values-driven — a rare Indian tech company that respects people', pros:'Zoho is genuinely profitable and not beholden to VC pressure — decisions are made for the long term. Culture respects work-life balance. Interesting technical problems across 50+ products. Unique Zoho Schools program for talent development.', cons:'Salary is below market for experienced engineers — company culture deliberately avoids competing on salary. Rural campus locations are inconvenient for some. Less brand glamour than FAANG or unicorns.', city:'Chennai', helpful:55, wlb:5, sal:2, js:5, cg:3, createdAt:new Date('2025-02-12') },
+    { company:'Paytm', industry:'Fintech', role:'Data Engineer', empType:'Full-time', rating:2, title:'RBI action created panic — leadership vanished when employees needed clarity most', pros:'Massive transaction data scale makes for interesting data engineering problems. Pan-India brand recognition. Competitive initial salary offers.', cons:'RBI regulatory action in early 2024 created months of total uncertainty. Senior leadership went silent. Frequent team reshuffles. Job security is the worst in Indian fintech right now.', city:'Noida', helpful:76, wlb:2, sal:3, js:1, cg:2, createdAt:new Date('2024-09-18') },
+    { company:'InMobi', industry:'Technology / IT', role:'Machine Learning Engineer', empType:'Full-time', rating:4, title:'Underrated adtech gem with world-class ML problems and low politics', pros:'Advertising ML at scale — billions of bid requests daily. Very smart peers with low ego. Good work-life balance. Generous ESOP program from one of India\'s original unicorns.', cons:'Brand is not well known for recruiting — hard to explain to family what InMobi does. Adtech is a mature industry with capped growth ceiling. Fewer benefits than Google or Microsoft.', city:'Bangalore', helpful:34, wlb:4, sal:4, js:4, cg:4, createdAt:new Date('2025-01-10') },
+    { company:'Nykaa', industry:'E-Commerce / Retail', role:'Frontend Engineer', empType:'Full-time', rating:3, title:'Consumer-first culture is genuinely strong, but tech is not a priority yet', pros:'Strong product and brand culture led from the top. Good exposure to full e-commerce stack. Collaborative and diverse team. Office culture is very positive.', cons:'Engineering is not yet treated as a strategic differentiator — most investment goes to marketing and supply chain. Tech debt is high. Compensation is below peers in B2C e-commerce.', city:'Mumbai', helpful:26, wlb:3, sal:3, js:3, cg:3, createdAt:new Date('2024-12-20') },
+  ];
+
+  async function seedIfEmpty() {
+    try {
+      const snap = await getDocs(collection(db, 'reviews'));
+      if (!snap.empty) return; // already has data — never seeds twice
+      console.log('[WorkVoice] Seeding Firestore with', SEED_REVIEWS.length, 'sample reviews...');
+      for (const r of SEED_REVIEWS) {
+        const { createdAt, ...rest } = r;
+        await addDoc(collection(db, 'reviews'), {
+          ...rest,
+          reviewerName: 'Anonymous',
+          reviewerUID: 'seed',
+          isSeeded: true,   // ← use this flag in Firebase Console to find & delete all sample data
+          createdAt: Timestamp.fromDate(createdAt)
+        });
+      }
+      console.log('[WorkVoice] Seeding complete.');
+    } catch(e) {
+      console.warn('[WorkVoice] Seeding skipped:', e.message);
+    }
+  }
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+  // Show seed data instantly while Firestore loads (great perceived performance)
+  allReviews = SEED_REVIEWS.map((r, i) => ({
+    ...r,
+    id: 'local_' + i,
+    reviewerName: 'Anonymous',
+    isSeeded: true
+  })).sort((a, b) => b.createdAt - a.createdAt);
+  renderReviews();
+  renderTopCompanies();
+  renderBreakdown();
+  updateStats();
+
+  // Then replace with real Firestore data (including any user-written reviews)
+  await seedIfEmpty();
+  loadReviews();
+</script>
+</body>
+</html>
