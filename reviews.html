@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WorkVoice — Company Reviews</title>
+<link rel="stylesheet" href="assets/css/shared.css">
+<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -419,6 +421,18 @@
 </style>
 </head>
 <body>
+
+<!-- Navbar -->
+<div id="navbar"></div>
+<script>
+fetch("navbar.html").then(r=>r.text()).then(html=>{
+  document.getElementById("navbar").innerHTML=html;
+  const s=document.createElement("script");
+  s.type="module";
+  s.src="/booterspace/public/js/navbar.js";
+  document.body.appendChild(s);
+});
+</script>
 
 <!-- HERO -->
 <section class="hero">
