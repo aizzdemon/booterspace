@@ -1,7 +1,19 @@
+function getEnvVar(...keys) {
+  const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+  const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+
+  for (const key of keys) {
+    if (runtimeEnv[key]) return runtimeEnv[key];
+    if (processEnv[key]) return processEnv[key];
+  }
+
+  return "";
+}
+
 firebase.initializeApp({
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan"
+  apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID")
 });
 
 const auth = firebase.auth();
