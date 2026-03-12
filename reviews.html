@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WorkVoice — Company Reviews</title>
+<title>Company Reviews</title>
 <link rel="stylesheet" href="assets/css/shared.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -126,7 +126,7 @@
     letter-spacing: 0.02em;
   }
   .btn-hero-write:hover { background: #f0f4ff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
-  .btn-hero-signin {
+  .btn-hero-login {
     display: block; width: 100%;
     padding: 0.85rem;
     background: #fff;
@@ -141,7 +141,7 @@
     letter-spacing: 0.02em;
     margin-bottom: 0.6rem;
   }
-  .btn-hero-signin:hover { background: #f0f4ff; transform: translateY(-1px); }
+  .btn-hero-login:hover { background: #f0f4ff; transform: translateY(-1px); }
   .btn-hero-signup {
     display: block; width: 100%;
     padding: 0.75rem;
@@ -750,7 +750,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
     const avatar = document.getElementById('userAvatar');
     const nameEl = document.getElementById('userName');
     const signoutBtn = document.getElementById('btnSignout');
-    const signinBtn = document.getElementById('btnSigninHeader');
+    const loginBtn = document.getElementById('btnSigninHeader');
     if (user) {
       const name = user.displayName || user.email.split('@')[0];
       avatar.textContent = name[0].toUpperCase();
@@ -785,7 +785,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
           <div class="hero-cta-icon">✍️</div>
           <h3>Share Your Experience</h3>
           <p>Sign in to write a review and help the community make better career decisions.</p>
-          <a href="signin.html" class="btn-hero-signin">Sign In to Write a Review</a>
+          <a href="login.html" class="btn-hero-signin">Login In to Write a Review</a>
           <a href="signup.html" class="btn-hero-signup">Create Free Account</a>
         </div>`;
     }
@@ -959,7 +959,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   // ── SUBMIT REVIEW ──────────────────────────────────────────────────────────
   window.submitReview = async () => {
     if (!currentUser) {
-      window.location.href = 'signin.html';
+      window.location.href = 'login.html';
       return;
     }
     const company = document.getElementById('companyName').value.trim();
@@ -1069,7 +1069,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 
   // ── MODAL ──────────────────────────────────────────────────────────────────
   window.openModal = () => {
-    if (!currentUser) { window.location.href = 'signin.html'; return; }
+    if (!currentUser) { window.location.href = 'login.html'; return; }
     const wrap = document.getElementById('reviewPanelWrap');
     const isOpen = wrap.classList.contains('open');
     if (isOpen) {
