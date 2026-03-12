@@ -1,12 +1,24 @@
 importScripts("https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.5.0/firebase-messaging-compat.js");
 
+function getEnvVar(...keys) {
+  const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+  const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+
+  for (const key of keys) {
+    if (runtimeEnv[key]) return runtimeEnv[key];
+    if (processEnv[key]) return processEnv[key];
+  }
+
+  return "";
+}
+
 firebase.initializeApp({
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan",
-  messagingSenderId: "554147696994",
-  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
+  apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
+  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID")
 });
 
 const messaging = firebase.messaging();
