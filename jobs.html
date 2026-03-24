@@ -198,6 +198,25 @@ const uniqueTitles = new Set();
 
 const formatSalary = (val) => val ? val : "Salary Undisclosed";
 
+function normalizeWebsiteUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== "string") return "";
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function getWebsiteFavicon(websiteUrl) {
+  const normalized = normalizeWebsiteUrl(websiteUrl);
+  if (!normalized) return "";
+  try {
+    const url = new URL(normalized);
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`;
+  } catch {
+    return "";
+  }
+}
+
 function updateSuggestions(job) {
   // Update Location Suggestions
   if (job.location && !uniqueLocations.has(job.location)) {
@@ -217,6 +236,8 @@ function updateSuggestions(job) {
 
 function renderJobCard(job) {
   const logo = job.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company)}&background=random`;
+  const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
+  const faviconUrl = getWebsiteFavicon(websiteUrl);
   const isNew = job.timestamp && (Date.now() - job.timestamp.toMillis() < 3 * 24 * 60 * 60 * 1000);
   
   const div = document.createElement("div");
@@ -236,6 +257,12 @@ function renderJobCard(job) {
           <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
           ${job.company}
         </span>
+        ${faviconUrl ? `
+          <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit company website">
+            <img src="${faviconUrl}" alt="${job.company} website favicon" class="w-4 h-4 rounded-sm" onerror="this.style.display='none'">
+            <span>Website</span>
+          </a>
+        ` : ""}
         <span class="flex items-center gap-1.5 text-blue-600/80">
           <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
           ${job.location || 'Remote'}
