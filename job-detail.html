@@ -194,7 +194,7 @@ We built this website with Love ❤️ and hard work. In return, all we ask is y
 <!-- ================= LOGIC ================= -->
 <script type="module">
 import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { doc, getDoc, getDocs, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, collection, addDoc, query, where, limit } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const auth = window.auth;
 const db = window.db;
@@ -231,7 +231,12 @@ async function renderRecommendedJobs(){
   if(!recommendedList) return;
 
   try {
-    const jobsSnap = await getDocs(collection(db, "jobs"));
+    const recommendedQuery = query(
+      collection(db, "jobs"),
+      where("status", "==", "approved"),
+      limit(6)
+    );
+    const jobsSnap = await getDocs(recommendedQuery);
     const jobs = jobsSnap.docs
       .map((jobDoc) => ({ id: jobDoc.id, ...jobDoc.data() }))
       .filter((job) => job.id !== currentJobId)
