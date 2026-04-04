@@ -38,6 +38,7 @@
   <meta name="theme-color" content="#2563eb">
 <link rel="stylesheet" href="assets/css/shared.css">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="public/js/env-config.js"></script>
 
 <!-- 🔥 Firebase -->
 <script type="module">
@@ -74,16 +75,31 @@ window.auth = getAuth(app);
 window.db = getFirestore(app);
 
 let currentUser = null;
- // Auth listener
-onAuthStateChanged(window.auth, (user) => {
+
+function hasVerifiedSession() {
+  return Boolean(currentUser && !currentUser.isAnonymous);
+}
+
+// Auth listener
+onAuthStateChanged(window.auth, async (user) => {
   currentUser = user;
+
+  if (!user) {
+    try {
+      await signInAnonymously(window.auth);
+      return;
+    } catch (authError) {
+      console.error("Anonymous sign-in failed:", authError);
+    }
+  }
+
   loadPosts();
   loadSuggestions();
 });
 
 /* ---------- POST ---------- */
 window.postContent = async () => {
-  if (!currentUser) return alert("Login required");
+  if (!hasVerifiedSession()) return alert("Login required");
 
   const text = document.getElementById("postText").value.trim();
   if (!text) return;
@@ -107,15 +123,16 @@ async function loadPosts() {
   const wrap = document.getElementById("posts");
   wrap.innerHTML = '<div class="p-10 text-center text-gray-400">Loading feeds...</div>';
 
-  const q = query(collection(db, "communityPosts"), orderBy("timestamp", "desc"));
-  const snap = await getDocs(q);
-  wrap.innerHTML = "";
+  try {
+    const q = query(collection(db, "communityPosts"), orderBy("timestamp", "desc"));
+    const snap = await getDocs(q);
+    wrap.innerHTML = "";
 
-  if (snap.empty) {
-    wrap.innerHTML = '<div class="bg-white p-8 rounded-xl text-center border">No posts yet. Be the first to share!</div>';
-  }
+    if (snap.empty) {
+      wrap.innerHTML = '<div class="bg-white p-8 rounded-xl text-center border">No posts yet. Be the first to share!</div>';
+    }
 
-  for (const d of snap.docs) {
+    for (const d of snap.docs) {
     const p = d.data();
     const avatar = p.userPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.userName)}&background=random`;
 
@@ -172,6 +189,10 @@ async function loadPosts() {
     `;
     wrap.appendChild(postEl);
     loadComments(d.id);
+    }
+  } catch (error) {
+    console.error("Unable to load posts:", error);
+    wrap.innerHTML = '<div class="bg-white p-8 rounded-xl text-center border text-red-500">Unable to load feed right now. Please refresh in a moment.</div>';
   }
 }
 
@@ -204,7 +225,7 @@ async function loadSuggestions() {
     const list = document.getElementById("suggestionList");
     const mobileList = document.getElementById("suggestionListMobile");
 
-    if (!currentUser) {
+    if (!hasVerifiedSession()) {
         if (list) list.innerHTML = '<p class="text-[10px] text-gray-400 italic">Login to see suggestions.</p>';
         if (mobileList) mobileList.innerHTML = '<p class="text-[10px] text-gray-400 italic">Login to see suggestions.</p>';
         return;
@@ -234,7 +255,7 @@ async function loadSuggestions() {
 
 /* ---------- CONNECT ACTION ---------- */
 window.connectUser = async (targetUid) => {
-    if (!currentUser) return alert("Login required");
+    if (!hasVerifiedSession()) return alert("Login required");
     const btn = document.getElementById(`btn-${targetUid}`);
     btn.disabled = true;
     btn.innerHTML = "⏳";
@@ -258,7 +279,7 @@ window.connectUser = async (targetUid) => {
 
 /* ---------- REACT ---------- */
 window.react = async (postId, type) => {
-  if (!currentUser) return alert("Login required");
+  if (!hasVerifiedSession()) return alert("Login required");
 
   const ref = doc(db, "communityPosts", postId, "reactions", currentUser.uid);
   const existing = await getDoc(ref);
@@ -276,7 +297,7 @@ window.react = async (postId, type) => {
 
 /* ---------- COMMENTS ---------- */
 window.addComment = async (postId) => {
-  if (!currentUser) return;
+  if (!hasVerifiedSession()) return alert("Login required");
 
   const input = document.getElementById(`c-${postId}`);
   const text = input.value.trim();
@@ -325,7 +346,7 @@ window.openProfile = (uid) => {
 
 
     <link rel="stylesheet" href="css/style.css">
-<link rel="icon" href="/favicon.ico" type="image/x-icon"><script src="public/js/env-config.js"></script>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
 </head>
 
 <body class="bg-slate-50 font-sans text-slate-900 pb-20 page-community">
