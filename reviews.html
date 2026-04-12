@@ -376,6 +376,16 @@
     font-size: 1.1rem; font-weight: 800; color: white;
     box-shadow: 0 3px 10px rgba(0,0,0,0.15);
   }
+  .company-favicon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  }
   .company-group-name { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
   .company-group-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
   .company-group-right { display: flex; align-items: center; gap: 0.75rem; }
@@ -655,6 +665,10 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
         <label>City / Location</label>
         <input type="text" id="reviewerCity" placeholder="e.g. Bangalore">
       </div>
+      <div class="form-group">
+        <label>Company Website Link</label>
+        <input type="text" id="companyWebsite" placeholder="https://example.com">
+      </div>
       <button class="btn-submit" id="submitBtn" onclick="submitReview()">Submit Review →</button>
       <p class="privacy-note">🔒 Your review is anonymous and public.</p>
     </div>
@@ -824,6 +838,33 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   function getRatingClass(r) {
     return r >= 4 ? 'good' : r >= 3 ? 'okay' : 'bad';
   }
+  function normalizeWebsiteUrl(rawUrl) {
+    if (!rawUrl) return '';
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return '';
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      const parsed = new URL(withProtocol);
+      return parsed.href;
+    } catch {
+      return '';
+    }
+  }
+  function getWebsiteOrigin(url) {
+    try {
+      return new URL(url).origin;
+    } catch {
+      return '';
+    }
+  }
+  function getCompanyFaviconMarkup(company, website) {
+    const normalizedWebsite = normalizeWebsiteUrl(website);
+    if (!normalizedWebsite) {
+      return `<div class="company-group-logo" style="background:${getLogoColor(company)}">${getInitials(company)}</div>`;
+    }
+    const faviconUrl = `${getWebsiteOrigin(normalizedWebsite)}/favicon.ico`;
+    return `<img class="company-favicon" src="${escHtml(faviconUrl)}" alt="${escHtml(company)} favicon" onerror="this.onerror=null;this.outerHTML='<div class=&quot;company-group-logo&quot; style=&quot;background:${getLogoColor(company)}&quot;>${getInitials(company)}</div>'">`;
+  }
 
   function getFilteredReviews() {
     return allReviews.filter(r => {
@@ -853,8 +894,9 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
     const groups = {};
     filtered.forEach(r => {
       const key = (r.company || 'Unknown').trim();
-      if (!groups[key]) groups[key] = { reviews: [], industry: r.industry || '' };
+      if (!groups[key]) groups[key] = { reviews: [], industry: r.industry || '', website: r.website || '' };
       groups[key].reviews.push(r);
+      if (!groups[key].website && r.website) groups[key].website = r.website;
     });
 
     // Sort groups by latest review date
@@ -894,7 +936,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
         <div class="company-group" style="animation-delay:${gIdx*0.06}s">
           <div class="company-group-header" onclick="toggleCompanyGroup(this)">
             <div class="company-group-left">
-              <div class="company-group-logo" style="background:${getLogoColor(company)}">${getInitials(company)}</div>
+              ${getCompanyFaviconMarkup(company, group.website)}
               <div>
                 <div class="company-group-name">${escHtml(company)}</div>
                 <div class="company-group-meta">${escHtml(group.industry)}${group.industry ? ' · ' : ''}${reviews.length} review${reviews.length !== 1 ? 's' : ''}</div>
@@ -963,9 +1005,15 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
       return;
     }
     const company = document.getElementById('companyName').value.trim();
+    const website = normalizeWebsiteUrl(document.getElementById('companyWebsite').value);
     const role = document.getElementById('roleTitle').value.trim();
     const title = document.getElementById('reviewTitle').value.trim();
     const pros = document.getElementById('prosText').value.trim();
+    const websiteValue = document.getElementById('companyWebsite').value.trim();
+    if (websiteValue && !website) {
+      showToast('⚠️ Please enter a valid company website link');
+      return;
+    }
     if (!company || !role || !title || !pros || ratings.overall === 0) {
       showToast('⚠️ Please fill required fields and set a rating');
       return;
@@ -976,6 +1024,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
     try {
       await addDoc(collection(db, 'reviews'), {
         company,
+        website,
         industry: document.getElementById('industry').value || 'Other',
         role,
         empType: document.getElementById('empType').value,
@@ -994,7 +1043,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
         createdAt: serverTimestamp()
       });
       // Reset
-      ['companyName','roleTitle','reviewTitle','prosText','consText','reviewerCity'].forEach(id => document.getElementById(id).value = '');
+      ['companyName','companyWebsite','roleTitle','reviewTitle','prosText','consText','reviewerCity'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('reviewTitleSelect').value = '';
       document.getElementById('roleTitleSelect').value = '';
       Object.keys(ratings).forEach(k => ratings[k] = 0);
