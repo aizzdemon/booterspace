@@ -187,6 +187,7 @@ const searchInput = document.getElementById("searchInput");
 const locationInput = document.getElementById("locationInput");
 const dateFilter = document.getElementById("dateFilter");
 const mainSearchBtn = document.getElementById("mainSearchBtn");
+const suggestionContainers = [];
 
 let lastDoc = null; 
 let jobsRealtimeUnsubscribe = null;
@@ -234,11 +235,72 @@ function updateSuggestions(job) {
   }
 }
 
+function closeSuggestionDropdowns() {
+  suggestionContainers.forEach((dropdown) => dropdown.classList.add("hidden"));
+}
+
+function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
+  const parent = inputEl.parentElement;
+  const dropdown = document.createElement("div");
+  dropdown.className = "hidden absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-60 overflow-auto";
+  parent.appendChild(dropdown);
+  suggestionContainers.push(dropdown);
+
+  function renderSuggestions() {
+    const queryText = inputEl.value.trim().toLowerCase();
+    if (!queryText) {
+      dropdown.classList.add("hidden");
+      dropdown.innerHTML = "";
+      return;
+    }
+
+    const matches = [...optionsSet]
+      .filter((value) => value.toLowerCase().includes(queryText))
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 8);
+
+    if (!matches.length) {
+      dropdown.classList.add("hidden");
+      dropdown.innerHTML = "";
+      return;
+    }
+
+    dropdown.innerHTML = matches.map((match) => (
+      `<button type="button" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" data-suggestion="${match.replace(/"/g, "&quot;")}">${match}</button>`
+    )).join("");
+    dropdown.classList.remove("hidden");
+  }
+
+  inputEl.addEventListener("focus", renderSuggestions);
+  inputEl.addEventListener("input", renderSuggestions);
+
+  dropdown.addEventListener("mousedown", (event) => {
+    event.preventDefault();
+    const selected = event.target.closest("[data-suggestion]");
+    if (!selected) return;
+    const value = selected.dataset.suggestion || "";
+    inputEl.value = value;
+    dropdown.classList.add("hidden");
+    onSelect();
+  });
+
+  return { renderSuggestions };
+}
+
+const titleSuggestionDropdown = createSuggestionDropdown(searchInput, uniqueTitles, applyFilters);
+const locationSuggestionDropdown = createSuggestionDropdown(locationInput, uniqueLocations, applyFilters);
+
 function renderJobCard(job) {
   const logo = job.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company)}&background=random`;
   const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
   const faviconUrl = getWebsiteFavicon(websiteUrl);
   const isNew = job.timestamp && (Date.now() - job.timestamp.toMillis() < 3 * 24 * 60 * 60 * 1000);
+  const initials = (job.company || "CO")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "CO";
   
   const div = document.createElement("div");
   div.className = "group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start sm:items-center";
@@ -250,6 +312,7 @@ function renderJobCard(job) {
     </div>
     <div class="flex-grow">
       <div class="flex flex-wrap items-center gap-2 mb-1">
+        <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1.5 text-[11px] font-bold tracking-wide text-slate-600 sm:hidden">${initials}</span>
         <h3 class="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">${job.title}</h3>
       </div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 font-medium">
@@ -319,8 +382,10 @@ function applyFilters() {
     let matchDate = true;
     if (dateVal !== "all") {
       const hours = parseInt(dateVal) * 24;
-      const diff = (Date.now() - job.timestamp?.toMillis()) / (1000 * 60 * 60);
-      matchDate = diff <= hours;
+      if (job.timestamp?.toMillis) {
+        const diff = (Date.now() - job.timestamp.toMillis()) / (1000 * 60 * 60);
+        matchDate = diff <= hours;
+      }
     }
 
     return matchKeyword && matchLocation && matchDate;
@@ -366,6 +431,8 @@ function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
 
   loadedJobs = isLoadMore ? [...loadedJobs, ...newJobs] : newJobs;
   lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+  titleSuggestionDropdown.renderSuggestions();
+  locationSuggestionDropdown.renderSuggestions();
 
   applyFilters();
 
@@ -430,6 +497,10 @@ mainSearchBtn.addEventListener("click", applyFilters);
 searchInput.addEventListener("input", applyFilters);
 locationInput.addEventListener("input", applyFilters);
 dateFilter.addEventListener("change", applyFilters);
+document.addEventListener("click", (event) => {
+  if (event.target.closest("#searchInput, #locationInput, [data-suggestion]")) return;
+  closeSuggestionDropdowns();
+});
 jobsList.addEventListener("click", (event) => {
   const copyButton = event.target.closest("[data-copy-emoji]");
   if (!copyButton) return;
