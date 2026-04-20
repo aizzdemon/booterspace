@@ -279,6 +279,76 @@ background-color:#E5E7EB; color:#6B7280; cursor:pointer;
 body.page-index .tab-inactive:hover {
 background-color: #D1D5DB;
 }
+body.page-index .index-hero {
+background: radial-gradient(circle at top, #dbeafe 0%, #eff6ff 35%, #f8fafc 70%);
+}
+body.page-index .hero-btn-primary,
+body.page-index .hero-btn-secondary {
+display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border-radius: 0.85rem;
+            padding: 0.7rem 1.1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.page-index .hero-btn-primary {
+background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 12px 28px -20px #1d4ed8;
+}
+body.page-index .hero-btn-secondary {
+background: #fff;
+            color: #1e3a8a;
+            border: 1px solid #bfdbfe;
+}
+body.page-index .hero-btn-primary:hover,
+body.page-index .hero-btn-secondary:hover {
+transform: translateY(-1px);
+}
+body.page-index .engagement-chip {
+background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-weight: 600;
+}
+body.page-index .highlight-card {
+background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.9rem;
+            padding: 0.9rem;
+            box-shadow: 0 14px 24px -22px rgba(15, 23, 42, 0.6);
+}
+body.page-index .highlight-title {
+font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            font-weight: 700;
+}
+body.page-index .highlight-value {
+font-size: 0.95rem;
+            margin-top: 0.3rem;
+            color: #0f172a;
+            font-weight: 600;
+}
+body.page-index .mobile-join-cta {
+position: sticky;
+            bottom: 0.8rem;
+            z-index: 35;
+            padding: 0 1rem;
+}
+body.page-index .mobile-join-link {
+display: block;
+            text-align: center;
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #fff;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 0.8rem 1rem;
+            box-shadow: 0 18px 30px -25px rgba(22, 163, 74, 1);
+}
 
 @media (max-width: 768px) {
 body.page-index .tab-button {
