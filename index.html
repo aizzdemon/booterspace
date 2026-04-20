@@ -68,14 +68,27 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 </script>
 
 <!-- Header -->
-<header class="bg-white border-b border-gray-200 py-10">
+<header class="index-hero border-b border-blue-100 py-12 sm:py-14">
   <div class="max-w-7xl mx-auto px-4 text-center">
-    <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+    <p class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1 text-xs font-semibold text-blue-700 shadow-sm">
+      <span>✨</span>
+      New: Faster discovery for jobs, community, and connections
+    </p>
+    <h1 class="mt-4 text-3xl font-black tracking-tight text-gray-900 sm:text-5xl">
       Booter<span class="text-blue-600">Space</span>
     </h1>
-    <p class="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-      Explore your career opportunities and community posts
+    <p class="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto">
+      Discover your next job, build meaningful connections, and stay career-ready with one modern workspace.
     </p>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <a href="signup.html" class="hero-btn-primary">Join Free</a>
+      <a href="jobs.html" class="hero-btn-secondary">Browse Jobs</a>
+    </div>
+    <div class="mt-6 flex flex-wrap justify-center gap-2 text-xs sm:text-sm text-slate-600">
+      <span class="engagement-chip">🚀 Career Growth</span>
+      <span class="engagement-chip">🤝 Real Community</span>
+      <span class="engagement-chip">📢 Daily Opportunities</span>
+    </div>
   </div>
 </header>
 
@@ -86,6 +99,28 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   <div id="btn-updates" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('updates')">Updates</div>
   <div id="btn-community" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('community')">Community</div>
 </div>
+
+<!-- Quick Highlights -->
+<section class="max-w-7xl mx-auto px-4 mt-3">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <article class="highlight-card">
+      <p class="highlight-title">Verified Listings</p>
+      <p class="highlight-value">Fresh approved job updates</p>
+    </article>
+    <article class="highlight-card">
+      <p class="highlight-title">Govt Alerts</p>
+      <p class="highlight-value">Track opportunities quickly</p>
+    </article>
+    <article class="highlight-card">
+      <p class="highlight-title">Community Posts</p>
+      <p class="highlight-value">Learn from peers and mentors</p>
+    </article>
+    <article class="highlight-card">
+      <p class="highlight-title">One Dashboard</p>
+      <p class="highlight-value">Everything in one feed</p>
+    </article>
+  </div>
+</section>
 
 <!-- Tab Panels -->
 <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6">
@@ -137,6 +172,11 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   </div>
 
 </main>
+
+<!-- Mobile engagement CTA -->
+<div class="mobile-join-cta sm:hidden">
+  <a href="signup.html" class="mobile-join-link">Create your free profile</a>
+</div>
 
 <!-- Footer -->
 <footer class="mt-12 py-8 text-center">
