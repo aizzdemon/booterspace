@@ -85,20 +85,27 @@ const firebaseConfig = {
     };
   }
 
+  function normalizeProfileName(value) {
+    const name = (value || "").toString().trim();
+    if (!name) return "";
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(name)) return "";
+    return name;
+  }
+
   function resolveProfileName(user, profileData) {
-    return profileData?.fullName || user.displayName || user.email || "User";
+    return (
+      normalizeProfileName(profileData?.fullName) ||
+      normalizeProfileName(profileData?.name) ||
+      normalizeProfileName(profileData?.username) ||
+      normalizeProfileName(user.displayName) ||
+      "User"
+    );
   }
 
   function resolveProfilePhoto(user, profileData) {
+    if (user.photoURL) return user.photoURL;
     if (profileData?.photoURL) return profileData.photoURL;
     if (profileData?.avatar) return profileData.avatar;
-    if (user.photoURL) return user.photoURL;
-
-    const email = (user.email || "").trim().toLowerCase();
-    if (email.endsWith("@gmail.com")) {
-      return `https://profiles.google.com/s2/photos/profile/${encodeURIComponent(email)}?sz=256`;
-    }
-
     return `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
   }
 
@@ -156,10 +163,24 @@ const firebaseConfig = {
     const displayName = resolveProfileName(user, profileData);
     const avatar = resolveProfilePhoto(user, profileData);
 
+    const fallbackAvatar = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+
     if (profileName) profileName.textContent = displayName;
-    if (profilePic) profilePic.src = avatar;
+    if (profilePic) {
+      profilePic.src = avatar;
+      profilePic.onerror = () => {
+        profilePic.onerror = null;
+        profilePic.src = fallbackAvatar;
+      };
+    }
     if (mProfileName) mProfileName.textContent = displayName;
-    if (mProfilePic) mProfilePic.src = avatar;
+    if (mProfilePic) {
+      mProfilePic.src = avatar;
+      mProfilePic.onerror = () => {
+        mProfilePic.onerror = null;
+        mProfilePic.src = fallbackAvatar;
+      };
+    }
   }
 
   function resolveNotificationLabel(type = "", text = "") {
