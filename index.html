@@ -81,9 +81,8 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
       Discover your next job, build meaningful connections, and stay career-ready with one modern workspace.
     </p>
     <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-      <a href="signup.html" class="hero-btn-primary">Join Free</a>
-      <a href="jobs.html" class="hero-btn-secondary">Browse Jobs</a>
-    </div>
+      <a href="jobs.html" class="hero-btn-primary">Browse Jobs</a>
+      </div>
     <div class="mt-6 flex flex-wrap justify-center gap-2 text-xs sm:text-sm text-slate-600">
       <span class="engagement-chip">🚀 Career Growth</span>
       <span class="engagement-chip">🤝 Real Community</span>
@@ -93,7 +92,7 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
 </header>
 
 <!-- Tabs -->
-<div class="max-w-7xl mx-auto mt-6 px-4 flex gap-3 justify-center overflow-x-auto py-2">
+<div class="index-tab-strip max-w-7xl mx-auto mt-4 sm:mt-6 px-4 flex gap-2 sm:gap-3 justify-start sm:justify-center overflow-x-auto py-2">
   <div id="btn-featured" class="tab-button tab-active whitespace-nowrap" onclick="switchTab('featured')">Featured Jobs</div>
   <div id="btn-govt" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('govt')">Govt. Jobs</div>
   <div id="btn-updates" class="tab-button tab-inactive whitespace-nowrap" onclick="switchTab('updates')">Updates</div>
@@ -172,11 +171,6 @@ fetch("navbar.html").then(r=>r.text()).then(html=>{
   </div>
 
 </main>
-
-<!-- Mobile engagement CTA -->
-<div class="mobile-join-cta sm:hidden">
-  <a href="signup.html" class="mobile-join-link">Create your free profile</a>
-</div>
 
 <!-- Footer -->
 <footer class="mt-12 py-8 text-center">

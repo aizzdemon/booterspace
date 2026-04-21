@@ -270,6 +270,12 @@ animation: blink 1s infinite ease-in-out;
 body.page-index .tab-button {
 padding:0.5rem 1rem; border-radius:0.5rem; font-weight: 600; transition: all 0.2s;
 }
+body.page-index .index-tab-strip {
+scrollbar-width: none;
+}
+body.page-index .index-tab-strip::-webkit-scrollbar {
+display: none;
+}
 body.page-index .tab-active {
 background-color:#3B82F6; color:white;
 }
@@ -333,24 +339,22 @@ font-size: 0.95rem;
             color: #0f172a;
             font-weight: 600;
 }
-body.page-index .mobile-join-cta {
-position: sticky;
-            bottom: 0.8rem;
-            z-index: 35;
-            padding: 0 1rem;
-}
-body.page-index .mobile-join-link {
-display: block;
-            text-align: center;
-            background: linear-gradient(135deg, #16a34a, #15803d);
-            color: #fff;
-            font-weight: 700;
-            border-radius: 999px;
-            padding: 0.8rem 1rem;
-            box-shadow: 0 18px 30px -25px rgba(22, 163, 74, 1);
-}
-
 @media (max-width: 768px) {
+body.page-index .index-hero {
+padding-top: 2.25rem;
+              padding-bottom: 1.75rem;
+}
+body.page-index .hero-btn-primary,
+body.page-index .hero-btn-secondary {
+width: 100%;
+              max-width: 19rem;
+              min-height: 46px;
+}
+body.page-index .index-tab-strip {
+padding-left: 0.75rem;
+              padding-right: 0.75rem;
+              scroll-snap-type: x mandatory;
+}
 body.page-index .tab-button {
 padding: 0.62rem 0.85rem;
               border-radius: 999px;
@@ -361,6 +365,8 @@ padding: 0.62rem 0.85rem;
               white-space: normal;
               overflow-wrap: anywhere;
               box-shadow: 0 10px 22px -20px rgba(15, 23, 42, 1);
+              flex: 0 0 auto;
+              scroll-snap-align: start;
 }
 body.page-index .tab-active {
 background: linear-gradient(135deg, #2563eb, #4f46e5);

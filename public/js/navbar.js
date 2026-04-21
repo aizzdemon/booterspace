@@ -71,6 +71,8 @@ const firebaseConfig = {
       mProfilePic: document.getElementById("mProfilePic"),
       mProfileName: document.getElementById("mProfileName"),
       mLoginBtn: document.getElementById("mLoginBtn"),
+      desktopStartBtn: document.getElementById("desktopStartBtn"),
+      mSignupBtn: document.getElementById("mSignupBtn"),
       mLogoutBtn: document.getElementById("mLogoutBtn"),
       menuBtn: document.getElementById("menuBtn"),
       mobileMenu: document.getElementById("mobileMenu"),
@@ -123,6 +125,8 @@ const firebaseConfig = {
       mProfilePic,
       mProfileName,
       mLoginBtn,
+      desktopStartBtn,
+      mSignupBtn,
       mLogoutBtn,
       notificationCount,
       mNotificationCount,
@@ -134,6 +138,8 @@ const firebaseConfig = {
     profileBtn?.classList.toggle("hidden", !isAuthed);
 
     mLoginBtn?.classList.toggle("hidden", isAuthed);
+    desktopStartBtn?.classList.toggle("hidden", isAuthed);
+    mSignupBtn?.classList.toggle("hidden", isAuthed);
     mLogoutBtn?.classList.toggle("hidden", !isAuthed);
     mProfileBtn?.classList.toggle("hidden", !isAuthed);
 
