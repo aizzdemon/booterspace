@@ -1,77 +1,251 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Messaging App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages - BooterSpace</title>
+  <link rel="stylesheet" href="assets/css/shared.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <script src="public/js/env-config.js"></script>
+
   <style>
-    body { margin:0; font-family:Arial; background:#f3f2ef; }
-    #container { display:flex; height:100vh; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f3f2ef; }
 
-    #left { width:30%; background:#fff; border-right:1px solid #ddd; overflow:auto; }
-    #right { width:70%; display:flex; flex-direction:column; }
+    .messages-layout {
+      display: flex;
+      height: calc(100vh - 80px);
+      min-height: 560px;
+    }
 
-    .chatItem { padding:15px; border-bottom:1px solid #eee; cursor:pointer; }
-    .chatItem:hover { background:#f5f5f5; }
+    .chat-list {
+      width: 32%;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
 
-    #messages { flex:1; padding:15px; overflow:auto; }
+    .chat-list-header {
+      padding: 14px;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 2;
+    }
 
-    .msg { margin:10px 0; padding:10px; border-radius:10px; max-width:60%; }
-    .sent { background:#0a66c2; color:#fff; margin-left:auto; }
-    .received { background:#e4e6eb; }
+    #userSearch {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+      outline: none;
+    }
 
-    #inputBox { display:flex; padding:10px; background:#fff; }
-    #inputBox input { flex:1; padding:10px; }
-    #inputBox button { margin-left:10px; padding:10px; background:#0a66c2; color:#fff; border:none; }
+    #userSearch:focus {
+      border-color: #0a66c2;
+      box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.15);
+    }
 
-    #authBox { width:300px; margin:100px auto; background:#fff; padding:20px; border:1px solid #ccc; }
+    #left {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .chatItem {
+      padding: 14px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+    }
+
+    .chatItem:hover,
+    .chatItem.active {
+      background: #eef5ff;
+    }
+
+    .name { font-weight: bold; }
+    .lastMsg { font-size: 12px; color: #6b7280; }
+
+    #right {
+      width: 68%;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    #chatHeader {
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+      font-weight: bold;
+      background: #fff;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+
+    .msg {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 68%;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .sent { background: #0a66c2; color: white; margin-left: auto; }
+    .received { background: #e4e6eb; }
+
+    #inputBox {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      gap: 10px;
+    }
+
+    #msgInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+
+    #inputBox button {
+      padding: 10px 16px;
+      background: #0a66c2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #authBox {
+      max-width: 360px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
+    }
+
+    #authBox input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    #authBox button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    #authStatus {
+      margin-top: 10px;
+      color: #b91c1c;
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    #emptyUsers,
+    #emptyMessages {
+      color: #6b7280;
+      font-size: 14px;
+      padding: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .messages-layout {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .chat-list,
+      #right {
+        width: 100%;
+      }
+
+      .chat-list {
+        max-height: 280px;
+      }
+    }
   </style>
 </head>
-
 <body>
 
+<div id="navbar"></div>
+<script>
+fetch("navbar.html").then(r=>r.text()).then(html=>{
+  document.getElementById("navbar").innerHTML = html;
+  const s = document.createElement("script");
+  s.type = "module";
+  s.src = "/booterspace/public/js/navbar.js";
+  document.body.appendChild(s);
+});
+</script>
+
 <div id="authBox">
-  <h3>Login / Signup</h3>
-  <input id="email" placeholder="Email"><br><br>
-  <input id="password" type="password" placeholder="Password"><br><br>
-  <button onclick="signup()">Signup</button>
-  <button onclick="login()">Login</button>
+  <h3 class="text-lg font-bold mb-3">Login / Signup</h3>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <div>
+    <button style="background:#16a34a;color:#fff" onclick="signup()">Signup</button>
+    <button style="background:#0a66c2;color:#fff" onclick="login()">Login</button>
+  </div>
+  <p id="authStatus"></p>
 </div>
 
-<div id="container" style="display:none">
+<div id="container" class="messages-layout" style="display:none">
+  <aside class="chat-list">
+    <div class="chat-list-header">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="userSearch" type="text" placeholder="Search chats..." aria-label="Search chats" style="flex:1;">
+        <button id="newChatBtn" type="button" style="padding:10px 12px;background:#0a66c2;color:#fff;border:none;border-radius:8px;font-size:13px;white-space:nowrap;">New Chat</button>
+      </div>
+    </div>
+    <div id="left"></div>
+  </aside>
 
-  <div id="left">
-    <button onclick="openNewChat()">➕ New Chat</button>
-    <div id="chatList"></div>
-  </div>
-
-  <div id="right">
-    <div id="chatHeader">Select Chat</div>
-    <div id="messages"></div>
+  <section id="right">
+    <div id="chatHeader">Select a user to chat</div>
+    <div id="messages">
+      <p id="emptyMessages">No messages yet. Select a user and send the first message.</p>
+    </div>
 
     <div id="inputBox">
-      <input id="msgInput">
+      <input id="msgInput" placeholder="Type message...">
       <button onclick="sendMessage()">Send</button>
     </div>
-  </div>
-
+  </section>
 </div>
-
-<!-- Modal -->
-<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5)">
-  <div style="background:#fff;width:300px;margin:100px auto;padding:10px">
-    <h4>Select User</h4>
-    <div id="userList"></div>
+<div id="newChatModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:50;align-items:center;justify-content:center;">
+  <div style="width:min(560px,92vw);max-height:75vh;overflow:hidden;background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.25);display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eee;">
+      <h3 style="margin:0;font-weight:700;">Start a new chat</h3>
+      <button id="closeNewChatModal" type="button" style="border:none;background:none;font-size:22px;line-height:1;cursor:pointer;">×</button>
+    </div>
+    <div id="newChatUsers" style="overflow:auto;"></div>
   </div>
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, getDocs,
-  query, where, orderBy, onSnapshot, doc, setDoc
+  getFirestore, collection, addDoc, getDocs, getDoc,
+  query, where, orderBy, onSnapshot, doc, setDoc, serverTimestamp, limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
 import {
   getAuth, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, onAuthStateChanged
@@ -89,159 +263,339 @@ const auth = getAuth(app);
 
 let CURRENT_USER = null;
 let currentChatUser = null;
-let unsubscribe = null;
+let currentChatId = null;
+let unsubscribeMessages = null;
+let unsubscribeChats = null;
+let users = [];
+let chats = [];
 
-/* AUTH */
+const left = document.getElementById("left");
+const userSearch = document.getElementById("userSearch");
+const messagesBox = document.getElementById("messages");
+const newChatBtn = document.getElementById("newChatBtn");
+const newChatModal = document.getElementById("newChatModal");
+const closeNewChatModal = document.getElementById("closeNewChatModal");
+const newChatUsers = document.getElementById("newChatUsers");
 
 window.signup = async () => {
-  const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
+  try {
+    setAuthStatus("");
+    const email = emailInput();
+    const password = passInput();
+    if (!email || !password) {
+      setAuthStatus("Email and password are required.");
+      return;
+    }
 
-  await setDoc(doc(db,"users",cred.user.uid),{
-    name: email.value,
-    email: email.value
-  });
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", userCred.user.uid), {
+      name: email,
+      email,
+      createdAt: Date.now()
+    }, { merge: true });
+  } catch (error) {
+    setAuthStatus(error?.message || "Signup failed.");
+  }
 };
 
 window.login = async () => {
-  await signInWithEmailAndPassword(auth,email.value,password.value);
-};
-
-/* CHAT ID */
-
-function chatId(u1,u2){
-  return [u1,u2].sort().join("_");
-}
-
-/* LOAD USERS */
-
-async function loadUsers(){
-  const snap = await getDocs(collection(db,"users"));
-  const box = document.getElementById("userList");
-  box.innerHTML="";
-
-  snap.forEach(d=>{
-    if(d.id!==CURRENT_USER){
-      const div=document.createElement("div");
-      div.innerText=d.data().name;
-      div.onclick=()=>createChat(d.id);
-      box.appendChild(div);
-    }
-  });
-}
-
-/* NEW CHAT */
-
-window.openNewChat=()=>{
-  document.getElementById("modal").style.display="block";
-  loadUsers();
-};
-
-async function createChat(userId){
-  const id=chatId(CURRENT_USER,userId);
-
-  await setDoc(doc(db,"chats",id),{
-    participants:[CURRENT_USER,userId],
-    lastMessage:"",
-    timestamp:Date.now()
-  },{merge:true});
-
-  openChat(userId);
-  document.getElementById("modal").style.display="none";
-}
-
-/* CHAT LIST */
-
-function listenChats(){
-  const q=query(collection(db,"chats"),
-    where("participants","array-contains",CURRENT_USER),
-    orderBy("timestamp","desc")
-  );
-
-  onSnapshot(q,snap=>{
-    const list=document.getElementById("chatList");
-    list.innerHTML="";
-
-    snap.forEach(d=>{
-      const data=d.data();
-      const other=data.participants.find(p=>p!==CURRENT_USER);
-
-      const div=document.createElement("div");
-      div.className="chatItem";
-      div.innerHTML=`<b>${other}</b><br>${data.lastMessage||""}`;
-      div.onclick=()=>openChat(other);
-
-      list.appendChild(div);
-    });
-  });
-}
-
-/* OPEN CHAT */
-
-function openChat(userId){
-  currentChatUser=userId;
-  document.getElementById("chatHeader").innerText=userId;
-
-  const id=chatId(CURRENT_USER,userId);
-
-  if(unsubscribe) unsubscribe();
-
-  const q=query(collection(db,"messages"),
-    where("chatId","==",id),
-    orderBy("time")
-  );
-
-  unsubscribe=onSnapshot(q,snap=>{
-    const box=document.getElementById("messages");
-    box.innerHTML="";
-
-    snap.forEach(d=>{
-      const m=d.data();
-      const div=document.createElement("div");
-      div.className="msg "+(m.sender===CURRENT_USER?"sent":"received");
-      div.innerText=m.text;
-      box.appendChild(div);
-    });
-
-    box.scrollTop=box.scrollHeight;
-  });
-}
-
-/* SEND */
-
-window.sendMessage=async ()=>{
-  const text=msgInput.value;
-  if(!text) return;
-
-  const id=chatId(CURRENT_USER,currentChatUser);
-
-  await addDoc(collection(db,"messages"),{
-    chatId:id,
-    sender:CURRENT_USER,
-    text,
-    participants:[CURRENT_USER,currentChatUser], // ✅ FIX
-    time:Date.now()
-  });
-
-  await setDoc(doc(db,"chats",id),{
-    participants:[CURRENT_USER,currentChatUser],
-    lastMessage:text,
-    timestamp:Date.now()
-  },{merge:true});
-
-  msgInput.value="";
-};
-
-/* INIT */
-
-onAuthStateChanged(auth,user=>{
-  if(user){
-    CURRENT_USER=user.uid;
-    authBox.style.display="none";
-    container.style.display="flex";
-    listenChats();
+  try {
+    setAuthStatus("");
+    await signInWithEmailAndPassword(auth, emailInput(), passInput());
+  } catch (error) {
+    setAuthStatus(error?.message || "Login failed.");
   }
+};
+
+function setAuthStatus(text) {
+  document.getElementById("authStatus").textContent = text;
+}
+
+function emailInput() { return document.getElementById("email").value.trim(); }
+function passInput() { return document.getElementById("password").value; }
+
+function safeNameFromUser(userDoc, fallbackId) {
+  return userDoc?.name || userDoc?.email || fallbackId || "Unknown User";
+}
+
+function getChatId(u1, u2) {
+  return [u1, u2].sort().join("_");
+}
+
+function getPartnerIdFromChat(chat) {
+  return (chat.participants || []).find((id) => id !== CURRENT_USER) || null;
+}
+
+function filterCurrentChats() {
+  const term = userSearch.value.trim().toLowerCase();
+  if (!term) return chats;
+
+  return chats.filter((chat) => {
+    const partnerId = getPartnerIdFromChat(chat);
+    const user = users.find((u) => u.id === partnerId);
+    const name = (user?.name || partnerId || "").toLowerCase();
+    const preview = (chat.lastMessage || "").toLowerCase();
+    return name.includes(term) || preview.includes(term);
+  });
+}
+
+function renderChats(list) {
+  left.innerHTML = "";
+
+  if (!list.length) {
+    left.innerHTML = '<p id="emptyUsers">No chats yet. Click <b>New Chat</b> to start.</p>';
+    return;
+  }
+
+  list.forEach((chat) => {
+    const partnerId = getPartnerIdFromChat(chat);
+    const partner = users.find((u) => u.id === partnerId);
+    const partnerName = partner?.name || partnerId || "Unknown User";
+
+    const div = document.createElement("div");
+    div.className = "chatItem" + (chat.chatId === currentChatId ? " active" : "");
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "name";
+    nameEl.textContent = partnerName;
+
+    const previewEl = document.createElement("div");
+    previewEl.className = "lastMsg";
+    previewEl.textContent = chat.lastMessage || "Start chatting...";
+
+    div.appendChild(nameEl);
+    div.appendChild(previewEl);
+    div.addEventListener("click", () => openChat(partnerId, partnerName));
+    left.appendChild(div);
+  });
+}
+
+function renderNewChatUsers() {
+  if (!CURRENT_USER) {
+    newChatUsers.innerHTML = '<p id="emptyUsers">Login required.</p>';
+    return;
+  }
+
+  const available = users.filter((u) => u.id !== CURRENT_USER);
+  if (!available.length) {
+    newChatUsers.innerHTML = '<p id="emptyUsers">No users found.</p>';
+    return;
+  }
+
+  newChatUsers.innerHTML = "";
+  available.forEach((user) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.style.cssText = "width:100%;text-align:left;border:none;background:#fff;padding:14px 16px;border-bottom:1px solid #f2f2f2;cursor:pointer;";
+
+    const rowName = document.createElement("div");
+    rowName.className = "name";
+    rowName.textContent = user.name;
+
+    const rowEmail = document.createElement("div");
+    rowEmail.className = "lastMsg";
+    rowEmail.textContent = user.email || "";
+
+    row.appendChild(rowName);
+    row.appendChild(rowEmail);
+    row.addEventListener("click", async () => {
+      await createOrOpenChat(user.id, user.name);
+      closeModal();
+    });
+    newChatUsers.appendChild(row);
+  });
+}
+
+function closeModal() {
+  newChatModal.style.display = "none";
+}
+
+async function loadUsers() {
+  if (!CURRENT_USER) return;
+  const snapshot = await getDocs(query(collection(db, "users"), limit(500)));
+  users = [];
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    users.push({
+      id: docSnap.id,
+      name: safeNameFromUser(data, docSnap.id),
+      email: data.email || ""
+    });
+  });
+
+  renderChats(filterCurrentChats());
+  renderNewChatUsers();
+}
+
+function listenToChats() {
+  if (!CURRENT_USER) return;
+
+  if (unsubscribeChats) unsubscribeChats();
+  const chatsQuery = query(
+    collection(db, "chats"),
+    where("participants", "array-contains", CURRENT_USER),
+    orderBy("timestamp", "desc")
+  );
+
+  unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
+    chats = snapshot.docs.map((docSnap) => ({
+      chatId: docSnap.id,
+      ...docSnap.data()
+    }));
+
+    renderChats(filterCurrentChats());
+
+    if (currentChatId && !chats.some((c) => c.chatId === currentChatId)) {
+      resetActiveChat();
+    }
+  }, (error) => {
+    console.error("Chat list listener failed", error);
+  });
+}
+
+function resetActiveChat() {
+  currentChatUser = null;
+  currentChatId = null;
+  document.getElementById("chatHeader").innerText = "Select a user to chat";
+  messagesBox.innerHTML = '<p id="emptyMessages">No messages yet. Select a user and send the first message.</p>';
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+}
+
+window.openChat = (userId, name) => {
+  if (!CURRENT_USER || !userId) return;
+
+  currentChatUser = userId;
+  currentChatId = getChatId(CURRENT_USER, userId);
+  document.getElementById("chatHeader").innerText = name;
+  renderChats(filterCurrentChats());
+
+  if (unsubscribeMessages) unsubscribeMessages();
+
+  const messagesQuery = query(
+    collection(db, "messages"),
+    where("chatId", "==", currentChatId),
+    orderBy("time", "asc")
+  );
+
+  unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+    messagesBox.innerHTML = "";
+
+    if (snapshot.empty) {
+      messagesBox.innerHTML = '<p id="emptyMessages">No messages yet. Say hello 👋</p>';
+      return;
+    }
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "msg " + (data.sender === CURRENT_USER ? "sent" : "received");
+      div.textContent = data.text || "";
+      messagesBox.appendChild(div);
+    });
+
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+  }, (error) => {
+    console.error("Message listener failed", error);
+    messagesBox.innerHTML = '<p id="emptyMessages">Unable to load messages right now.</p>';
+  });
+};
+
+async function createOrOpenChat(userId, name) {
+  if (!CURRENT_USER || !userId) return;
+  const chatId = getChatId(CURRENT_USER, userId);
+  const chatRef = doc(db, "chats", chatId);
+  const existing = await getDoc(chatRef);
+
+  if (!existing.exists()) {
+    await setDoc(chatRef, {
+      participants: [CURRENT_USER, userId],
+      lastMessage: "",
+      timestamp: serverTimestamp()
+    }, { merge: true });
+  }
+
+  window.openChat(userId, name);
+}
+
+window.sendMessage = async () => {
+  const msgInput = document.getElementById("msgInput");
+  const text = msgInput.value.trim();
+
+  if (!CURRENT_USER) {
+    setAuthStatus("Please login to chat.");
+    return;
+  }
+
+  if (!text || !currentChatUser || !currentChatId) return;
+
+  await addDoc(collection(db, "messages"), {
+    chatId: currentChatId,
+    sender: CURRENT_USER,
+    receiver: currentChatUser,
+    text,
+    time: serverTimestamp()
+  });
+
+  await setDoc(doc(db, "chats", currentChatId), {
+    participants: [CURRENT_USER, currentChatUser],
+    lastMessage: text,
+    timestamp: serverTimestamp()
+  }, { merge: true });
+
+  msgInput.value = "";
+};
+
+userSearch.addEventListener("input", () => {
+  renderChats(filterCurrentChats());
 });
 
+newChatBtn.addEventListener("click", async () => {
+  if (!CURRENT_USER) {
+    setAuthStatus("Please login first.");
+    return;
+  }
+
+  await loadUsers();
+  newChatModal.style.display = "flex";
+});
+
+closeNewChatModal.addEventListener("click", closeModal);
+newChatModal.addEventListener("click", (e) => {
+  if (e.target === newChatModal) closeModal();
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    CURRENT_USER = user.uid;
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("container").style.display = "flex";
+
+    await loadUsers();
+    listenToChats();
+  } else {
+    CURRENT_USER = null;
+    document.getElementById("authBox").style.display = "block";
+    document.getElementById("container").style.display = "none";
+
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
+    if (unsubscribeChats) {
+      unsubscribeChats();
+      unsubscribeChats = null;
+    }
+
+    resetActiveChat();
+    chats = [];
+    users = [];
+    renderChats([]);
+  }
+});
 </script>
 
 </body>
