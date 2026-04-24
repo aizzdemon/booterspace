@@ -1,326 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages - BooterSpace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .msg-bubble { max-width: 75%; word-wrap: break-word; }
-        .sent { background-color: #2563eb; color: white; border-bottom-right-radius: 2px; }
-        .received { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 2px; }
-    </style>
-</head>
-<body class="bg-slate-50 h-screen flex flex-col font-sans">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages - BooterSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f3f2ef; color: #1a1a1a; overflow-x: hidden; }
 
-<div id="authOverlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
-        <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome to BooterSpace</h2>
-        <p class="text-slate-500 mb-6">Sign in to start messaging</p>
-        <div class="space-y-4">
-            <input id="email" type="email" placeholder="Email address" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            <input id="password" type="password" placeholder="Password" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            <div class="flex gap-3 pt-2">
-                <button onclick="handleAuth('login')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors">Login</button>
-                <button onclick="handleAuth('signup')" class="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-3 rounded-lg transition-colors">Sign Up</button>
-            </div>
-            <p id="authError" class="text-red-500 text-sm min-h-[20px]"></p>
-        </div>
-    </div>
+    .messages-layout {
+      display: flex;
+      height: calc(100vh - 64px);
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .chat-list {
+      width: 350px;
+      background: #fff;
+      border-right: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .chat-list-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    #left {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .chatItem {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f9fafb;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chatItem:hover, .chatItem.active {
+      background: #f0f7ff;
+    }
+
+    .chatItem.active {
+      border-left: 4px solid #00a884;
+    }
+
+    .avatar-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #e9edef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #54656f;
+      flex-shrink: 0;
+    }
+
+    .name { font-weight: 600; font-size: 1rem; color: #111b21; }
+    .lastMsg { font-size: 0.85rem; color: #667781; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    #right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #efeae2;
+      position: relative;
+    }
+
+    #chatHeader {
+      padding: 10px 16px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 60px;
+      z-index: 5;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .msg-wrapper {
+        display: flex;
+        width: 100%;
+        margin-bottom: 2px;
+    }
+
+    .msg {
+      padding: 6px 12px;
+      border-radius: 8px;
+      max-width: 65%;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      position: relative;
+      box-shadow: 0 1px 0.5px rgba(11,20,26,.13);
+    }
+
+    .sent { background: #d9fdd3; color: #111b21; align-self: flex-end; border-top-right-radius: 0; }
+    .received { background: #fff; color: #111b21; align-self: flex-start; border-top-left-radius: 0; }
+
+    #inputBox {
+      display: flex;
+      padding: 10px 16px;
+      background: #f0f2f5;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #msgInput {
+      flex: 1;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+
+    .side-panel {
+      position: absolute;
+      top: 0;
+      left: -100%; 
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      z-index: 50;
+      transition: left 0.3s cubic-bezier(0.2, 0, 0, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    }
+
+    .side-panel.active {
+      left: 0;
+    }
+
+    .whatsapp-header {
+        background: #008069;
+        color: white;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        min-height: 108px;
+        align-items: flex-end;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .contact-item:hover {
+        background: #f5f6f6;
+    }
+
+    .contact-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: #dfe5e7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .messages-layout { margin: 0; height: 100vh; border-radius: 0; }
+      .chat-list { width: 100%; }
+    }
+
+    #authBox {
+      max-width: 400px;
+      margin: 100px auto;
+      background: #fff;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<div id="navbar" class="bg-white border-b px-4 py-3 flex justify-between items-center sticky top-0 z-50">
+  <span class="font-bold text-xl text-[#008069]">BooterSpace</span>
+  <button id="logoutBtn" class="text-sm text-gray-600 hover:text-red-600 hidden">Logout</button>
 </div>
 
-<div id="appContainer" class="flex flex-1 overflow-hidden hidden">
-    <!-- Sidebar -->
-    <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-slate-200 flex flex-col">
-        <div class="p-4 border-bottom border-slate-100">
-            <div class="flex items-center justify-between mb-4">
-                <h1 class="text-xl font-bold text-slate-800">Messages</h1>
-                <button onclick="toggleUserSearch()" class="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" /></svg>
-                </button>
-            </div>
-            <div id="searchBar" class="hidden pb-2">
-                <input id="userSearchInput" type="text" placeholder="Search for users..." class="w-full p-2 bg-slate-100 rounded-lg text-sm outline-none">
+<div id="authBox">
+  <h2 class="text-2xl font-bold mb-6 text-center">Login to Chat</h2>
+  <div class="space-y-4">
+    <input id="email" type="email" placeholder="Email address" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-[#008069]">
+    <input id="password" type="password" placeholder="Password" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-[#008069]">
+    <div class="flex gap-3">
+      <button onclick="login()" class="flex-1 bg-[#008069] text-white font-semibold py-3 rounded-lg">Login</button>
+      <button onclick="signup()" class="flex-1 border border-[#008069] text-[#008069] font-semibold py-3 rounded-lg">Signup</button>
+    </div>
+    <p id="authStatus" class="text-red-500 text-sm text-center"></p>
+  </div>
+</div>
+
+<div id="container" class="messages-layout" style="display:none">
+  <aside class="chat-list" id="chatSidebar">
+    <div id="sidePanel" class="side-panel">
+        <div class="whatsapp-header">
+            <button id="closeSidePanel" class="hover:bg-white/10 p-1 rounded-full mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <div class="mb-1">
+                <h3 class="font-bold text-lg leading-tight">New chat</h3>
+                <p id="contactCount" class="text-xs opacity-90">0 contacts</p>
             </div>
         </div>
-        
-        <div id="chatList" class="flex-1 overflow-y-auto custom-scrollbar">
-            <!-- Chats populated by JS -->
-            <div class="p-8 text-center text-slate-400">Loading chats...</div>
-        </div>
-
-        <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-            <div class="flex items-center gap-2 overflow-hidden">
-                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold" id="currentUserInitial">?</div>
-                <span id="currentUserEmail" class="text-xs text-slate-600 truncate">...</span>
-            </div>
-            <button onclick="signOutUser()" class="text-xs font-semibold text-slate-400 hover:text-red-500">Logout</button>
-        </div>
-    </aside>
-
-    <!-- Main Chat Area -->
-    <main class="hidden md:flex flex-1 flex-col bg-white">
-        <div id="noChatSelected" class="flex-1 flex flex-col items-center justify-center text-center p-8">
-            <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-            </div>
-            <h2 class="text-xl font-semibold text-slate-800">Your Messages</h2>
-            <p class="text-slate-500">Select a contact to start a conversation</p>
-        </div>
-
-        <div id="activeChat" class="hidden flex-1 flex flex-col overflow-hidden">
-            <header class="p-4 border-b border-slate-100 flex items-center gap-3">
-                <button onclick="backToSidebar()" class="md:hidden p-2 -ml-2 text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500" id="activePartnerInitial"></div>
-                <div>
-                    <div class="font-bold text-slate-800" id="activePartnerName">Partner</div>
-                    <div class="text-xs text-green-500">Online</div>
-                </div>
-            </header>
-
-            <div id="messageViewport" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 custom-scrollbar">
-                <!-- Messages populated by JS -->
-            </div>
-
-            <div class="p-4 bg-white border-t border-slate-100">
-                <form onsubmit="sendMessage(event)" class="flex gap-2">
-                    <input id="messageInput" type="text" placeholder="Type a message..." class="flex-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20">
-                    <button type="submit" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-transform active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                    </button>
-                </form>
+        <div class="p-2 bg-white border-b">
+            <div class="relative flex items-center bg-[#f0f2f5] rounded-lg px-3 py-1">
+                <svg class="text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input id="newChatSearch" type="text" placeholder="Search name or email" class="bg-transparent w-full p-1 outline-none text-sm">
             </div>
         </div>
-    </main>
+        <div id="newChatUsers" class="overflow-y-auto flex-1">
+          <!-- Users list -->
+        </div>
+    </div>
+
+    <div class="chat-list-header">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-xl">Chats</h2>
+        <button id="newChatBtn" class="text-[#54656f] hover:bg-gray-100 p-2 rounded-full transition">
+          <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" version="1.1" x="0px" y="0px" enable-background="new 0 0 24 24"><path fill="currentColor" d="M19.005,3.175H4.674C3.642,3.175,2.8,4.017,2.8,5.049v10.767c0,1.032,0.842,1.874,1.874,1.874h1.399v2.511 l3.393-2.511h9.539c1.032,0,1.874-0.842,1.874-1.874V5.049C20.879,4.017,20.037,3.175,19.005,3.175z M17.358,11.523H6.321V10.12 h11.037V11.523z M17.358,8.718H6.321V7.315h11.037V8.718z"></path></svg>
+        </button>
+      </div>
+      <div class="bg-[#f0f2f5] rounded-lg px-3 py-2 flex items-center">
+        <svg class="text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="userSearch" type="text" placeholder="Search or start new chat" class="bg-transparent w-full outline-none text-sm">
+      </div>
+    </div>
+    <div id="left"></div>
+  </aside>
+
+  <section id="right">
+    <div id="chatHeader">
+        <div id="headerContent" class="flex items-center gap-3 text-gray-500">
+            Select a chat to start messaging
+        </div>
+    </div>
+    
+    <div id="messages">
+      <div class="m-auto text-center max-w-sm">
+        <div class="bg-gray-200/50 p-6 rounded-full inline-block mb-4">
+            <svg viewBox="0 0 24 24" width="60" height="60" class="text-gray-400"><path fill="currentColor" d="M12.072 1.761a10.05 10.05 0 0 0-9.303 5.65c-1.925 3.904-1.325 8.224 1.512 11.5l-1.041 3.804a.75.75 0 0 0 .916.916l3.804-1.041c1.582.885 3.326 1.341 5.112 1.341a10.05 10.05 0 0 0 10.048-10.047c0-5.549-4.498-10.123-10.048-10.123z"></path></svg>
+        </div>
+        <h3 class="text-2xl font-light text-gray-700">BooterSpace Web</h3>
+      </div>
+    </div>
+
+    <div id="inputBox" style="display:none">
+      <button class="text-gray-500 hover:text-gray-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg></button>
+      <input id="msgInput" placeholder="Type a message">
+      <button onclick="sendMessage()" class="text-[#008069]"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+    </div>
+  </section>
 </div>
 
 <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, query, where, serverTimestamp, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { 
+  getFirestore, collection, addDoc, getDocs, 
+  query, where, onSnapshot, doc, setDoc, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { 
+  getAuth, createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-    // 1. Setup Firebase
-    const firebaseConfig = JSON.parse(__firebase_config);
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = JSON.parse(__firebase_config);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-default';
 
-    // 2. Global State
-    let currentUser = null;
-    let activeChatId = null;
-    let activePartnerId = null;
-    let unsubMessages = null;
-    let unsubChats = null;
-    let knownUsers = {};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-    // 3. Auth Flow (Rule 3 Implementation)
-    const initAuth = async () => {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                // If not signed in yet, we will stay at the login screen
-            }
-        } catch (e) {
-            console.error("Auth init failed", e);
-        }
-    };
+let CURRENT_USER = null;
+let currentChatUser = null;
+let currentChatId = null;
+let unsubscribeMessages = null;
+let unsubscribeChats = null;
 
-    onAuthStateChanged(auth, async (user) => {
-        currentUser = user;
-        if (user) {
-            document.getElementById('authOverlay').classList.add('hidden');
-            document.getElementById('appContainer').classList.remove('hidden');
-            document.getElementById('currentUserEmail').textContent = user.email || 'Anonymous';
-            document.getElementById('currentUserInitial').textContent = (user.email?.[0] || 'A').toUpperCase();
-            
-            // Save user profile for discovery (Private data storage pattern)
-            const userProfileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile');
-            await setDoc(userProfileRef, {
-                uid: user.uid,
-                email: user.email || 'Anonymous',
-                lastActive: serverTimestamp()
-            }, { merge: true });
+let allUsers = [];
+let activeChats = [];
 
-            setupChatListeners();
-        } else {
-            document.getElementById('authOverlay').classList.remove('hidden');
-            document.getElementById('appContainer').classList.add('hidden');
-            if (unsubChats) unsubChats();
-            if (unsubMessages) unsubMessages();
-        }
+const left = document.getElementById("left");
+const userSearch = document.getElementById("userSearch");
+const newChatSearch = document.getElementById("newChatSearch");
+const messagesBox = document.getElementById("messages");
+const newChatBtn = document.getElementById("newChatBtn");
+const sidePanel = document.getElementById("sidePanel");
+const closeSidePanel = document.getElementById("closeSidePanel");
+const newChatUsers = document.getElementById("newChatUsers");
+const contactCount = document.getElementById("contactCount");
+const inputBox = document.getElementById("inputBox");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function togglePanel(show) {
+  if (show) {
+    sidePanel.classList.add('active');
+    newChatSearch.focus();
+  } else {
+    sidePanel.classList.remove('active');
+  }
+}
+
+newChatBtn.onclick = () => {
+  newChatSearch.value = "";
+  renderNewChatUsers("");
+  togglePanel(true);
+};
+
+closeSidePanel.onclick = () => togglePanel(false);
+
+window.signup = async () => {
+  try {
+    setAuthStatus("");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    if (!email || !password) return setAuthStatus("Email/Password required.");
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', userCred.user.uid), {
+      name: email.split('@')[0],
+      email: email,
+      uid: userCred.user.uid,
+      updatedAt: serverTimestamp()
     });
+  } catch (error) { setAuthStatus(error.message); }
+};
 
-    // 4. Chat Listeners (Rule 1 & 2 Implementation)
-    function setupChatListeners() {
-        if (!currentUser) return;
+window.login = async () => {
+  try {
+    setAuthStatus("");
+    await signInWithEmailAndPassword(auth, document.getElementById("email").value.trim(), document.getElementById("password").value);
+  } catch (error) { setAuthStatus(error.message); }
+};
 
-        // Path Rule: Public data path
-        const chatsRef = collection(db, 'artifacts', appId, 'public', 'data', 'chats');
-        
-        // We listen to all chats where user is a participant
-        // Note: rule 2 says no complex queries, but simple 'array-contains' is allowed
-        // If we want to strictly follow "fetch all then filter in JS", we just query the collection
-        unsubChats = onSnapshot(chatsRef, (snapshot) => {
-            const chatListContainer = document.getElementById('chatList');
-            chatListContainer.innerHTML = '';
-            
-            const relevantChats = snapshot.docs
-                .map(d => ({ id: d.id, ...d.data() }))
-                .filter(chat => chat.participants?.includes(currentUser.uid));
+logoutBtn.onclick = () => signOut(auth);
+function setAuthStatus(text) { document.getElementById("authStatus").textContent = text; }
 
-            if (relevantChats.length === 0) {
-                chatListContainer.innerHTML = '<div class="p-8 text-center text-slate-400">No active chats</div>';
-                return;
-            }
+function getChatId(u1, u2) { return [u1, u2].sort().join("_"); }
 
-            relevantChats.forEach(chat => {
-                const partnerId = chat.participants.find(p => p !== currentUser.uid);
-                const partnerEmail = chat.participantEmails?.[partnerId] || 'User ' + partnerId.slice(0,4);
-                
-                const div = document.createElement('div');
-                div.className = `p-4 cursor-pointer hover:bg-slate-50 border-b border-slate-50 transition-colors ${activeChatId === chat.id ? 'bg-blue-50/50' : ''}`;
-                div.onclick = () => selectChat(chat.id, partnerId, partnerEmail);
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500">${partnerEmail[0].toUpperCase()}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-semibold text-slate-800 truncate">${partnerEmail}</div>
-                            <div class="text-sm text-slate-500 truncate">${chat.lastMessage || 'No messages yet'}</div>
-                        </div>
-                    </div>
-                `;
-                chatListContainer.appendChild(div);
-            });
-        }, (err) => console.error("Chat list error:", err));
+async function loadAllUsers() {
+  if (!CURRENT_USER) return;
+  const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+  allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  contactCount.textContent = `${allUsers.length - 1} contacts`;
+  renderNewChatUsers("");
+}
+
+function listenToChats() {
+  if (!CURRENT_USER) return;
+  if (unsubscribeChats) unsubscribeChats();
+  const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), where("participants", "array-contains", CURRENT_USER));
+  unsubscribeChats = onSnapshot(q, (snapshot) => {
+    activeChats = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    activeChats.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+    renderChatList();
+  }, (err) => console.error("Chat list error:", err));
+}
+
+function renderChatList(filter = "") {
+  left.innerHTML = "";
+  const term = filter.toLowerCase();
+  const filtered = activeChats.filter(chat => {
+    const pId = chat.participants.find(p => p !== CURRENT_USER);
+    const partner = allUsers.find(u => u.id === pId);
+    return (partner?.name || pId || "").toLowerCase().includes(term);
+  });
+  
+  if (filtered.length === 0) {
+      left.innerHTML = `<div class="p-8 text-center text-gray-400 text-sm">No conversations. Start a new one!</div>`;
+      return;
+  }
+
+  filtered.forEach(chat => {
+    const pId = chat.participants.find(p => p !== CURRENT_USER);
+    const partner = allUsers.find(u => u.id === pId);
+    const initials = (partner?.name || 'U')[0].toUpperCase();
+    
+    const div = document.createElement("div");
+    div.className = `chatItem ${chat.id === currentChatId ? 'active' : ''}`;
+    div.innerHTML = `
+        <div class="avatar-circle">${initials}</div>
+        <div class="flex-1 min-w-0">
+            <div class="name">${partner?.name || 'User'}</div>
+            <div class="lastMsg">${chat.lastMessage || '...' }</div>
+        </div>
+    `;
+    div.onclick = () => openChat(pId, partner?.name || 'User');
+    left.appendChild(div);
+  });
+}
+
+function renderNewChatUsers(filter = "") {
+  newChatUsers.innerHTML = "";
+  const term = filter.trim().toLowerCase();
+  const candidates = allUsers.filter(u => u.id !== CURRENT_USER && (u.name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)));
+  
+  if (candidates.length === 0) {
+      newChatUsers.innerHTML = `<div class="p-8 text-center text-gray-500 text-sm">No results for "${filter}"</div>`;
+      return;
+  }
+
+  candidates.forEach(user => {
+    const div = document.createElement("div");
+    div.className = "contact-item border-b border-gray-100";
+    const initials = (user.name || 'U')[0].toUpperCase();
+    div.innerHTML = `
+        <div class="contact-avatar">${initials}</div>
+        <div class="flex-1">
+            <div class="font-medium text-[#111b21]">${user.name || 'User'}</div>
+            <div class="text-sm text-[#667781]">${user.email}</div>
+        </div>
+    `;
+    div.onclick = () => { openChat(user.id, user.name); togglePanel(false); };
+    newChatUsers.appendChild(div);
+  });
+}
+
+window.openChat = async (partnerId, partnerName) => {
+  currentChatUser = partnerId;
+  currentChatId = getChatId(CURRENT_USER, partnerId);
+  const initials = partnerName[0].toUpperCase();
+  
+  document.getElementById("chatHeader").innerHTML = `
+    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">${initials}</div>
+    <div class="flex-1">
+        <div class="font-semibold text-[#111b21]">${partnerName}</div>
+        <div class="text-xs text-gray-500">online</div>
+    </div>
+  `;
+  
+  messagesBox.innerHTML = '<div class="m-auto text-gray-400">Loading...</div>';
+  inputBox.style.display = "flex";
+  
+  if (unsubscribeMessages) unsubscribeMessages();
+  const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), where("chatId", "==", currentChatId));
+  unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    messagesBox.innerHTML = "";
+    const msgs = snapshot.docs.map(d => d.data());
+    msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    
+    if (msgs.length === 0) {
+      messagesBox.innerHTML = `<div class="bg-[#dcf8c6] text-[#4a4a4a] text-xs px-3 py-1 rounded shadow-sm mx-auto my-4">Messages are end-to-end encrypted.</div>`;
+    } else {
+      msgs.forEach(m => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "msg-wrapper";
+        const div = document.createElement("div");
+        div.className = `msg ${m.sender === CURRENT_USER ? 'sent' : 'received'}`;
+        div.textContent = m.text;
+        wrapper.appendChild(div);
+        messagesBox.appendChild(wrapper);
+      });
+      messagesBox.scrollTop = messagesBox.scrollHeight;
     }
+  }, (err) => console.error("Messages error:", err));
+  renderChatList();
+};
 
-    async function selectChat(chatId, partnerId, partnerName) {
-        activeChatId = chatId;
-        activePartnerId = partnerId;
+window.sendMessage = async () => {
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if (!text || !currentChatId) return;
+  input.value = "";
+  try {
+    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), { chatId: currentChatId, sender: CURRENT_USER, text, createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', currentChatId), { participants: [CURRENT_USER, currentChatUser], lastMessage: text, updatedAt: serverTimestamp() }, { merge: true });
+  } catch (err) { console.error("Send error:", err); }
+};
 
-        // Mobile UI handling
-        document.querySelector('aside').classList.add('hidden', 'md:flex');
-        document.querySelector('main').classList.remove('hidden');
-        document.getElementById('noChatSelected').classList.add('hidden');
-        document.getElementById('activeChat').classList.remove('hidden');
+userSearch.oninput = (e) => renderChatList(e.target.value);
+newChatSearch.oninput = (e) => renderNewChatUsers(e.target.value);
+document.getElementById("msgInput").onkeydown = (e) => { if(e.key === 'Enter') sendMessage(); };
 
-        document.getElementById('activePartnerName').textContent = partnerName;
-        document.getElementById('activePartnerInitial').textContent = partnerName[0].toUpperCase();
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    CURRENT_USER = user.uid;
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("container").style.display = "flex";
+    logoutBtn.classList.remove("hidden");
+    await loadAllUsers();
+    listenToChats();
+  } else {
+    CURRENT_USER = null;
+    document.getElementById("authBox").style.display = "block";
+    document.getElementById("container").style.display = "none";
+    logoutBtn.classList.add("hidden");
+  }
+});
 
-        if (unsubMessages) unsubMessages();
-        
-        const msgsRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-        unsubMessages = onSnapshot(msgsRef, (snapshot) => {
-            const viewport = document.getElementById('messageViewport');
-            viewport.innerHTML = '';
-            
-            // Rule 2: Filter in memory
-            const chatMessages = snapshot.docs
-                .map(d => ({ id: d.id, ...d.data() }))
-                .filter(m => m.chatId === chatId)
-                .sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-
-            if (chatMessages.length === 0) {
-                viewport.innerHTML = '<div class="text-center text-slate-400 py-10">Starting a new conversation...</div>';
-            }
-
-            chatMessages.forEach(msg => {
-                const isSent = msg.senderId === currentUser.uid;
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `flex ${isSent ? 'justify-end' : 'justify-start'}`;
-                msgDiv.innerHTML = `
-                    <div class="msg-bubble p-3 rounded-2xl ${isSent ? 'sent' : 'received shadow-sm'}">
-                        ${msg.text}
-                    </div>
-                `;
-                viewport.appendChild(msgDiv);
-            });
-            viewport.scrollTop = viewport.scrollHeight;
-        }, (err) => console.error("Messages error:", err));
-    }
-
-    // 5. Actions
-    window.sendMessage = async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
-        if (!text || !activeChatId || !currentUser) return;
-
-        try {
-            // Add message
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
-                chatId: activeChatId,
-                senderId: currentUser.uid,
-                text: text,
-                timestamp: serverTimestamp()
-            });
-
-            // Update chat preview
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', activeChatId), {
-                lastMessage: text,
-                timestamp: serverTimestamp()
-            }, { merge: true });
-
-            input.value = '';
-        } catch (err) {
-            console.error("Send failed", err);
-        }
-    };
-
-    window.handleAuth = async (type) => {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('password').value;
-        const errEl = document.getElementById('authError');
-        errEl.textContent = '';
-
-        try {
-            if (type === 'login') {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } else {
-                await createUserWithEmailAndPassword(auth, email, pass);
-            }
-        } catch (e) {
-            errEl.textContent = e.message;
-        }
-    };
-
-    window.signOutUser = () => signOut(auth);
-
-    window.toggleUserSearch = async () => {
-        const searchBar = document.getElementById('searchBar');
-        searchBar.classList.toggle('hidden');
-        if (!searchBar.classList.contains('hidden')) {
-            // For a production app, we would query the user list
-            // For this demo, let's allow finding a specific user email
-            const email = prompt("Enter the exact email of the person you want to chat with:");
-            if (email) createChatWithUser(email);
-        }
-    };
-
-    async function createChatWithUser(partnerEmail) {
-        // Simple mock: in a real app, you search the users collection
-        // Since we can't easily query by email (Rule 2), 
-        // we'd typically have a users list to pick from.
-        // For this demo, we'll create a unique chatId based on sorted IDs
-        // but we need the partner's UID. Let's assume user provides UID for this flow
-        // or we scan the public/users index if implemented.
-        alert("To keep logic simple and compliant with Rule 2, please click an existing chat or wait for someone to message you. In a full app, we would list all registered users here.");
-    }
-
-    window.backToSidebar = () => {
-        document.querySelector('aside').classList.remove('hidden');
-        document.querySelector('main').classList.add('hidden');
-    };
-
-    window.onload = initAuth;
+const initAuth = async () => {
+  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+    await signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+  }
+};
+initAuth();
 </script>
-
 </body>
 </html>
