@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pro Chat App</title>
+
+  <style>
+    body { margin:0; font-family: Arial; background:#f3f2ef; }
+
+    #container { display:flex; height:100vh; }
+
+    #left {
+      width:30%;
+      background:#fff;
+      border-right:1px solid #ddd;
+      overflow-y:auto;
+    }
+
+    #right {
+      width:70%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .chatItem {
+      padding:15px;
+      border-bottom:1px solid #eee;
+      cursor:pointer;
+    }
+
+    .chatItem:hover { background:#f5f5f5; }
+
+    .name { font-weight:bold; }
+    .lastMsg { font-size:12px; color:gray; }
+
+    #chatHeader {
+      padding:15px;
+      background:#fff;
+      border-bottom:1px solid #ddd;
+      font-weight:bold;
+    }
+
+    #messages {
+      flex:1;
+      padding:15px;
+      overflow-y:auto;
+    }
+
+    .msg {
+      margin:10px 0;
+      padding:10px;
+      border-radius:10px;
+      max-width:60%;
+    }
+
+    .sent { background:#0a66c2; color:white; margin-left:auto; }
+    .received { background:#e4e6eb; }
+
+    #inputBox {
+      display:flex;
+      padding:10px;
+      background:#fff;
+      border-top:1px solid #ddd;
+    }
+
+    #inputBox input { flex:1; padding:10px; }
+
+    #inputBox button {
+      padding:10px;
+      margin-left:10px;
+      background:#0a66c2;
+      color:white;
+      border:none;
+      cursor:pointer;
+    }
+
+    #authBox {
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:#fff;
+      padding:20px;
+      border:1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="authBox">
+  <h3>Login / Signup</h3>
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
+  <button onclick="signup()">Signup</button>
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="container" style="display:none">
+
+  <div id="left"></div>
+
+  <div id="right">
+    <div id="chatHeader">Select Chat</div>
+    <div id="messages"></div>
+
+    <div id="inputBox">
+      <input id="msgInput" placeholder="Type message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs,
+  query, where, orderBy, onSnapshot, doc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import {
+  getAuth, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+/* 🔥 YOUR CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let CURRENT_USER = null;
+let currentChatUser = null;
+let unsubscribe = null;
+
+/* 🔐 AUTH */
+
+window.signup = async () => {
+  const email = emailInput();
+  const password = passInput();
+
+  const userCred = await createUserWithEmailAndPassword(auth, email, password);
+
+  await setDoc(doc(db, "users", userCred.user.uid), {
+    name: email,
+    email: email,
+    createdAt: Date.now()
+  });
+};
+
+window.login = async () => {
+  await signInWithEmailAndPassword(auth, emailInput(), passInput());
+};
+
+function emailInput() { return document.getElementById("email").value; }
+function passInput() { return document.getElementById("password").value; }
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    CURRENT_USER = user.uid;
+
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("container").style.display = "flex";
+
+    loadUsers();
+  }
+});
+
+/* 👥 LOAD USERS */
+
+async function loadUsers() {
+  const snapshot = await getDocs(collection(db, "users"));
+  const left = document.getElementById("left");
+  left.innerHTML = "";
+
+  snapshot.forEach(docSnap => {
+    if (docSnap.id !== CURRENT_USER) {
+      const data = docSnap.data();
+
+      const div = document.createElement("div");
+      div.className = "chatItem";
+      div.innerHTML = `
+        <div class="name">${data.name}</div>
+        <div class="lastMsg">Start chatting...</div>
+      `;
+
+      div.onclick = () => openChat(docSnap.id, data.name);
+
+      left.appendChild(div);
+    }
+  });
+}
+
+/* 💬 CHAT */
+
+function getChatId(u1, u2) {
+  return [u1, u2].sort().join("_");
+}
+
+window.openChat = (userId, name) => {
+  currentChatUser = userId;
+  document.getElementById("chatHeader").innerText = name;
+
+  const chatId = getChatId(CURRENT_USER, userId);
+
+  if (unsubscribe) unsubscribe();
+
+  const q = query(
+    collection(db, "messages"),
+    where("chatId", "==", chatId),
+    orderBy("time")
+  );
+
+  unsubscribe = onSnapshot(q, (snapshot) => {
+    const box = document.getElementById("messages");
+    box.innerHTML = "";
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
+      const div = document.createElement("div");
+      div.className = "msg " + (data.sender === CURRENT_USER ? "sent" : "received");
+      div.innerText = data.text;
+
+      box.appendChild(div);
+    });
+  });
+};
+
+/* ✉️ SEND */
+
+window.sendMessage = async () => {
+  const text = document.getElementById("msgInput").value;
+
+  if (!text || !currentChatUser) return;
+
+  const chatId = getChatId(CURRENT_USER, currentChatUser);
+
+  await addDoc(collection(db, "messages"), {
+    chatId,
+    sender: CURRENT_USER,
+    text,
+    time: Date.now()
+  });
+
+  document.getElementById("msgInput").value = "";
+};
+
+</script>
+
+</body>
+</html>
