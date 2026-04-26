@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messages - BooterSpace</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="public/js/env-config.js"></script>
   <style>
     body { margin: 0; font-family: 'Inter', sans-serif; background: #f3f2ef; color: #1a1a1a; overflow-x: hidden; }
 
@@ -212,10 +213,26 @@
 </head>
 <body>
 
-<div id="navbar" class="bg-white border-b px-4 py-3 flex justify-between items-center sticky top-0 z-50">
-  <span class="font-bold text-xl text-[#008069]">BooterSpace</span>
-  <button id="logoutBtn" class="text-sm text-gray-600 hover:text-red-600 hidden">Logout</button>
-</div>
+<div id="navbar"></div>
+<script>
+  fetch("navbar.html")
+    .then((r) => r.text())
+    .then((html) => {
+      document.getElementById("navbar").innerHTML = html;
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "public/js/navbar.js";
+      script.onerror = () => {
+        script.remove();
+        const fallbackScript = document.createElement("script");
+        fallbackScript.type = "module";
+        fallbackScript.src = "/booterspace/public/js/navbar.js";
+        document.body.appendChild(fallbackScript);
+      };
+      document.body.appendChild(script);
+      if (typeof window.bindChatLogout === "function") window.bindChatLogout();
+    });
+</script>
 
 <div id="authBox">
   <h2 class="text-2xl font-bold mb-6 text-center">Login to Chat</h2>
@@ -293,20 +310,36 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { 
   getFirestore, collection, addDoc, getDocs, 
   query, where, onSnapshot, doc, setDoc, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { 
   getAuth, createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-const firebaseConfig = JSON.parse(__firebase_config);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'booterspace-default';
+function getEnvVar(...keys) {
+  const runtimeEnv = window.__ENV__ || {};
+  for (const key of keys) {
+    if (runtimeEnv[key]) return runtimeEnv[key];
+  }
+  return "";
+}
 
-const app = initializeApp(firebaseConfig);
+const firebaseConfig = {
+  apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
+  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID")
+};
+
+const appId = 'booterspace-default';
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -329,7 +362,6 @@ const closeSidePanel = document.getElementById("closeSidePanel");
 const newChatUsers = document.getElementById("newChatUsers");
 const contactCount = document.getElementById("contactCount");
 const inputBox = document.getElementById("inputBox");
-const logoutBtn = document.getElementById("logoutBtn");
 
 function togglePanel(show) {
   if (show) {
@@ -371,7 +403,13 @@ window.login = async () => {
   } catch (error) { setAuthStatus(error.message); }
 };
 
-logoutBtn.onclick = () => signOut(auth);
+window.bindChatLogout = function bindLogout() {
+  const logoutBtn = document.getElementById("logoutBtn");
+  const mobileLogoutBtn = document.getElementById("mLogoutBtn");
+  if (logoutBtn) logoutBtn.onclick = () => signOut(auth);
+  if (mobileLogoutBtn) mobileLogoutBtn.onclick = () => signOut(auth);
+};
+
 function setAuthStatus(text) { document.getElementById("authStatus").textContent = text; }
 
 function getChatId(u1, u2) { return [u1, u2].sort().join("_"); }
@@ -515,22 +553,23 @@ onAuthStateChanged(auth, async (user) => {
     CURRENT_USER = user.uid;
     document.getElementById("authBox").style.display = "none";
     document.getElementById("container").style.display = "flex";
-    logoutBtn.classList.remove("hidden");
+    document.getElementById("logoutBtn")?.classList.remove("hidden");
     await loadAllUsers();
     listenToChats();
   } else {
     CURRENT_USER = null;
     document.getElementById("authBox").style.display = "block";
     document.getElementById("container").style.display = "none";
-    logoutBtn.classList.add("hidden");
+    document.getElementById("logoutBtn")?.classList.add("hidden");
   }
 });
 
 const initAuth = async () => {
   if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-    await signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+    await signInWithCustomToken(auth, __initial_auth_token).catch(() => null);
   }
 };
+window.bindChatLogout();
 initAuth();
 </script>
 </body>
