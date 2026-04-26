@@ -353,17 +353,8 @@ window.openProfile = (uid) => {
 
 <!-- 🔥 NAVBAR INJECTION -->
 <div id="navbar"></div>
-<script>
-fetch("navbar.html")
-  .then(res => res.text())
-  .then(html => {
-    document.getElementById("navbar").innerHTML = html;
-    const s = document.createElement("script");
-    s.type = "module";
-    s.src = "/booterspace/public/js/navbar.js";
-    document.body.appendChild(s);
-  });
-</script>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
 <header class="bg-white border-b py-8 px-4">
   <div class="max-w-6xl mx-auto flex flex-col items-center">

@@ -89,15 +89,8 @@ enableIndexedDbPersistence(db).catch((err) => {
 
 <!-- Navbar -->
 <div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module"; 
-  s.src="/booterspace/public/js/navbar.js"; 
-  document.body.appendChild(s);
-});
-</script>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
 <div id="emojiToast" class="fixed bottom-6 right-6 hidden bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-xl z-50">
   Emoji copied

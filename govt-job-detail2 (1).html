@@ -468,17 +468,8 @@
 <body>
 
   <div id="navbar"></div>
-  <script>
-    if (typeof fetch !== 'undefined') {
-      fetch("navbar.html").then(r => r.text()).then(html => {
-        document.getElementById("navbar").innerHTML = html;
-        const s = document.createElement("script");
-        s.type = "module";
-        s.src = "public/js/navbar.js";
-        document.body.appendChild(s);
-      }).catch(() => {});
-    }
-  </script>
+  <script src="public/js/navbar-loader.js"></script>
+  <script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
   <!-- ═══════════════ HEADER ═══════════════ -->
   <header class="govt-header">
