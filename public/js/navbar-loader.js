@@ -1,38 +1,40 @@
 (function initNavbarLoader() {
-  const NAVBAR_CONTAINER_ID = 'navbar';
-  const NAVBAR_CACHE_KEY = 'booterspace:navbar:html:v1';
-  const NAVBAR_CACHE_TIME_KEY = 'booterspace:navbar:cachedAt:v1';
-  const NAVBAR_CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
-  const NAVBAR_HTML_PATH = 'navbar.html';
-  const NAVBAR_SCRIPT_SRC = 'public/js/navbar.js';
+  const NAVBAR_CONTAINER_ID = "navbar";
+  const NAVBAR_CACHE_KEY = "booterspace:navbar:html:v1";
+  const NAVBAR_CACHE_TIME_KEY = "booterspace:navbar:cachedAt:v1";
+  const NAVBAR_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+  const NAVBAR_HTML_PATH = "navbar.html";
+  const NAVBAR_SCRIPT_SRC = "public/js/navbar.js";
 
   function injectNavbarMarkup(markup) {
     const container = document.getElementById(NAVBAR_CONTAINER_ID);
     if (!container || !markup) return false;
 
     if (!container.innerHTML.trim()) {
-      container.style.opacity = '0.01';
-      container.style.transition = 'opacity 160ms ease';
+      container.style.opacity = "0.01";
+      container.style.transition = "opacity 160ms ease";
     }
 
     container.innerHTML = markup;
     requestAnimationFrame(() => {
-      container.style.opacity = '1';
+      container.style.opacity = "1";
+      window.dispatchEvent(new CustomEvent("navbar:ready"));
     });
+
     return true;
   }
 
   function ensureNavbarScript() {
     if (document.querySelector('script[data-booter-navbar="true"]')) return;
-    const script = document.createElement('script');
-    script.type = 'module';
+    const script = document.createElement("script");
+    script.type = "module";
     script.src = NAVBAR_SCRIPT_SRC;
-    script.dataset.booterNavbar = 'true';
+    script.dataset.booterNavbar = "true";
     document.body.appendChild(script);
   }
 
   async function fetchNavbarMarkup() {
-    const response = await fetch(NAVBAR_HTML_PATH, { cache: 'force-cache' });
+    const response = await fetch(NAVBAR_HTML_PATH, { cache: "force-cache" });
     if (!response.ok) throw new Error(`Navbar fetch failed (${response.status})`);
     return response.text();
   }
@@ -54,7 +56,7 @@
       localStorage.setItem(NAVBAR_CACHE_KEY, html);
       localStorage.setItem(NAVBAR_CACHE_TIME_KEY, String(Date.now()));
     } catch {
-      // Ignore storage errors (e.g. privacy mode/quota).
+      // Ignore storage errors.
     }
   }
 
@@ -67,15 +69,11 @@
 
     try {
       const fresh = await fetchNavbarMarkup();
-      if (fresh !== cached) {
-        injectNavbarMarkup(fresh);
-      }
+      if (fresh !== cached) injectNavbarMarkup(fresh);
       setCachedMarkup(fresh);
       ensureNavbarScript();
     } catch (error) {
-      if (!cached) {
-        console.error('Navbar failed to load', error);
-      }
+      if (!cached) console.error("Navbar failed to load", error);
     }
   }
 

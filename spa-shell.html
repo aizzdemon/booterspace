@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BooterSpace</title>
+  <link rel="stylesheet" href="assets/css/shared.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans antialiased text-gray-900 bg-gray-50">
+  <div id="navbar"></div>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div id="app-loading" class="hidden rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+      Loading…
+    </div>
+    <div id="app" aria-live="polite"></div>
+  </main>
+
+  <script src="public/js/navbar-loader.js"></script>
+  <script>
+    window.loadBooterNavbar && window.loadBooterNavbar();
+  </script>
+  <script type="module" src="public/js/router.js"></script>
+</body>
+</html>
