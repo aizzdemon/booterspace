@@ -44,15 +44,8 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 page-connection">
   <div id="navbar"></div>
-  <script>
-    fetch("navbar.html").then(r => r.text()).then(html => {
-      document.getElementById("navbar").innerHTML = html;
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "public/js/navbar.js";
-      document.body.appendChild(s);
-    }).catch(e => console.error("Navbar failed to load", e));
-  </script>
+  <script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
   <main class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
     <div id="authStatus" class="fixed top-4 right-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-white/80 backdrop-blur px-3 py-1 rounded-full border soft-border z-50">Checking session...</div>

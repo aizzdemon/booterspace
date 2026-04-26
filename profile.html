@@ -87,17 +87,8 @@ window.db = getFirestore(app);
   <!-- 🔥 SaaS Navbar -->
 <div id="navbar"></div>
 
-<script>
-fetch("navbar.html")
-.then(r=>r.text())
-.then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module";
-  s.src="/booterspace/public/js/navbar.js";
-  document.body.appendChild(s);
-});
-</script>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
 <!-- 🔍 SEARCH BAR -->
 <div class="bg-white border-b sticky top-0 z-20 shadow-sm">

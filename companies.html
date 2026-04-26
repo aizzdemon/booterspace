@@ -87,19 +87,9 @@ onAuthStateChanged(window.auth, (user) => {
 <body class="bg-gray-100 page-companies">
 
 <!-- Navbar -->
-<div id="navbar-placeholder"></div>
-<script>
-  // Inject navbar dynamically
-  fetch("navbar.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("navbar-placeholder").innerHTML = html;
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "/booterspace/public/js/navbar.js";
-      document.body.appendChild(s);
-    });
-</script>
+<div id="navbar"></div>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
 <!-- Header -->
 <header class="bg-white border-b border-gray-200 py-10">

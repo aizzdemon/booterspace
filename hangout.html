@@ -50,15 +50,8 @@
 
 <!-- Navbar -->
 <div id="navbar"></div>
-<script>
-fetch("navbar.html").then(r=>r.text()).then(html=>{
-  document.getElementById("navbar").innerHTML=html;
-  const s=document.createElement("script");
-  s.type="module"; 
-  s.src="/booterspace/public/js/navbar.js"; 
-  document.body.appendChild(s);
-});
-</script>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 <!-- PAGE HEADER -->
 <header class="bg-purple-600 p-6 text-white text-center shadow">
   <h1 class="text-3xl font-bold">Places to Hangout</h1>

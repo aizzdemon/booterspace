@@ -214,25 +214,8 @@
 <body>
 
 <div id="navbar"></div>
-<script>
-  fetch("navbar.html")
-    .then((r) => r.text())
-    .then((html) => {
-      document.getElementById("navbar").innerHTML = html;
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = "public/js/navbar.js";
-      script.onerror = () => {
-        script.remove();
-        const fallbackScript = document.createElement("script");
-        fallbackScript.type = "module";
-        fallbackScript.src = "/booterspace/public/js/navbar.js";
-        document.body.appendChild(fallbackScript);
-      };
-      document.body.appendChild(script);
-      if (typeof window.bindChatLogout === "function") window.bindChatLogout();
-    });
-</script>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
 <div id="authBox">
   <h2 class="text-2xl font-bold mb-6 text-center">Login to Chat</h2>

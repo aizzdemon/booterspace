@@ -508,15 +508,8 @@
 
   <!-- Injected navbar -->
   <div id="navbar"></div>
-  <script>
-    fetch("navbar.html").then(r => r.text()).then(html => {
-      document.getElementById("navbar").innerHTML = html;
-      const s = document.createElement("script");
-      s.type = "module";
-      s.src = "public/js/navbar.js";
-      document.body.appendChild(s);
-    });
-  </script>
+  <script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
   <!-- Hero -->
   <section class="page-hero">
