@@ -111,6 +111,14 @@
         margin-bottom: 2px;
     }
 
+    .msg-wrapper.sent {
+      justify-content: flex-end;
+    }
+
+    .msg-wrapper.received {
+      justify-content: flex-start;
+    }
+
     .msg {
       padding: 6px 12px;
       border-radius: 8px;
@@ -199,6 +207,22 @@
     @media (max-width: 768px) {
       .messages-layout { margin: 0; height: 100vh; border-radius: 0; }
       .chat-list { width: 100%; }
+      #right {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+        z-index: 20;
+      }
+      .messages-layout.mobile-chat-open #right {
+        transform: translateX(0);
+      }
+      #mobileBackBtn {
+        display: inline-flex !important;
+      }
     }
 
     #authBox {
@@ -271,6 +295,9 @@
   <section id="right">
     <div id="chatHeader">
         <div id="headerContent" class="flex items-center gap-3 text-gray-500">
+            <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
             Select a chat to start messaging
         </div>
     </div>
@@ -343,6 +370,17 @@ const closeSidePanel = document.getElementById("closeSidePanel");
 const newChatUsers = document.getElementById("newChatUsers");
 const contactCount = document.getElementById("contactCount");
 const inputBox = document.getElementById("inputBox");
+const container = document.getElementById("container");
+const mobileBackBtn = document.getElementById("mobileBackBtn");
+
+function isMobileView() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function setMobileChatOpen(open) {
+  if (!container) return;
+  container.classList.toggle("mobile-chat-open", open && isMobileView());
+}
 
 function togglePanel(show) {
   if (show) {
@@ -360,6 +398,7 @@ newChatBtn.onclick = () => {
 };
 
 closeSidePanel.onclick = () => togglePanel(false);
+mobileBackBtn.onclick = () => setMobileChatOpen(false);
 
 window.signup = async () => {
   try {
@@ -490,12 +529,16 @@ window.openChat = async (partnerId, partnerName) => {
   const initials = partnerName[0].toUpperCase();
   
   document.getElementById("chatHeader").innerHTML = `
+    <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    </button>
     <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">${initials}</div>
     <div class="flex-1">
         <div class="font-semibold text-[#111b21]">${partnerName}</div>
         <div class="text-xs text-gray-500">online</div>
     </div>
   `;
+  document.getElementById("mobileBackBtn")?.addEventListener("click", () => setMobileChatOpen(false));
   
   messagesBox.innerHTML = '<div class="m-auto text-gray-400">Loading...</div>';
   inputBox.style.display = "flex";
@@ -515,9 +558,10 @@ window.openChat = async (partnerId, partnerName) => {
       snapshot.forEach((docSnap) => {
         const m = docSnap.data();
         const wrapper = document.createElement("div");
-        wrapper.className = "msg-wrapper";
+        const isSender = m.sender === CURRENT_USER;
+        wrapper.className = `msg-wrapper ${isSender ? 'sent' : 'received'}`;
         const div = document.createElement("div");
-        div.className = `msg ${m.sender === CURRENT_USER ? 'sent' : 'received'}`;
+        div.className = `msg ${isSender ? 'sent' : 'received'}`;
         div.textContent = m.text;
         wrapper.appendChild(div);
         messagesBox.appendChild(wrapper);
@@ -525,6 +569,7 @@ window.openChat = async (partnerId, partnerName) => {
       messagesBox.scrollTop = messagesBox.scrollHeight;
     }
   }, (err) => console.error("Messages error:", err));
+  setMobileChatOpen(true);
   renderChatList();
 };
 
@@ -615,6 +660,10 @@ const initAuth = async () => {
 };
 window.bindChatLogout();
 initAuth();
+
+window.addEventListener("resize", () => {
+  if (!isMobileView()) setMobileChatOpen(false);
+});
 </script>
 </body>
 </html>
