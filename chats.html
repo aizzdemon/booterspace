@@ -295,8 +295,8 @@
 <script type="module">
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, 
-  query, where, onSnapshot, doc, setDoc, serverTimestamp 
+  getFirestore, collection, addDoc, getDocs, getDoc,
+  query, where, orderBy, onSnapshot, doc, setDoc, serverTimestamp, limit
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { 
   getAuth, createUserWithEmailAndPassword, 
@@ -319,8 +319,6 @@ const firebaseConfig = {
   messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
   appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID")
 };
-
-const appId = 'booterspace-default';
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -370,11 +368,11 @@ window.signup = async () => {
     const password = document.getElementById("password").value;
     if (!email || !password) return setAuthStatus("Email/Password required.");
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', userCred.user.uid), {
-      name: email.split('@')[0],
-      email: email,
+    await setDoc(doc(db, "users", userCred.user.uid), {
+      name: email.split("@")[0],
+      email,
       uid: userCred.user.uid,
-      updatedAt: serverTimestamp()
+      createdAt: Date.now()
     });
   } catch (error) { setAuthStatus(error.message); }
 };
@@ -396,11 +394,17 @@ window.bindChatLogout = function bindLogout() {
 function setAuthStatus(text) { document.getElementById("authStatus").textContent = text; }
 
 function getChatId(u1, u2) { return [u1, u2].sort().join("_"); }
+function safeNameFromUser(userDoc, fallbackId) { return userDoc?.name || userDoc?.email || fallbackId || "Unknown User"; }
+function getPartnerIdFromChat(chat) { return (chat.participants || []).find(p => p !== CURRENT_USER) || null; }
 
 async function loadAllUsers() {
   if (!CURRENT_USER) return;
-  const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
-  allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(query(collection(db, "users"), limit(500)));
+  allUsers = snap.docs.map((d) => ({
+    id: d.id,
+    name: safeNameFromUser(d.data(), d.id),
+    email: d.data()?.email || ""
+  }));
   contactCount.textContent = `${allUsers.length - 1} contacts`;
   renderNewChatUsers("");
 }
@@ -408,10 +412,13 @@ async function loadAllUsers() {
 function listenToChats() {
   if (!CURRENT_USER) return;
   if (unsubscribeChats) unsubscribeChats();
-  const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), where("participants", "array-contains", CURRENT_USER));
+  const q = query(
+    collection(db, "chats"),
+    where("participants", "array-contains", CURRENT_USER),
+    orderBy("timestamp", "desc")
+  );
   unsubscribeChats = onSnapshot(q, (snapshot) => {
-    activeChats = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    activeChats.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+    activeChats = snapshot.docs.map(d => ({ chatId: d.id, ...d.data() }));
     renderChatList();
   }, (err) => console.error("Chat list error:", err));
 }
@@ -420,9 +427,11 @@ function renderChatList(filter = "") {
   left.innerHTML = "";
   const term = filter.toLowerCase();
   const filtered = activeChats.filter(chat => {
-    const pId = chat.participants.find(p => p !== CURRENT_USER);
+    const pId = getPartnerIdFromChat(chat);
     const partner = allUsers.find(u => u.id === pId);
-    return (partner?.name || pId || "").toLowerCase().includes(term);
+    const name = (partner?.name || pId || "").toLowerCase();
+    const preview = (chat.lastMessage || "").toLowerCase();
+    return name.includes(term) || preview.includes(term);
   });
   
   if (filtered.length === 0) {
@@ -431,12 +440,12 @@ function renderChatList(filter = "") {
   }
 
   filtered.forEach(chat => {
-    const pId = chat.participants.find(p => p !== CURRENT_USER);
+    const pId = getPartnerIdFromChat(chat);
     const partner = allUsers.find(u => u.id === pId);
     const initials = (partner?.name || 'U')[0].toUpperCase();
     
     const div = document.createElement("div");
-    div.className = `chatItem ${chat.id === currentChatId ? 'active' : ''}`;
+    div.className = `chatItem ${chat.chatId === currentChatId ? 'active' : ''}`;
     div.innerHTML = `
         <div class="avatar-circle">${initials}</div>
         <div class="flex-1 min-w-0">
@@ -444,7 +453,7 @@ function renderChatList(filter = "") {
             <div class="lastMsg">${chat.lastMessage || '...' }</div>
         </div>
     `;
-    div.onclick = () => openChat(pId, partner?.name || 'User');
+    div.onclick = () => openChat(pId, partner?.name || pId || 'User');
     left.appendChild(div);
   });
 }
@@ -470,7 +479,7 @@ function renderNewChatUsers(filter = "") {
             <div class="text-sm text-[#667781]">${user.email}</div>
         </div>
     `;
-    div.onclick = () => { openChat(user.id, user.name); togglePanel(false); };
+    div.onclick = async () => { await createOrOpenChat(user.id, user.name); togglePanel(false); };
     newChatUsers.appendChild(div);
   });
 }
@@ -492,16 +501,19 @@ window.openChat = async (partnerId, partnerName) => {
   inputBox.style.display = "flex";
   
   if (unsubscribeMessages) unsubscribeMessages();
-  const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), where("chatId", "==", currentChatId));
+  const q = query(
+    collection(db, "messages"),
+    where("chatId", "==", currentChatId),
+    orderBy("time", "asc")
+  );
   unsubscribeMessages = onSnapshot(q, (snapshot) => {
     messagesBox.innerHTML = "";
-    const msgs = snapshot.docs.map(d => d.data());
-    msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     
-    if (msgs.length === 0) {
+    if (snapshot.empty) {
       messagesBox.innerHTML = `<div class="bg-[#dcf8c6] text-[#4a4a4a] text-xs px-3 py-1 rounded shadow-sm mx-auto my-4">Messages are end-to-end encrypted.</div>`;
     } else {
-      msgs.forEach(m => {
+      snapshot.forEach((docSnap) => {
+        const m = docSnap.data();
         const wrapper = document.createElement("div");
         wrapper.className = "msg-wrapper";
         const div = document.createElement("div");
@@ -516,14 +528,41 @@ window.openChat = async (partnerId, partnerName) => {
   renderChatList();
 };
 
+async function createOrOpenChat(partnerId, partnerName) {
+  if (!CURRENT_USER || !partnerId) return;
+  const chatId = getChatId(CURRENT_USER, partnerId);
+  const chatRef = doc(db, "chats", chatId);
+  const existing = await getDoc(chatRef);
+
+  if (!existing.exists()) {
+    await setDoc(chatRef, {
+      participants: [CURRENT_USER, partnerId],
+      lastMessage: "",
+      timestamp: serverTimestamp()
+    }, { merge: true });
+  }
+
+  await openChat(partnerId, partnerName || "User");
+}
+
 window.sendMessage = async () => {
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
   if (!text || !currentChatId) return;
   input.value = "";
   try {
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), { chatId: currentChatId, sender: CURRENT_USER, text, createdAt: serverTimestamp() });
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', currentChatId), { participants: [CURRENT_USER, currentChatUser], lastMessage: text, updatedAt: serverTimestamp() }, { merge: true });
+    await addDoc(collection(db, "messages"), {
+      chatId: currentChatId,
+      sender: CURRENT_USER,
+      receiver: currentChatUser,
+      text,
+      time: serverTimestamp()
+    });
+    await setDoc(doc(db, "chats", currentChatId), {
+      participants: [CURRENT_USER, currentChatUser],
+      lastMessage: text,
+      timestamp: serverTimestamp()
+    }, { merge: true });
   } catch (err) { console.error("Send error:", err); }
 };
 
@@ -541,6 +580,28 @@ onAuthStateChanged(auth, async (user) => {
     listenToChats();
   } else {
     CURRENT_USER = null;
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
+    if (unsubscribeChats) {
+      unsubscribeChats();
+      unsubscribeChats = null;
+    }
+    activeChats = [];
+    allUsers = [];
+    currentChatUser = null;
+    currentChatId = null;
+    messagesBox.innerHTML = `
+      <div class="m-auto text-center max-w-sm">
+        <div class="bg-gray-200/50 p-6 rounded-full inline-block mb-4">
+            <svg viewBox="0 0 24 24" width="60" height="60" class="text-gray-400"><path fill="currentColor" d="M12.072 1.761a10.05 10.05 0 0 0-9.303 5.65c-1.925 3.904-1.325 8.224 1.512 11.5l-1.041 3.804a.75.75 0 0 0 .916.916l3.804-1.041c1.582.885 3.326 1.341 5.112 1.341a10.05 10.05 0 0 0 10.048-10.047c0-5.549-4.498-10.123-10.048-10.123z"></path></svg>
+        </div>
+        <h3 class="text-2xl font-light text-gray-700">BooterSpace Web</h3>
+      </div>
+    `;
+    inputBox.style.display = "none";
+    renderChatList();
     document.getElementById("authBox").style.display = "block";
     document.getElementById("container").style.display = "none";
     document.getElementById("logoutBtn")?.classList.add("hidden");
