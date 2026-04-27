@@ -6,6 +6,7 @@
 <title>Company Reviews</title>
 <link rel="stylesheet" href="assets/css/shared.css">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="public/js/env-config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -710,28 +711,14 @@
 
 <!-- FIREBASE SDK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import {
-    getFirestore, collection, addDoc, getDocs, doc, updateDoc,
+  import { getFirebaseServices, loadFirebaseModule } from "./public/js/firebase-singleton.js";
+
+  const { auth, db } = await getFirebaseServices();
+  const { onAuthStateChanged } = await loadFirebaseModule("firebase-auth.js");
+  const {
+    collection, addDoc, getDocs, doc, updateDoc,
     query, orderBy, serverTimestamp, increment, Timestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-    authDomain: "kar-kardan.firebaseapp.com",
-    databaseURL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kar-kardan",
-    storageBucket: "kar-kardan.firebasestorage.app",
-    messagingSenderId: "554147696994",
-    appId: "1:554147696994:web:221dcb883e3b65dcea5c3b",
-    measurementId: "G-RRC3X485KQ"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+  } = await loadFirebaseModule("firebase-firestore.js");
 
   // ── STATE ──────────────────────────────────────────────────────────────────
   let currentUser = null;
@@ -792,7 +779,7 @@
           <div class="hero-cta-icon">✍️</div>
           <h3>Share Your Experience</h3>
           <p>Sign in to write a review and help the community make better career decisions.</p>
-          <a href="login.html" class="btn-hero-signin">Login In to Write a Review</a>
+          <a href="login.html" class="btn-hero-login">Log In to Write a Review</a>
           <a href="signup.html" class="btn-hero-signup">Create Free Account</a>
         </div>`;
     }
