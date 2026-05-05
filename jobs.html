@@ -288,6 +288,16 @@ function renderJobCard(job) {
   const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
   const faviconUrl = getWebsiteFavicon(websiteUrl);
   const isNew = job.timestamp && (Date.now() - job.timestamp.toMillis() < 3 * 24 * 60 * 60 * 1000);
+  const companyName = job.company || "Unknown Company";
+  const companyMarkup = faviconUrl
+    ? `<a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${companyName} website">
+            <img src="${faviconUrl}" alt="${companyName} website favicon" class="w-5 h-5 rounded-md" onerror="this.style.display='none'">
+            <span class="font-semibold">${companyName}</span>
+          </a>`
+    : `<span class="flex items-center gap-1.5 text-slate-600">
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-[11px] text-slate-500">🌐</span>
+            <span class="font-semibold">${companyName}</span>
+          </span>`;
   const initials = (job.company || "CO")
     .split(/\s+/)
     .filter(Boolean)
@@ -310,16 +320,10 @@ function renderJobCard(job) {
         <h3 class="font-bold text-base sm:text-lg text-slate-900 group-hover:text-blue-600 transition-colors">${job.title}</h3>
       </div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-[15px] sm:text-sm text-slate-500 font-medium">
-        <span class="flex items-center gap-1.5">
-          <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
-          ${job.company}
+        <span class="flex items-center gap-2">
+          <button type="button" class="copy-emoji inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-600 ring-1 ring-blue-100 transition hover:bg-blue-100 sm:h-8 sm:w-8 sm:text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
+          ${companyMarkup}
         </span>
-        ${faviconUrl ? `
-          <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit company website">
-            <img src="${faviconUrl}" alt="${job.company} website favicon" class="w-4 h-4 rounded-sm" onerror="this.style.display='none'">
-            <span>Website</span>
-          </a>
-        ` : ""}
         <span class="flex items-center gap-1.5 text-blue-600/80">
           <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
           ${job.location || 'Remote'}
