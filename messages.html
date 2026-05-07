@@ -532,7 +532,7 @@ function getUnreadCount(chat) {
 }
 
 function isChatDeletedForCurrentUser(chat) {
-  return getMapValueForUser(chat?.deletedFor, CURRENT_USER) === true;
+  return !!getMapValueForUser(chat?.deletedFor, CURRENT_USER);
 }
 
 function formatUnreadCount(count) {
@@ -746,7 +746,7 @@ async function deleteChat(chatId) {
       doc(db, "chats", chatId),
       {
         deletedFor: {
-          [CURRENT_USER]: true
+          [CURRENT_USER]: Date.now()
         }
       },
       { merge: true }
@@ -827,9 +827,6 @@ window.openChat = async (partnerId, partnerName) => {
   await setDoc(doc(db, "chats", currentChatId), {
     unreadBy: {
       [CURRENT_USER]: 0
-    },
-    deletedFor: {
-      [CURRENT_USER]: false
     }
   }, { merge: true });
   
