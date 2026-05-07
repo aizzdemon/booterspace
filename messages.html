@@ -520,10 +520,12 @@ function getUnreadCount(chat) {
     return Number(unreadValue) || 0;
   }
 
-  const legacyUnreadCount = Number(chat.unreadCount || chat.unread || 0);
-  const messageIsFromPartner = chat.lastSenderId && chat.lastSenderId !== CURRENT_USER;
-  if (messageIsFromPartner && Number.isFinite(legacyUnreadCount) && legacyUnreadCount > 0) {
-    return legacyUnreadCount;
+  if (
+    chat.unreadBy &&
+    typeof chat.unreadBy === "object" &&
+    chat.unreadBy[CURRENT_USER] !== undefined
+  ) {
+    return Number(chat.unreadBy[CURRENT_USER]) || 0;
   }
 
   return 0;
