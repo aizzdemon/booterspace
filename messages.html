@@ -261,7 +261,7 @@
       height: 22px;
       border-radius: 50%;
       background: #1d9bf0;
-      color: #000;
+      color: #fff;
       font-size: 0.75rem;
       font-weight: 900;
       display: inline-flex;
@@ -430,7 +430,7 @@
 <script type="module">
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc,
+  getFirestore, collection, addDoc, getDocs, getDoc,
   query, where, orderBy, onSnapshot, doc, setDoc, serverTimestamp, limit, increment
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { 
@@ -502,15 +502,15 @@ function escapeHtml(value = "") {
 }
 
 function getUnreadCount(chat) {
+
   if (!chat || !CURRENT_USER) return 0;
 
-  const currentUserUnread = Number(chat.unreadBy?.[CURRENT_USER] || 0);
-  if (Number.isFinite(currentUserUnread) && currentUserUnread > 0) return currentUserUnread;
-
-  const legacyUnreadCount = Number(chat.unreadCount || chat.unread || 0);
-  const messageIsFromPartner = chat.lastSenderId && chat.lastSenderId !== CURRENT_USER;
-  if (messageIsFromPartner && Number.isFinite(legacyUnreadCount) && legacyUnreadCount > 0) {
-    return legacyUnreadCount;
+  if (
+    chat.unreadBy &&
+    typeof chat.unreadBy === "object" &&
+    chat.unreadBy[CURRENT_USER] !== undefined
+  ) {
+    return Number(chat.unreadBy[CURRENT_USER]) || 0;
   }
 
   return 0;
@@ -635,7 +635,11 @@ function listenToChats() {
 function renderChatList(filter = "") {
   left.innerHTML = "";
   const term = filter.toLowerCase();
-  const filtered = activeChats.filter(chat => {
+  const visibleChats = activeChats.filter(chat => {
+    return !(chat.deletedFor && chat.deletedFor[CURRENT_USER]);
+  });
+
+  const filtered = visibleChats.filter(chat => {
     const pId = getPartnerIdFromChat(chat);
     const partner = allUsers.find(u => u.id === pId);
     const name = (partner?.name || pId || "").toLowerCase();
@@ -649,6 +653,10 @@ function renderChatList(filter = "") {
   }
 
   filtered.forEach(chat => {
+    console.log("Chat:", chat.chatId);
+    console.log("UnreadBy:", chat.unreadBy);
+    console.log("DeletedFor:", chat.deletedFor);
+
     const pId = getPartnerIdFromChat(chat);
     const partner = allUsers.find(u => u.id === pId);
     const displayName = partner?.name || 'User';
@@ -704,29 +712,52 @@ function showContactInfo(user) {
 }
 
 async function deleteChat(chatId) {
-  if (!chatId) return;
-  const confirmed = window.confirm("Delete this chat from your chat list?");
+  if (!chatId || !CURRENT_USER) return;
+
+  const confirmed = window.confirm(
+    "Delete this conversation from your chat list?"
+  );
+
   if (!confirmed) return;
+
   try {
-    await deleteDoc(doc(db, "chats", chatId));
+
+    // Soft delete only for current user
+    await setDoc(
+      doc(db, "chats", chatId),
+      {
+        [`deletedFor.${CURRENT_USER}`]: true
+      },
+      { merge: true }
+    );
+
+    // Close current chat UI
     if (chatId === currentChatId) {
+
       currentChatId = null;
       currentChatUser = null;
+
+      if (unsubscribeMessages) {
+        unsubscribeMessages();
+        unsubscribeMessages = null;
+      }
+
       inputBox.style.display = "none";
-      document.getElementById("chatHeader").innerHTML = `
-        <div id="headerContent" class="flex items-center gap-3 text-gray-500">
-          <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          </button>
-          Select a chat to start messaging
-        </div>`;
-      document.getElementById("mobileBackBtn")?.addEventListener("click", () => setMobileChatOpen(false));
-      messagesBox.innerHTML = `<div class="m-auto text-center text-sm text-gray-500">Chat deleted.</div>`;
+
+      messagesBox.innerHTML = `
+        <div class="m-auto text-center text-sm text-gray-500">
+          Conversation deleted.
+        </div>
+      `;
+
       setMobileChatOpen(false);
     }
+
+    renderChatList();
+
   } catch (err) {
     console.error("Delete chat error:", err);
-    showChatError("Could not delete chat. Please try again.");
+    showChatError("Could not delete conversation.");
   }
 }
 
@@ -769,7 +800,9 @@ window.openChat = async (partnerId, partnerName) => {
   currentChatId = getChatId(CURRENT_USER, partnerId);
   const safePartnerName = partnerName || "User";
   const initials = safePartnerName.charAt(0).toUpperCase();
-  await setDoc(doc(db, "chats", currentChatId), { [`unreadBy.${CURRENT_USER}`]: 0 }, { merge: true });
+  await setDoc(doc(db, "chats", currentChatId), {
+    [`unreadBy.${CURRENT_USER}`]: 0
+  }, { merge: true });
   
   document.getElementById("chatHeader").innerHTML = `
     <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
@@ -856,12 +889,20 @@ window.sendMessage = async () => {
       time: serverTimestamp()
     });
     await setDoc(doc(db, "chats", currentChatId), {
+
       participants: [CURRENT_USER, currentChatUser],
+
       lastMessage: text,
       lastSenderId: CURRENT_USER,
       timestamp: serverTimestamp(),
+
       [`unreadBy.${currentChatUser}`]: increment(1),
-      [`unreadBy.${CURRENT_USER}`]: 0
+      [`unreadBy.${CURRENT_USER}`]: 0,
+
+      // restore deleted chats automatically
+      [`deletedFor.${CURRENT_USER}`]: false,
+      [`deletedFor.${currentChatUser}`]: false
+
     }, { merge: true });
     if (isMobileView()) input.focus();
   } catch (err) { console.error("Send error:", err); }
