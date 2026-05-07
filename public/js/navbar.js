@@ -288,6 +288,7 @@ async function bindMessageCenter(user, elements) {
         const data = d.data() || {};
         return { id: d.id, data, unreadCount: Number(data.unreadBy?.[user.uid] || 0) };
       })
+      .filter((chat) => !(chat.data.deletedFor && chat.data.deletedFor[user.uid]))
       .filter((chat) => chat.unreadCount > 0);
 
     const uniquePartnerIds = [...new Set(unreadChats.map((chat) => getChatPartnerId(chat.data, user.uid)).filter(Boolean))];
