@@ -204,6 +204,84 @@
         font-weight: bold;
     }
 
+    .chat-options-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .chat-options-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      color: #667781;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-options-btn:hover { background: #e9edef; }
+
+    .chat-options-menu {
+      position: absolute;
+      right: 0;
+      top: 36px;
+      min-width: 160px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+      z-index: 80;
+      overflow: hidden;
+    }
+
+    .chat-options-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #111827;
+    }
+
+    .chat-options-menu button:hover { background: #f3f4f6; }
+    .chat-options-menu button.danger { color: #dc2626; }
+
+    .unread-badge {
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .contact-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .contact-modal-backdrop.active { display: flex; }
+
+    .contact-modal {
+      width: min(100%, 380px);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
     @media (max-width: 768px) {
       .messages-layout { margin: 0; height: 100vh; border-radius: 0; }
       .chat-list { width: 100%; }
@@ -319,11 +397,25 @@
   </section>
 </div>
 
+<div id="contactModalBackdrop" class="contact-modal-backdrop">
+  <div class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contactModalName">
+    <div class="bg-[#008069] text-white px-5 py-4 flex items-center justify-between">
+      <h3 class="font-bold text-lg">Contact info</h3>
+      <button id="closeContactModal" class="text-2xl leading-none" aria-label="Close contact info">×</button>
+    </div>
+    <div class="p-6 text-center">
+      <div id="contactModalAvatar" class="mx-auto mb-4 w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold">U</div>
+      <h4 id="contactModalName" class="text-xl font-bold text-gray-900">User</h4>
+      <p id="contactModalEmail" class="mt-1 text-sm text-gray-500 break-all"></p>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, getDoc,
-  query, where, orderBy, onSnapshot, doc, setDoc, serverTimestamp, limit
+  getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc,
+  query, where, orderBy, onSnapshot, doc, setDoc, serverTimestamp, limit, increment
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { 
   getAuth, createUserWithEmailAndPassword, 
@@ -357,6 +449,8 @@ let currentChatId = null;
 let unsubscribeMessages = null;
 let unsubscribeChats = null;
 let hasAutoOpenedLatestChat = false;
+const pendingOpenChatId = new URLSearchParams(window.location.search).get("chatId");
+const pendingComposeTo = new URLSearchParams(window.location.search).get("composeTo");
 
 let allUsers = [];
 let activeChats = [];
@@ -374,9 +468,30 @@ const inputBox = document.getElementById("inputBox");
 const container = document.getElementById("container");
 const mobileBackBtn = document.getElementById("mobileBackBtn");
 const chatHeader = document.getElementById("chatHeader");
+const contactModalBackdrop = document.getElementById("contactModalBackdrop");
+const closeContactModal = document.getElementById("closeContactModal");
 
 function showChatError(message) {
   messagesBox.innerHTML = `<div class="m-auto text-center text-sm text-red-500 px-4">${message}</div>`;
+}
+
+function escapeHtml(value = "") {
+  return value.toString().replace(/[&<>'"]/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;"
+  }[char]));
+}
+
+function getUnreadCount(chat) {
+  const unreadBy = chat?.unreadBy || {};
+  return Number(unreadBy[CURRENT_USER] || 0);
+}
+
+function closeAllChatMenus() {
+  document.querySelectorAll(".chat-options-menu").forEach((menu) => menu.classList.add("hidden"));
 }
 
 function isMobileView() {
@@ -405,6 +520,13 @@ newChatBtn.onclick = () => {
 
 closeSidePanel.onclick = () => togglePanel(false);
 mobileBackBtn.onclick = () => setMobileChatOpen(false);
+closeContactModal.onclick = () => contactModalBackdrop.classList.remove("active");
+contactModalBackdrop.onclick = (event) => {
+  if (event.target === contactModalBackdrop) contactModalBackdrop.classList.remove("active");
+};
+document.addEventListener("click", (event) => {
+  if (event.target instanceof Element && !event.target.closest(".chat-options-wrapper")) closeAllChatMenus();
+});
 
 window.signup = async () => {
   try {
@@ -466,9 +588,11 @@ function listenToChats() {
     activeChats = snapshot.docs.map(d => ({ chatId: d.id, ...d.data() }));
     renderChatList();
 
-    if (!hasAutoOpenedLatestChat && activeChats.length > 0) {
-      const latestChat = activeChats[0];
-      const partnerId = getPartnerIdFromChat(latestChat);
+    if (!hasAutoOpenedLatestChat && (pendingOpenChatId || pendingComposeTo)) {
+      const requestedChat = pendingOpenChatId ? activeChats.find(chat => chat.chatId === pendingOpenChatId) : null;
+      const requestedCompose = pendingComposeTo ? { participants: [CURRENT_USER, pendingComposeTo] } : null;
+      const targetChat = requestedChat || requestedCompose;
+      const partnerId = getPartnerIdFromChat(targetChat || {});
       if (partnerId) {
         const partner = allUsers.find(u => u.id === partnerId);
         hasAutoOpenedLatestChat = true;
@@ -497,20 +621,81 @@ function renderChatList(filter = "") {
   filtered.forEach(chat => {
     const pId = getPartnerIdFromChat(chat);
     const partner = allUsers.find(u => u.id === pId);
-    const initials = (partner?.name || 'U')[0].toUpperCase();
+    const displayName = partner?.name || 'User';
+    const initials = displayName[0].toUpperCase();
+    const unreadCount = getUnreadCount(chat);
     
     const div = document.createElement("div");
     div.className = `chatItem ${chat.chatId === currentChatId ? 'active' : ''}`;
     div.innerHTML = `
-        <div class="avatar-circle">${initials}</div>
+        <div class="avatar-circle">${escapeHtml(initials)}</div>
         <div class="flex-1 min-w-0">
-            <div class="name">${partner?.name || 'User'}</div>
-            <div class="lastMsg">${chat.lastMessage || '...' }</div>
+            <div class="name">${escapeHtml(displayName)}</div>
+            <div class="lastMsg">${escapeHtml(chat.lastMessage || '...' )}</div>
+        </div>
+        ${unreadCount > 0 ? `<span class="unread-badge" aria-label="${unreadCount} unread messages">${unreadCount > 99 ? "99+" : unreadCount}</span>` : ""}
+        <div class="chat-options-wrapper">
+          <button class="chat-options-btn" type="button" aria-label="Chat options for ${escapeHtml(displayName)}">⋮</button>
+          <div class="chat-options-menu hidden">
+            <button type="button" data-action="view-contact">View contact</button>
+            <button type="button" data-action="delete-chat" class="danger">Delete chat</button>
+          </div>
         </div>
     `;
-    div.onclick = () => openChat(pId, partner?.name || pId || 'User');
+    div.addEventListener("click", () => openChat(pId, displayName));
+    div.querySelector(".chat-options-btn").addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menu = div.querySelector(".chat-options-menu");
+      const shouldOpen = menu.classList.contains("hidden");
+      closeAllChatMenus();
+      menu.classList.toggle("hidden", !shouldOpen);
+    });
+    div.querySelector('[data-action="view-contact"]').addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeAllChatMenus();
+      showContactInfo(partner || { id: pId, name: displayName, email: "" });
+    });
+    div.querySelector('[data-action="delete-chat"]').addEventListener("click", async (event) => {
+      event.stopPropagation();
+      closeAllChatMenus();
+      await deleteChat(chat.chatId);
+    });
     left.appendChild(div);
   });
+}
+
+function showContactInfo(user) {
+  document.getElementById("contactModalAvatar").textContent = (user.name || "U").charAt(0).toUpperCase();
+  document.getElementById("contactModalName").textContent = user.name || "User";
+  document.getElementById("contactModalEmail").textContent = user.email || "No email available";
+  contactModalBackdrop.classList.add("active");
+}
+
+async function deleteChat(chatId) {
+  if (!chatId) return;
+  const confirmed = window.confirm("Delete this chat from your chat list?");
+  if (!confirmed) return;
+  try {
+    await deleteDoc(doc(db, "chats", chatId));
+    if (chatId === currentChatId) {
+      currentChatId = null;
+      currentChatUser = null;
+      inputBox.style.display = "none";
+      document.getElementById("chatHeader").innerHTML = `
+        <div id="headerContent" class="flex items-center gap-3 text-gray-500">
+          <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          Select a chat to start messaging
+        </div>`;
+      document.getElementById("mobileBackBtn")?.addEventListener("click", () => setMobileChatOpen(false));
+      messagesBox.innerHTML = `<div class="m-auto text-center text-sm text-gray-500">Chat deleted.</div>`;
+      setMobileChatOpen(false);
+    }
+  } catch (err) {
+    console.error("Delete chat error:", err);
+    showChatError("Could not delete chat. Please try again.");
+  }
 }
 
 function renderNewChatUsers(filter = "") {
@@ -519,7 +704,7 @@ function renderNewChatUsers(filter = "") {
   const candidates = allUsers.filter(u => u.id !== CURRENT_USER && (u.name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)));
   
   if (candidates.length === 0) {
-      newChatUsers.innerHTML = `<div class="p-8 text-center text-gray-500 text-sm">No results for "${filter}"</div>`;
+      newChatUsers.innerHTML = `<div class="p-8 text-center text-gray-500 text-sm">No results for "${escapeHtml(filter)}"</div>`;
       return;
   }
 
@@ -528,10 +713,10 @@ function renderNewChatUsers(filter = "") {
     div.className = "contact-item border-b border-gray-100";
     const initials = (user.name || 'U')[0].toUpperCase();
     div.innerHTML = `
-        <div class="contact-avatar">${initials}</div>
+        <div class="contact-avatar">${escapeHtml(initials)}</div>
         <div class="flex-1">
-            <div class="font-medium text-[#111b21]">${user.name || 'User'}</div>
-            <div class="text-sm text-[#667781]">${user.email}</div>
+            <div class="font-medium text-[#111b21]">${escapeHtml(user.name || 'User')}</div>
+            <div class="text-sm text-[#667781]">${escapeHtml(user.email)}</div>
         </div>
     `;
     div.onclick = async () => {
@@ -552,14 +737,15 @@ window.openChat = async (partnerId, partnerName) => {
   currentChatId = getChatId(CURRENT_USER, partnerId);
   const safePartnerName = partnerName || "User";
   const initials = safePartnerName.charAt(0).toUpperCase();
+  await setDoc(doc(db, "chats", currentChatId), { [`unreadBy.${CURRENT_USER}`]: 0 }, { merge: true });
   
   document.getElementById("chatHeader").innerHTML = `
     <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     </button>
-    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">${initials}</div>
+    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">${escapeHtml(initials)}</div>
     <div class="flex-1">
-        <div class="font-semibold text-[#111b21]">${safePartnerName}</div>
+        <div class="font-semibold text-[#111b21]">${escapeHtml(safePartnerName)}</div>
         <div class="text-xs text-gray-500">online</div>
     </div>
   `;
@@ -640,7 +826,10 @@ window.sendMessage = async () => {
     await setDoc(doc(db, "chats", currentChatId), {
       participants: [CURRENT_USER, currentChatUser],
       lastMessage: text,
-      timestamp: serverTimestamp()
+      lastSenderId: CURRENT_USER,
+      timestamp: serverTimestamp(),
+      [`unreadBy.${currentChatUser}`]: increment(1),
+      [`unreadBy.${CURRENT_USER}`]: 0
     }, { merge: true });
     if (isMobileView()) input.focus();
   } catch (err) { console.error("Send error:", err); }
