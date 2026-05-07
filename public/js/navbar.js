@@ -224,6 +224,16 @@ function getChatPartnerId(chat, uid) {
   return (chat.participants || []).find((participant) => participant !== uid) || null;
 }
 
+function getMapValueForUser(mapValue, userId) {
+  if (!mapValue || typeof mapValue !== "object" || !userId) return undefined;
+  if (Object.prototype.hasOwnProperty.call(mapValue, userId)) return mapValue[userId];
+
+  return userId.split(".").reduce((value, segment) => {
+    if (!value || typeof value !== "object") return undefined;
+    return value[segment];
+  }, mapValue);
+}
+
 async function getUserDisplayName(uid) {
   if (!uid) return "User";
   const profile = await getProfileData(uid);
@@ -286,9 +296,9 @@ async function bindMessageCenter(user, elements) {
     const unreadChats = snap.docs
       .map((d) => {
         const data = d.data() || {};
-        return { id: d.id, data, unreadCount: Number(data.unreadBy?.[user.uid] || 0) };
+        return { id: d.id, data, unreadCount: Number(getMapValueForUser(data.unreadBy, user.uid) || 0) };
       })
-      .filter((chat) => !(chat.data.deletedFor && chat.data.deletedFor[user.uid]))
+      .filter((chat) => getMapValueForUser(chat.data.deletedFor, user.uid) !== true)
       .filter((chat) => chat.unreadCount > 0);
 
     const uniquePartnerIds = [...new Set(unreadChats.map((chat) => getChatPartnerId(chat.data, user.uid)).filter(Boolean))];

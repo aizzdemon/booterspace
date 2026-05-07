@@ -501,9 +501,24 @@ function escapeHtml(value = "") {
   }[char]));
 }
 
+function getMapValueForUser(mapValue, userId) {
+  if (!mapValue || typeof mapValue !== "object" || !userId) return undefined;
+  if (Object.prototype.hasOwnProperty.call(mapValue, userId)) return mapValue[userId];
+
+  return userId.split(".").reduce((value, segment) => {
+    if (!value || typeof value !== "object") return undefined;
+    return value[segment];
+  }, mapValue);
+}
+
 function getUnreadCount(chat) {
 
   if (!chat || !CURRENT_USER) return 0;
+
+  const unreadValue = getMapValueForUser(chat.unreadBy, CURRENT_USER);
+  if (unreadValue !== undefined) {
+    return Number(unreadValue) || 0;
+  }
 
   if (
     chat.unreadBy &&
@@ -514,6 +529,10 @@ function getUnreadCount(chat) {
   }
 
   return 0;
+}
+
+function isChatDeletedForCurrentUser(chat) {
+  return getMapValueForUser(chat?.deletedFor, CURRENT_USER) === true;
 }
 
 function formatUnreadCount(count) {
@@ -636,7 +655,7 @@ function renderChatList(filter = "") {
   left.innerHTML = "";
   const term = filter.toLowerCase();
   const visibleChats = activeChats.filter(chat => {
-    return !(chat.deletedFor && chat.deletedFor[CURRENT_USER]);
+    return !isChatDeletedForCurrentUser(chat);
   });
 
   const filtered = visibleChats.filter(chat => {
@@ -726,7 +745,9 @@ async function deleteChat(chatId) {
     await setDoc(
       doc(db, "chats", chatId),
       {
-        [`deletedFor.${CURRENT_USER}`]: true
+        deletedFor: {
+          [CURRENT_USER]: true
+        }
       },
       { merge: true }
     );
@@ -801,7 +822,9 @@ window.openChat = async (partnerId, partnerName) => {
   const safePartnerName = partnerName || "User";
   const initials = safePartnerName.charAt(0).toUpperCase();
   await setDoc(doc(db, "chats", currentChatId), {
-    [`unreadBy.${CURRENT_USER}`]: 0
+    unreadBy: {
+      [CURRENT_USER]: 0
+    }
   }, { merge: true });
   
   document.getElementById("chatHeader").innerHTML = `
@@ -896,12 +919,16 @@ window.sendMessage = async () => {
       lastSenderId: CURRENT_USER,
       timestamp: serverTimestamp(),
 
-      [`unreadBy.${currentChatUser}`]: increment(1),
-      [`unreadBy.${CURRENT_USER}`]: 0,
+      unreadBy: {
+        [currentChatUser]: increment(1),
+        [CURRENT_USER]: 0
+      },
 
       // restore deleted chats automatically
-      [`deletedFor.${CURRENT_USER}`]: false,
-      [`deletedFor.${currentChatUser}`]: false
+      deletedFor: {
+        [CURRENT_USER]: false,
+        [currentChatUser]: false
+      }
 
     }, { merge: true });
     if (isMobileView()) input.focus();
