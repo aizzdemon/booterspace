@@ -752,6 +752,9 @@ async function deleteChat(chatId) {
       { merge: true }
     );
 
+    // Optimistically remove deleted chat from local list so it does not reappear
+    activeChats = activeChats.filter((chat) => chat.chatId !== chatId);
+
     // Close current chat UI
     if (chatId === currentChatId) {
 
@@ -824,6 +827,9 @@ window.openChat = async (partnerId, partnerName) => {
   await setDoc(doc(db, "chats", currentChatId), {
     unreadBy: {
       [CURRENT_USER]: 0
+    },
+    deletedFor: {
+      [CURRENT_USER]: false
     }
   }, { merge: true });
   
@@ -924,10 +930,10 @@ window.sendMessage = async () => {
         [CURRENT_USER]: 0
       },
 
-      // restore deleted chats automatically
+      // restore chat only for the sender;
+      // the receiver should decide when to reopen a deleted chat
       deletedFor: {
-        [CURRENT_USER]: false,
-        [currentChatUser]: false
+        [CURRENT_USER]: false
       }
 
     }, { merge: true });
