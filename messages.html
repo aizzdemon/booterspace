@@ -373,6 +373,11 @@ const contactCount = document.getElementById("contactCount");
 const inputBox = document.getElementById("inputBox");
 const container = document.getElementById("container");
 const mobileBackBtn = document.getElementById("mobileBackBtn");
+const chatHeader = document.getElementById("chatHeader");
+
+function showChatError(message) {
+  messagesBox.innerHTML = `<div class="m-auto text-center text-sm text-red-500 px-4">${message}</div>`;
+}
 
 function isMobileView() {
   return window.matchMedia("(max-width: 768px)").matches;
@@ -529,7 +534,15 @@ function renderNewChatUsers(filter = "") {
             <div class="text-sm text-[#667781]">${user.email}</div>
         </div>
     `;
-    div.onclick = async () => { await createOrOpenChat(user.id, user.name); togglePanel(false); };
+    div.onclick = async () => {
+      try {
+        await createOrOpenChat(user.id, user.name);
+        togglePanel(false);
+      } catch (err) {
+        console.error("Create/open chat error:", err);
+        showChatError("Could not open chat. Please try again.");
+      }
+    };
     newChatUsers.appendChild(div);
   });
 }
@@ -537,7 +550,8 @@ function renderNewChatUsers(filter = "") {
 window.openChat = async (partnerId, partnerName) => {
   currentChatUser = partnerId;
   currentChatId = getChatId(CURRENT_USER, partnerId);
-  const initials = partnerName[0].toUpperCase();
+  const safePartnerName = partnerName || "User";
+  const initials = safePartnerName.charAt(0).toUpperCase();
   
   document.getElementById("chatHeader").innerHTML = `
     <button id="mobileBackBtn" class="hidden hover:bg-gray-100 p-2 rounded-full" aria-label="Back to chats">
@@ -545,7 +559,7 @@ window.openChat = async (partnerId, partnerName) => {
     </button>
     <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">${initials}</div>
     <div class="flex-1">
-        <div class="font-semibold text-[#111b21]">${partnerName}</div>
+        <div class="font-semibold text-[#111b21]">${safePartnerName}</div>
         <div class="text-xs text-gray-500">online</div>
     </div>
   `;
@@ -579,26 +593,34 @@ window.openChat = async (partnerId, partnerName) => {
       });
       messagesBox.scrollTop = messagesBox.scrollHeight;
     }
-  }, (err) => console.error("Messages error:", err));
+  }, (err) => {
+    console.error("Messages error:", err);
+    showChatError("Could not load messages. Check your Firestore index/rules.");
+  });
   setMobileChatOpen(true);
   renderChatList();
 };
 
 async function createOrOpenChat(partnerId, partnerName) {
   if (!CURRENT_USER || !partnerId) return;
-  const chatId = getChatId(CURRENT_USER, partnerId);
-  const chatRef = doc(db, "chats", chatId);
-  const existing = await getDoc(chatRef);
+  try {
+    const chatId = getChatId(CURRENT_USER, partnerId);
+    const chatRef = doc(db, "chats", chatId);
+    const existing = await getDoc(chatRef);
 
-  if (!existing.exists()) {
-    await setDoc(chatRef, {
-      participants: [CURRENT_USER, partnerId],
-      lastMessage: "",
-      timestamp: serverTimestamp()
-    }, { merge: true });
+    if (!existing.exists()) {
+      await setDoc(chatRef, {
+        participants: [CURRENT_USER, partnerId],
+        lastMessage: "",
+        timestamp: serverTimestamp()
+      }, { merge: true });
+    }
+
+    await openChat(partnerId, partnerName || "User");
+  } catch (err) {
+    console.error("createOrOpenChat failed:", err);
+    throw err;
   }
-
-  await openChat(partnerId, partnerName || "User");
 }
 
 window.sendMessage = async () => {
