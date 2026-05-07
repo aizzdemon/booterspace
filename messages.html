@@ -246,19 +246,35 @@
     .chat-options-menu button:hover { background: #f3f4f6; }
     .chat-options-menu button.danger { color: #dc2626; }
 
+    .chatItem.unread .name {
+      font-weight: 800;
+    }
+
+    .chatItem.unread .lastMsg {
+      color: #111b21;
+      font-weight: 600;
+    }
+
     .unread-badge {
+      width: 22px;
       min-width: 22px;
       height: 22px;
-      padding: 0 7px;
-      border-radius: 999px;
-      background: #2563eb;
-      color: #fff;
+      border-radius: 50%;
+      background: #1d9bf0;
+      color: #000;
       font-size: 0.75rem;
-      font-weight: 800;
+      font-weight: 900;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .unread-badge[data-wide="true"] {
+      width: auto;
+      padding: 0 7px;
+      border-radius: 999px;
     }
 
     .contact-modal-backdrop {
@@ -486,8 +502,22 @@ function escapeHtml(value = "") {
 }
 
 function getUnreadCount(chat) {
-  const unreadBy = chat?.unreadBy || {};
-  return Number(unreadBy[CURRENT_USER] || 0);
+  if (!chat || !CURRENT_USER) return 0;
+
+  const currentUserUnread = Number(chat.unreadBy?.[CURRENT_USER] || 0);
+  if (Number.isFinite(currentUserUnread) && currentUserUnread > 0) return currentUserUnread;
+
+  const legacyUnreadCount = Number(chat.unreadCount || chat.unread || 0);
+  const messageIsFromPartner = chat.lastSenderId && chat.lastSenderId !== CURRENT_USER;
+  if (messageIsFromPartner && Number.isFinite(legacyUnreadCount) && legacyUnreadCount > 0) {
+    return legacyUnreadCount;
+  }
+
+  return 0;
+}
+
+function formatUnreadCount(count) {
+  return count > 99 ? "99+" : String(count);
 }
 
 function closeAllChatMenus() {
@@ -626,14 +656,16 @@ function renderChatList(filter = "") {
     const unreadCount = getUnreadCount(chat);
     
     const div = document.createElement("div");
-    div.className = `chatItem ${chat.chatId === currentChatId ? 'active' : ''}`;
+    div.className = `chatItem ${chat.chatId === currentChatId ? 'active' : ''} ${unreadCount > 0 ? 'unread' : ''}`;
+    const unreadLabel = `${unreadCount} unread ${unreadCount === 1 ? 'message' : 'messages'}`;
+    const unreadText = formatUnreadCount(unreadCount);
     div.innerHTML = `
         <div class="avatar-circle">${escapeHtml(initials)}</div>
         <div class="flex-1 min-w-0">
             <div class="name">${escapeHtml(displayName)}</div>
             <div class="lastMsg">${escapeHtml(chat.lastMessage || '...' )}</div>
         </div>
-        ${unreadCount > 0 ? `<span class="unread-badge" aria-label="${unreadCount} unread messages">${unreadCount > 99 ? "99+" : unreadCount}</span>` : ""}
+        ${unreadCount > 0 ? `<span class="unread-badge" data-wide="${unreadText.length > 1}" aria-label="${unreadLabel}" title="${unreadLabel}">${unreadText}</span>` : ""}
         <div class="chat-options-wrapper">
           <button class="chat-options-btn" type="button" aria-label="Chat options for ${escapeHtml(displayName)}">⋮</button>
           <div class="chat-options-menu hidden">
