@@ -4,18 +4,24 @@ const navbarState = globalThis.__booterNavbarState || {
   initialized: false,
   notificationsUnsubscribe: null,
   authUnsubscribe: null,
-  activeNotificationUid: null
+  activeNotificationUid: null,
+  messagesUnsubscribe: null,
+  activeMessageUid: null,
+  boundNav: null
 };
 
 globalThis.__booterNavbarState = navbarState;
 
 if (!navbarState.initialized) {
   navbarState.initialized = true;
-  initNavbarUI();
+  window.addEventListener("navbar:ready", () => initNavbarUI());
 }
+
+initNavbarUI();
 
 function getNavbarElements() {
   return {
+    navRoot: document.querySelector("#navbar nav"),
     profileBtn: document.getElementById("profileBtn"),
     profilePic: document.getElementById("profilePic"),
     profileName: document.getElementById("profileName"),
@@ -35,7 +41,12 @@ function getNavbarElements() {
     notificationList: document.getElementById("notificationList"),
     notificationCount: document.getElementById("notificationCount"),
     mNotificationBtn: document.getElementById("mNotificationBtn"),
-    mNotificationCount: document.getElementById("mNotificationCount")
+    mNotificationCount: document.getElementById("mNotificationCount"),
+    messageBtn: document.getElementById("messageBtn"),
+    messageDropdown: document.getElementById("messageDropdown"),
+    messageNotificationList: document.getElementById("messageNotificationList"),
+    messageCount: document.getElementById("messageCount"),
+    mMessageCount: document.getElementById("mMessageCount")
   };
 }
 
@@ -92,7 +103,10 @@ async function toggleForAuth(user, elements) {
     mLogoutBtn,
     notificationCount,
     mNotificationCount,
-    notificationList
+    notificationList,
+    messageCount,
+    mMessageCount,
+    messageNotificationList
   } = elements;
 
   loginBtn?.classList.toggle("hidden", isAuthed);
@@ -108,8 +122,13 @@ async function toggleForAuth(user, elements) {
   if (!isAuthed) {
     if (notificationCount) notificationCount.classList.add("hidden");
     if (mNotificationCount) mNotificationCount.classList.add("hidden");
+    if (messageCount) messageCount.classList.add("hidden");
+    if (mMessageCount) mMessageCount.classList.add("hidden");
     if (notificationList) {
       notificationList.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Login to see notifications</p>';
+    }
+    if (messageNotificationList) {
+      messageNotificationList.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Login to see message notifications</p>';
     }
     return;
   }
@@ -191,6 +210,102 @@ function renderNotificationDropdown(listEl, notifications) {
   }).join("");
 }
 
+function escapeHtml(value = "") {
+  return value.toString().replace(/[&<>'"]/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;"
+  }[char]));
+}
+
+function getChatPartnerId(chat, uid) {
+  return (chat.participants || []).find((participant) => participant !== uid) || null;
+}
+
+async function getUserDisplayName(uid) {
+  if (!uid) return "User";
+  const profile = await getProfileData(uid);
+  return normalizeProfileName(profile?.fullName) || normalizeProfileName(profile?.name) || normalizeProfileName(profile?.username) || profile?.email || "User";
+}
+
+function renderMessageDropdown(listEl, chats, namesByUid, uid) {
+  if (!listEl) return;
+  if (!chats.length) {
+    listEl.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">No new messages</p>';
+    return;
+  }
+
+  listEl.innerHTML = chats.map(({ id, data, unreadCount }) => {
+    const partnerId = getChatPartnerId(data, uid);
+    const senderName = namesByUid.get(partnerId) || "User";
+    const preview = data.lastMessage || "Sent you a message";
+    return `
+      <a href="messages.html?chatId=${encodeURIComponent(id)}" class="block px-4 py-3 border-b border-slate-100 hover:bg-blue-50">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">${escapeHtml(senderName.charAt(0).toUpperCase())}</div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(senderName)}</p>
+            <p class="text-xs text-slate-500 truncate">${escapeHtml(preview)}</p>
+          </div>
+          <span class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">${unreadCount > 99 ? "99+" : unreadCount}</span>
+        </div>
+      </a>
+    `;
+  }).join("");
+}
+
+async function bindMessageCenter(user, elements) {
+  const { messageNotificationList, messageCount, mMessageCount, messageDropdown } = elements;
+  if (!messageNotificationList || !messageCount || !mMessageCount) return;
+
+  if (navbarState.messagesUnsubscribe && navbarState.activeMessageUid !== user?.uid) {
+    navbarState.messagesUnsubscribe();
+    navbarState.messagesUnsubscribe = null;
+    navbarState.activeMessageUid = null;
+  }
+
+  if (!user) {
+    renderMessageDropdown(messageNotificationList, [], new Map(), "");
+    messageCount.classList.add("hidden");
+    mMessageCount.classList.add("hidden");
+    messageDropdown?.classList.add("hidden");
+    return;
+  }
+
+  if (navbarState.activeMessageUid === user.uid && navbarState.messagesUnsubscribe) {
+    return;
+  }
+
+  const { db } = await getFirebaseServices();
+  const { collection, onSnapshot, orderBy, query, where } = await loadFirebaseModule("firebase-firestore.js");
+  const q = query(collection(db, "chats"), where("participants", "array-contains", user.uid), orderBy("timestamp", "desc"));
+
+  navbarState.messagesUnsubscribe = onSnapshot(q, async (snap) => {
+    const unreadChats = snap.docs
+      .map((d) => {
+        const data = d.data() || {};
+        return { id: d.id, data, unreadCount: Number(data.unreadBy?.[user.uid] || 0) };
+      })
+      .filter((chat) => chat.unreadCount > 0);
+
+    const uniquePartnerIds = [...new Set(unreadChats.map((chat) => getChatPartnerId(chat.data, user.uid)).filter(Boolean))];
+    const namesByUid = new Map(await Promise.all(uniquePartnerIds.map(async (uid) => [uid, await getUserDisplayName(uid)])));
+    const totalUnread = unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0);
+
+    renderMessageDropdown(messageNotificationList, unreadChats, namesByUid, user.uid);
+    messageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    messageCount.classList.toggle("hidden", totalUnread === 0);
+    mMessageCount.classList.toggle("hidden", totalUnread === 0);
+  }, () => {
+    messageNotificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load messages</p>';
+  });
+
+  navbarState.activeMessageUid = user.uid;
+}
+
 async function bindNotificationCenter(user, elements) {
   const { notificationList, notificationCount, mNotificationCount, notificationDropdown } = elements;
   if (!notificationList || !notificationCount || !mNotificationCount) return;
@@ -236,9 +351,11 @@ async function bindNotificationCenter(user, elements) {
 
 async function initNavbarUI() {
   const elements = getNavbarElements();
-  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn } = elements;
+  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn, messageBtn, messageDropdown } = elements;
 
   if (!loginBtn && !mLoginBtn) return;
+  if (elements.navRoot && navbarState.boundNav === elements.navRoot) return;
+  navbarState.boundNav = elements.navRoot;
 
   menuBtn?.addEventListener("click", () => {
     mobileMenu?.classList.toggle("hidden");
@@ -246,14 +363,23 @@ async function initNavbarUI() {
 
   notificationBtn?.addEventListener("click", (event) => {
     event.stopPropagation();
+    messageDropdown?.classList.add("hidden");
     notificationDropdown?.classList.toggle("hidden");
+  });
+
+  messageBtn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    notificationDropdown?.classList.add("hidden");
+    messageDropdown?.classList.toggle("hidden");
   });
 
   document.addEventListener("click", (event) => {
     const target = event.target;
-    if (!notificationDropdown || !notificationBtn || !(target instanceof Element)) return;
-    const clickedInside = notificationDropdown.contains(target) || notificationBtn.contains(target);
-    if (!clickedInside) notificationDropdown.classList.add("hidden");
+    if (!(target instanceof Element)) return;
+    const clickedInsideNotifications = notificationDropdown && notificationBtn && (notificationDropdown.contains(target) || notificationBtn.contains(target));
+    const clickedInsideMessages = messageDropdown && messageBtn && (messageDropdown.contains(target) || messageBtn.contains(target));
+    if (!clickedInsideNotifications) notificationDropdown?.classList.add("hidden");
+    if (!clickedInsideMessages) messageDropdown?.classList.add("hidden");
   });
 
   mNotificationBtn?.addEventListener("click", () => {
@@ -274,6 +400,7 @@ async function initNavbarUI() {
     navbarState.authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       await toggleForAuth(user, elements);
       await bindNotificationCenter(user, elements);
+      await bindMessageCenter(user, elements);
     });
 
     const onLogout = async () => {

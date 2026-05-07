@@ -67,18 +67,40 @@
         </div>
       </div>
 
-      <!-- 💬 Message Button (Updated with Link) -->
-      <a id="messageBtn" href="messages.html" class="relative text-gray-600 hover:text-blue-600">
+      <!-- 💬 Message Button -->
+      <button id="messageBtn" type="button" class="relative text-gray-600 hover:text-blue-600">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none"
              viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 10h8m-8 4h5m-9 5l1.4-3.2A9 9 0 1112 21a8.96 8.96 0 01-4-.9L3 21z" />
         </svg>
         <span id="messageCount"
-          class="absolute -top-1 -right-1 hidden bg-indigo-500 text-white text-[10px] px-1.5 rounded-full">
+          class="absolute -top-1 -right-1 hidden bg-blue-600 text-white text-[10px] px-1.5 rounded-full">
           0
         </span>
-      </a>
+      </button>
+
+      <!-- 🔽 Message Dropdown -->
+      <div id="messageDropdown"
+        class="hidden absolute right-0 top-12 w-80 bg-white border rounded-xl shadow-lg z-50">
+
+        <div class="px-4 py-3 border-b font-bold text-gray-700">
+          Message notifications
+        </div>
+
+        <div id="messageNotificationList" class="max-h-96 overflow-y-auto">
+          <p class="text-center text-sm text-gray-400 py-6">
+            No new messages
+          </p>
+        </div>
+
+        <div class="border-t text-center">
+          <a href="messages.html"
+            class="block py-2 text-sm font-semibold text-blue-600 hover:bg-gray-50">
+            View all messages
+          </a>
+        </div>
+      </div>
 
       <!-- Profile -->
       <a id="profileBtn"
@@ -137,7 +159,7 @@
         Messages
       </span>
       <span id="mMessageCount"
-        class="hidden bg-indigo-500 text-white text-xs px-2 rounded-full">0</span>
+        class="hidden bg-blue-600 text-white text-xs px-2 rounded-full">0</span>
     </a>
 
     <a href="jobs.html" class="flex items-center gap-2 rounded-lg px-2 py-2 font-semibold hover:bg-gray-50"><span aria-hidden="true">💼</span><span>Jobs</span></a>
