@@ -28,6 +28,8 @@ function getNavbarElements() {
     loginBtn: document.getElementById("loginBtn"),
     logoutBtn: document.getElementById("logoutBtn"),
     mProfileBtn: document.getElementById("mProfileBtn"),
+    mTopProfileBtn: document.getElementById("mTopProfileBtn"),
+    mTopProfileName: document.getElementById("mTopProfileName"),
     mProfilePic: document.getElementById("mProfilePic"),
     mProfileName: document.getElementById("mProfileName"),
     mLoginBtn: document.getElementById("mLoginBtn"),
@@ -42,11 +44,14 @@ function getNavbarElements() {
     notificationCount: document.getElementById("notificationCount"),
     mNotificationBtn: document.getElementById("mNotificationBtn"),
     mNotificationCount: document.getElementById("mNotificationCount"),
+    mTopNotificationBtn: document.getElementById("mTopNotificationBtn"),
+    mTopNotificationCount: document.getElementById("mTopNotificationCount"),
     messageBtn: document.getElementById("messageBtn"),
     messageDropdown: document.getElementById("messageDropdown"),
     messageNotificationList: document.getElementById("messageNotificationList"),
     messageCount: document.getElementById("messageCount"),
-    mMessageCount: document.getElementById("mMessageCount")
+    mMessageCount: document.getElementById("mMessageCount"),
+    mTopMessageCount: document.getElementById("mTopMessageCount")
   };
 }
 
@@ -95,8 +100,10 @@ async function toggleForAuth(user, elements) {
     loginBtn,
     logoutBtn,
     mProfileBtn,
+    mTopProfileBtn,
     mProfilePic,
     mProfileName,
+    mTopProfileName,
     mLoginBtn,
     desktopStartBtn,
     mSignupBtn,
@@ -118,6 +125,7 @@ async function toggleForAuth(user, elements) {
   mSignupBtn?.classList.toggle("hidden", isAuthed);
   mLogoutBtn?.classList.toggle("hidden", !isAuthed);
   mProfileBtn?.classList.toggle("hidden", !isAuthed);
+  mTopProfileBtn?.classList.toggle("hidden", !isAuthed);
 
   if (!isAuthed) {
     if (notificationCount) notificationCount.classList.add("hidden");
@@ -147,6 +155,7 @@ async function toggleForAuth(user, elements) {
     };
   }
   if (mProfileName) mProfileName.textContent = displayName;
+  if (mTopProfileName) mTopProfileName.textContent = displayName;
   if (mProfilePic) {
     mProfilePic.src = avatar;
     mProfilePic.onerror = () => {
@@ -267,8 +276,8 @@ function renderMessageDropdown(listEl, chats, namesByUid, uid) {
 }
 
 async function bindMessageCenter(user, elements) {
-  const { messageNotificationList, messageCount, mMessageCount, messageDropdown } = elements;
-  if (!messageNotificationList || !messageCount || !mMessageCount) return;
+  const { messageNotificationList, messageCount, mMessageCount, mTopMessageCount, messageDropdown } = elements;
+  if (!messageNotificationList || !messageCount) return;
 
   if (navbarState.messagesUnsubscribe && navbarState.activeMessageUid !== user?.uid) {
     navbarState.messagesUnsubscribe();
@@ -279,7 +288,8 @@ async function bindMessageCenter(user, elements) {
   if (!user) {
     renderMessageDropdown(messageNotificationList, [], new Map(), "");
     messageCount.classList.add("hidden");
-    mMessageCount.classList.add("hidden");
+    mMessageCount?.classList.add("hidden");
+    mTopMessageCount?.classList.add("hidden");
     messageDropdown?.classList.add("hidden");
     return;
   }
@@ -307,9 +317,11 @@ async function bindMessageCenter(user, elements) {
 
     renderMessageDropdown(messageNotificationList, unreadChats, namesByUid, user.uid);
     messageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
-    mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    if (mMessageCount) mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    if (mTopMessageCount) mTopMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
     messageCount.classList.toggle("hidden", totalUnread === 0);
-    mMessageCount.classList.toggle("hidden", totalUnread === 0);
+    mMessageCount?.classList.toggle("hidden", totalUnread === 0);
+    mTopMessageCount?.classList.toggle("hidden", totalUnread === 0);
   }, () => {
     messageNotificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load messages</p>';
   });
@@ -318,8 +330,8 @@ async function bindMessageCenter(user, elements) {
 }
 
 async function bindNotificationCenter(user, elements) {
-  const { notificationList, notificationCount, mNotificationCount, notificationDropdown } = elements;
-  if (!notificationList || !notificationCount || !mNotificationCount) return;
+  const { notificationList, notificationCount, mNotificationCount, mTopNotificationCount, notificationDropdown } = elements;
+  if (!notificationList || !notificationCount) return;
 
   if (navbarState.notificationsUnsubscribe && navbarState.activeNotificationUid !== user?.uid) {
     navbarState.notificationsUnsubscribe();
@@ -330,7 +342,8 @@ async function bindNotificationCenter(user, elements) {
   if (!user) {
     renderNotificationDropdown(notificationList, []);
     notificationCount.classList.add("hidden");
-    mNotificationCount.classList.add("hidden");
+    mNotificationCount?.classList.add("hidden");
+    mTopNotificationCount?.classList.add("hidden");
     notificationDropdown?.classList.add("hidden");
     return;
   }
@@ -350,9 +363,11 @@ async function bindNotificationCenter(user, elements) {
 
     renderNotificationDropdown(notificationList, rows);
     notificationCount.textContent = String(unreadCount);
-    mNotificationCount.textContent = String(unreadCount);
+    if (mNotificationCount) mNotificationCount.textContent = String(unreadCount);
+    if (mTopNotificationCount) mTopNotificationCount.textContent = String(unreadCount);
     notificationCount.classList.toggle("hidden", unreadCount === 0);
-    mNotificationCount.classList.toggle("hidden", unreadCount === 0);
+    mNotificationCount?.classList.toggle("hidden", unreadCount === 0);
+    mTopNotificationCount?.classList.toggle("hidden", unreadCount === 0);
   }, () => {
     notificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load notifications</p>';
   });
@@ -362,7 +377,7 @@ async function bindNotificationCenter(user, elements) {
 
 async function initNavbarUI() {
   const elements = getNavbarElements();
-  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn, messageBtn, messageDropdown } = elements;
+  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn, mTopNotificationBtn, messageBtn, messageDropdown } = elements;
 
   if (!loginBtn && !mLoginBtn) return;
   if (elements.navRoot && navbarState.boundNav === elements.navRoot) return;
@@ -394,6 +409,14 @@ async function initNavbarUI() {
   });
 
   mNotificationBtn?.addEventListener("click", () => {
+    const nav = globalThis.booterRouter;
+    if (nav?.navigate) {
+      nav.navigate("notification.html");
+      return;
+    }
+    window.location.href = "notification.html";
+  });
+  mTopNotificationBtn?.addEventListener("click", () => {
     const nav = globalThis.booterRouter;
     if (nav?.navigate) {
       nav.navigate("notification.html");
