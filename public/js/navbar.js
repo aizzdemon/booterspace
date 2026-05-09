@@ -277,7 +277,7 @@ function renderMessageDropdown(listEl, chats, namesByUid, uid) {
 
 async function bindMessageCenter(user, elements) {
   const { messageNotificationList, messageCount, mMessageCount, mTopMessageCount, messageDropdown } = elements;
-  if (!messageNotificationList || !messageCount || !mMessageCount) return;
+  if (!messageNotificationList || !messageCount) return;
 
   if (navbarState.messagesUnsubscribe && navbarState.activeMessageUid !== user?.uid) {
     navbarState.messagesUnsubscribe();
@@ -288,7 +288,7 @@ async function bindMessageCenter(user, elements) {
   if (!user) {
     renderMessageDropdown(messageNotificationList, [], new Map(), "");
     messageCount.classList.add("hidden");
-    mMessageCount.classList.add("hidden");
+    mMessageCount?.classList.add("hidden");
     mTopMessageCount?.classList.add("hidden");
     messageDropdown?.classList.add("hidden");
     return;
@@ -317,10 +317,10 @@ async function bindMessageCenter(user, elements) {
 
     renderMessageDropdown(messageNotificationList, unreadChats, namesByUid, user.uid);
     messageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
-    mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    if (mMessageCount) mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
     if (mTopMessageCount) mTopMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
     messageCount.classList.toggle("hidden", totalUnread === 0);
-    mMessageCount.classList.toggle("hidden", totalUnread === 0);
+    mMessageCount?.classList.toggle("hidden", totalUnread === 0);
     mTopMessageCount?.classList.toggle("hidden", totalUnread === 0);
   }, () => {
     messageNotificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load messages</p>';
@@ -331,7 +331,7 @@ async function bindMessageCenter(user, elements) {
 
 async function bindNotificationCenter(user, elements) {
   const { notificationList, notificationCount, mNotificationCount, mTopNotificationCount, notificationDropdown } = elements;
-  if (!notificationList || !notificationCount || !mNotificationCount) return;
+  if (!notificationList || !notificationCount) return;
 
   if (navbarState.notificationsUnsubscribe && navbarState.activeNotificationUid !== user?.uid) {
     navbarState.notificationsUnsubscribe();
@@ -342,7 +342,7 @@ async function bindNotificationCenter(user, elements) {
   if (!user) {
     renderNotificationDropdown(notificationList, []);
     notificationCount.classList.add("hidden");
-    mNotificationCount.classList.add("hidden");
+    mNotificationCount?.classList.add("hidden");
     mTopNotificationCount?.classList.add("hidden");
     notificationDropdown?.classList.add("hidden");
     return;
@@ -363,10 +363,10 @@ async function bindNotificationCenter(user, elements) {
 
     renderNotificationDropdown(notificationList, rows);
     notificationCount.textContent = String(unreadCount);
-    mNotificationCount.textContent = String(unreadCount);
+    if (mNotificationCount) mNotificationCount.textContent = String(unreadCount);
     if (mTopNotificationCount) mTopNotificationCount.textContent = String(unreadCount);
     notificationCount.classList.toggle("hidden", unreadCount === 0);
-    mNotificationCount.classList.toggle("hidden", unreadCount === 0);
+    mNotificationCount?.classList.toggle("hidden", unreadCount === 0);
     mTopNotificationCount?.classList.toggle("hidden", unreadCount === 0);
   }, () => {
     notificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load notifications</p>';
