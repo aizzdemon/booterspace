@@ -930,10 +930,10 @@ window.sendMessage = async () => {
         [CURRENT_USER]: 0
       },
 
-      // restore chat only for the sender;
-      // the receiver should decide when to reopen a deleted chat
+      // restore chat visibility for both participants when a new message arrives
       deletedFor: {
-        [CURRENT_USER]: false
+        [CURRENT_USER]: false,
+        [currentChatUser]: false
       }
 
     }, { merge: true });
