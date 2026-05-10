@@ -148,7 +148,7 @@ if (!hasFirebaseConfig) {
   <div class="mb-8 border-b pb-4">
     <div>
       <h2 id="jobCount" class="text-slate-900 font-bold text-xl">Latest Opportunities</h2>
-      <p id="filterSummary" class="text-slate-500 text-sm mt-1">Showing all verified job postings</p>
+      <p id="filterSummary" class="text-slate-500 text-sm mt-1"></p>
     </div>
   </div>
 
@@ -241,17 +241,6 @@ function normalizeWebsiteUrl(rawUrl) {
   return `https://${trimmed}`;
 }
 
-function getWebsiteFavicon(websiteUrl) {
-  const normalized = normalizeWebsiteUrl(websiteUrl);
-  if (!normalized) return "";
-  try {
-    const url = new URL(normalized);
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`;
-  } catch {
-    return "";
-  }
-}
-
 function updateSuggestions(job) {
   const location = typeof job.location === "string" ? job.location.trim() : "";
   const title = typeof job.title === "string" ? job.title.trim() : "";
@@ -333,7 +322,6 @@ function renderJobCard(job) {
   const location = job.location || "Remote";
   const logo = normalizeImageUrl(job.logoUrl) || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
   const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
-  const faviconUrl = getWebsiteFavicon(websiteUrl);
   const postedAt = typeof job.timestamp?.toMillis === "function" ? job.timestamp.toMillis() : 0;
   const isNew = postedAt > 0 && (Date.now() - postedAt < 3 * 24 * 60 * 60 * 1000);
   const safeCompanyName = escapeHtml(companyName);
@@ -342,21 +330,9 @@ function renderJobCard(job) {
   const safeWebsiteUrl = escapeAttribute(websiteUrl);
   const safeLogo = escapeAttribute(logo);
   const safeJobId = encodeURIComponent(job.id || "");
-  const companyMarkup = faviconUrl
-    ? `<a href="${safeWebsiteUrl}" target="_blank" rel="noopener noreferrer" class="flex min-w-0 items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${escapeAttribute(companyName)} website">
-            <img src="${escapeAttribute(faviconUrl)}" alt="" loading="lazy" class="w-5 h-5 rounded-md shrink-0" onerror="this.style.display='none'">
-            <span class="font-semibold truncate">${safeCompanyName}</span>
-          </a>`
-    : `<span class="flex min-w-0 items-center gap-1.5 text-slate-600">
-            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] text-slate-500" aria-hidden="true">🌐</span>
-            <span class="font-semibold truncate">${safeCompanyName}</span>
-          </span>`;
-  const initials = companyName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "CO";
+  const companyMarkup = websiteUrl
+    ? `<a href="${safeWebsiteUrl}" target="_blank" rel="noopener noreferrer" class="min-w-0 font-semibold truncate text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${escapeAttribute(companyName)} website">${safeCompanyName}</a>`
+    : `<span class="min-w-0 font-semibold truncate text-slate-600">${safeCompanyName}</span>`;
   
   const div = document.createElement("article");
   div.className = "group bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-4 sm:gap-5 items-stretch sm:items-center";
@@ -369,12 +345,10 @@ function renderJobCard(job) {
       </div>
       <div class="min-w-0 flex-grow">
         <div class="flex flex-wrap items-center gap-2 mb-1">
-          <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1.5 text-[11px] font-bold tracking-wide text-slate-600" aria-hidden="true">${escapeHtml(initials)}</span>
           <h3 class="min-w-0 font-bold text-base sm:text-lg text-slate-900 group-hover:text-blue-600 transition-colors break-words">${safeTitle}</h3>
         </div>
         <div class="flex flex-col gap-2 text-[15px] text-slate-500 font-medium sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 sm:text-sm">
-          <span class="flex min-w-0 items-center gap-2">
-            <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-600 ring-1 ring-blue-100 transition hover:bg-blue-100 sm:h-8 sm:w-8 sm:text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
+          <span class="flex min-w-0 items-center">
             ${companyMarkup}
           </span>
           <span class="flex min-w-0 items-center gap-1.5 text-blue-600/80">
@@ -447,24 +421,23 @@ function applyFilters() {
 
 function renderList(jobs) {
   jobsList.innerHTML = "";
-  jobCount.innerText = jobs.length === 1 ? "1 Opportunity" : `${jobs.length} Opportunities`;
+  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+  jobCount.innerText = isSearching ? (jobs.length === 1 ? "1 Job" : `${jobs.length} Jobs`) : "Latest Opportunities";
   if (jobs.length === 0) {
     emptyState.classList.remove("hidden");
     loadMoreBtn.classList.add("hidden");
-    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
-    filterSummary.innerText = isSearching ? "No results match your current filters" : "No verified job postings are available yet";
+    filterSummary.innerText = isSearching ? "No results match your current filters" : "";
   } else {
     emptyState.classList.add("hidden");
     const fragment = document.createDocumentFragment();
     jobs.forEach(job => fragment.appendChild(renderJobCard(job)));
     jobsList.appendChild(fragment);
     
-    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
     if (isSearching) {
        loadMoreBtn.classList.add("hidden");
-       filterSummary.innerText = `Found ${jobs.length} results for your search`;
+       filterSummary.innerText = jobs.length === 1 ? "Found 1 job for your search" : `Found ${jobs.length} jobs for your search`;
     } else {
-       filterSummary.innerText = "Showing all verified job postings";
+       filterSummary.innerText = "";
     }
   }
 }
