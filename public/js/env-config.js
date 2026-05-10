@@ -2,11 +2,13 @@
   const defaultFirebaseEnv = {
     VITE_FIREBASE_API_KEY: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
     VITE_FIREBASE_AUTH_DOMAIN: "kar-kardan.firebaseapp.com",
+    VITE_FIREBASE_DATABASE_URL: "https://kar-kardan-default-rtdb.asia-southeast1.firebasedatabase.app",
     VITE_FIREBASE_PROJECT_ID: "kar-kardan",
     VITE_FIREBASE_STORAGE_BUCKET: "kar-kardan.firebasestorage.app",
     VITE_FIREBASE_MESSAGING_SENDER_ID: "554147696994",
     VITE_FIREBASE_APP_ID: "1:554147696994:web:221dcb883e3b65dcea5c3b",
-    VITE_FIREBASE_MEASUREMENT_ID: "G-RRC3X485KQ"
+    VITE_FIREBASE_MEASUREMENT_ID: "G-RRC3X485KQ",
+    VITE_FIREBASE_MESSAGING_VAPID_KEY: "BEXXcNApWgB7q2zcauzld7kL5nyI4ahXVr8xN3OSgjhtqzz2dQwkKIbMTjy4deMO2vcTseaGdWXuonaxcdpf8cI"
   };
 
   globalScope.__ENV__ = {
