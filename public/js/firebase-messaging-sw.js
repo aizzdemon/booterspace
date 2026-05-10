@@ -1,3 +1,4 @@
+importScripts("env-config.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
@@ -26,15 +27,22 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function scopedUrl(path) {
+  const value = path || "notification.html";
+  if (/^https?:\/\//i.test(value)) return value;
+  return new URL(value.replace(/^\//, ""), self.registration.scope).href;
+}
+
+
 messaging.onBackgroundMessage((payload) => {
   const notification = payload.notification || {};
   const title = notification.title || payload.data?.title || "BooterSpace Notification";
 
   self.registration.showNotification(title, {
     body: notification.body || payload.data?.body || "You have a new update",
-    icon: notification.icon || payload.data?.icon || "/favicon.ico",
+    icon: notification.icon || payload.data?.icon || scopedUrl("favicon.ico"),
     data: {
-      url: payload.data?.url || "/notification.html"
+      url: scopedUrl(payload.data?.url || "notification.html")
     }
   });
 });
@@ -42,7 +50,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification?.data?.url || "/notification.html";
+  const targetUrl = scopedUrl(event.notification?.data?.url || "notification.html");
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
