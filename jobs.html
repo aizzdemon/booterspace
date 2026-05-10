@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jobs – BooterSpace</title>
   <meta name="description" content="Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.">
   <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
   <meta name="robots" content="index, follow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="canonical" href="https://aizzdemon.github.io/booterspace/jobs.html">
 
   <meta property="og:type" content="website">
@@ -34,8 +36,10 @@
   }
 }
   </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2563eb">
+  <meta name="color-scheme" content="light">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="stylesheet" href="assets/css/shared.css">
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -66,18 +70,26 @@ const firebaseConfig = {
   appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID")
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const requiredFirebaseKeys = ["apiKey", "authDomain", "projectId", "appId"];
+const hasFirebaseConfig = requiredFirebaseKeys.every((key) => Boolean(firebaseConfig[key]));
 
-window.db = db;
-window.auth = auth;
+if (!hasFirebaseConfig) {
+  console.error("Firebase configuration is missing. Jobs cannot be loaded until environment variables are configured.");
+  window.firebaseBooterError = "missing-config";
+} else {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+  window.db = db;
+  window.auth = auth;
 
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
-});
+  signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+
+  enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+  });
+}
 </script>
 
 
@@ -92,34 +104,34 @@ enableIndexedDbPersistence(db).catch((err) => {
 <script src="public/js/navbar-loader.js"></script>
 <script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
 
-<div id="emojiToast" class="fixed bottom-6 right-6 hidden bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-xl z-50">
+<div id="emojiToast" class="fixed bottom-4 left-1/2 hidden -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-xl z-50 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0" role="status" aria-live="polite">
   Emoji copied
 </div>
 
-<div class="bg-blue-600 py-8 md:py-10 px-4">
+<div class="bg-blue-600 px-4 py-8 md:py-10">
   <div class="max-w-5xl mx-auto text-center">
     <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 md:mb-3">Discover Your Dream Job</h1>
     <p class="text-blue-100 text-base md:text-lg mb-5 md:mb-6">Browse thousands of high-quality job listings updated daily.</p>
     
     <!-- Multi-Column Search Bar -->
-    <div class="bg-white p-1.5 md:p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-1.5 md:gap-2">
+    <div class="bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
       <!-- Keyword/Title Search with Datalist -->
       <div class="relative flex-grow md:w-1/3">
-        <input id="searchInput" list="titleSuggestions" placeholder="Job title or company" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm md:text-base">
+        <input id="searchInput" type="search" inputmode="search" autocomplete="off" list="titleSuggestions" placeholder="Job title or company" aria-label="Search by job title or company" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         <datalist id="titleSuggestions"></datalist>
       </div>
 
       <!-- Location Search with Datalist -->
       <div class="relative flex-grow md:w-1/4">
-        <input id="locationInput" list="locationSuggestions" placeholder="City or remote" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm md:text-base">
+        <input id="locationInput" type="search" inputmode="search" autocomplete="off" list="locationSuggestions" placeholder="City or remote" aria-label="Search by city or remote" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         <datalist id="locationSuggestions"></datalist>
       </div>
 
       <!-- Date Filter -->
       <div class="relative w-full md:w-36">
-        <select id="dateFilter" class="w-full py-3 px-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer text-sm md:text-base">
+        <select id="dateFilter" aria-label="Filter jobs by posting date" class="w-full py-3 px-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer text-base">
           <option value="all">Any time</option>
           <option value="1">Last 24h</option>
           <option value="7">Last 7 days</option>
@@ -127,12 +139,12 @@ enableIndexedDbPersistence(db).catch((err) => {
         </select>
       </div>
 
-      <button id="mainSearchBtn" class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-sm md:text-base">Search</button>
+      <button id="mainSearchBtn" class="min-h-12 bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-base">Search</button>
     </div>
   </div>
 </div>
 
-<main class="max-w-5xl mx-auto px-4 py-10 flex-grow w-full">
+<main class="max-w-5xl mx-auto px-4 py-8 sm:py-10 flex-grow w-full">
   <div class="mb-8 border-b pb-4">
     <div>
       <h2 id="jobCount" class="text-slate-900 font-bold text-xl">Latest Opportunities</h2>
@@ -182,6 +194,14 @@ const dateFilter = document.getElementById("dateFilter");
 const mainSearchBtn = document.getElementById("mainSearchBtn");
 const suggestionContainers = [];
 
+if (!db) {
+  jobsList.innerHTML = "";
+  jobCount.innerText = "Jobs temporarily unavailable";
+  filterSummary.innerText = "Please try again later while we finish loading job listings.";
+  emptyState.classList.remove("hidden");
+  loadMoreBtn.classList.add("hidden");
+}
+
 let lastDoc = null; 
 let jobsRealtimeUnsubscribe = null;
 const INITIAL_PAGE_SIZE = 10;
@@ -190,7 +210,28 @@ let loadedJobs = []; // Maintain local list for filtering
 const uniqueLocations = new Set();
 const uniqueTitles = new Set();
 
-const formatSalary = (val) => val ? val : "Salary Undisclosed";
+const formatSalary = (val) => val ? String(val) : "Salary Undisclosed";
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+
+function normalizeImageUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== "string") return "";
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return "";
+}
 
 function normalizeWebsiteUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== "string") return "";
@@ -212,18 +253,21 @@ function getWebsiteFavicon(websiteUrl) {
 }
 
 function updateSuggestions(job) {
+  const location = typeof job.location === "string" ? job.location.trim() : "";
+  const title = typeof job.title === "string" ? job.title.trim() : "";
+
   // Update Location Suggestions
-  if (job.location && !uniqueLocations.has(job.location)) {
-    uniqueLocations.add(job.location);
+  if (location && !uniqueLocations.has(location)) {
+    uniqueLocations.add(location);
     const option = document.createElement("option");
-    option.value = job.location;
+    option.value = location;
     locationSuggestions.appendChild(option);
   }
   // Update Title Suggestions
-  if (job.title && !uniqueTitles.has(job.title)) {
-    uniqueTitles.add(job.title);
+  if (title && !uniqueTitles.has(title)) {
+    uniqueTitles.add(title);
     const option = document.createElement("option");
-    option.value = job.title;
+    option.value = title;
     titleSuggestions.appendChild(option);
   }
 }
@@ -259,7 +303,7 @@ function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
     }
 
     dropdown.innerHTML = matches.map((match) => (
-      `<button type="button" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" data-suggestion="${match.replace(/"/g, "&quot;")}">${match}</button>`
+      `<button type="button" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" data-suggestion="${escapeAttribute(match)}">${escapeHtml(match)}</button>`
     )).join("");
     dropdown.classList.remove("hidden");
   }
@@ -284,59 +328,68 @@ const titleSuggestionDropdown = createSuggestionDropdown(searchInput, uniqueTitl
 const locationSuggestionDropdown = createSuggestionDropdown(locationInput, uniqueLocations, applyFilters);
 
 function renderJobCard(job) {
-  const logo = job.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company)}&background=random`;
+  const companyName = job.company || "Unknown Company";
+  const title = job.title || "Untitled role";
+  const location = job.location || "Remote";
+  const logo = normalizeImageUrl(job.logoUrl) || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
   const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
   const faviconUrl = getWebsiteFavicon(websiteUrl);
-  const isNew = job.timestamp && (Date.now() - job.timestamp.toMillis() < 3 * 24 * 60 * 60 * 1000);
-  const companyName = job.company || "Unknown Company";
+  const postedAt = typeof job.timestamp?.toMillis === "function" ? job.timestamp.toMillis() : 0;
+  const isNew = postedAt > 0 && (Date.now() - postedAt < 3 * 24 * 60 * 60 * 1000);
+  const safeCompanyName = escapeHtml(companyName);
+  const safeTitle = escapeHtml(title);
+  const safeLocation = escapeHtml(location);
+  const safeWebsiteUrl = escapeAttribute(websiteUrl);
+  const safeLogo = escapeAttribute(logo);
+  const safeJobId = encodeURIComponent(job.id || "");
   const companyMarkup = faviconUrl
-    ? `<a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${companyName} website">
-            <img src="${faviconUrl}" alt="${companyName} website favicon" class="w-5 h-5 rounded-md" onerror="this.style.display='none'">
-            <span class="font-semibold">${companyName}</span>
+    ? `<a href="${safeWebsiteUrl}" target="_blank" rel="noopener noreferrer" class="flex min-w-0 items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${escapeAttribute(companyName)} website">
+            <img src="${escapeAttribute(faviconUrl)}" alt="" loading="lazy" class="w-5 h-5 rounded-md shrink-0" onerror="this.style.display='none'">
+            <span class="font-semibold truncate">${safeCompanyName}</span>
           </a>`
-    : `<span class="flex items-center gap-1.5 text-slate-600">
-            <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-[11px] text-slate-500">🌐</span>
-            <span class="font-semibold">${companyName}</span>
+    : `<span class="flex min-w-0 items-center gap-1.5 text-slate-600">
+            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] text-slate-500" aria-hidden="true">🌐</span>
+            <span class="font-semibold truncate">${safeCompanyName}</span>
           </span>`;
-  const initials = (job.company || "CO")
+  const initials = companyName
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "CO";
   
-  const div = document.createElement("div");
-  div.className = "group bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-3 sm:gap-5 items-stretch sm:items-center";
+  const div = document.createElement("article");
+  div.className = "group bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-4 sm:gap-5 items-stretch sm:items-center";
 
   div.innerHTML = `
-    <div class="flex items-start gap-3 sm:gap-5 w-full">
+    <div class="flex min-w-0 items-start gap-3 sm:gap-5 w-full">
       <div class="relative shrink-0">
-      <img src="${logo}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
-      ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
+        <img src="${safeLogo}" alt="${escapeAttribute(companyName)} logo" loading="lazy" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
+        ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3" aria-label="New job"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
       </div>
-      <div class="flex-grow min-w-0">
-      <div class="flex flex-wrap items-center gap-2 mb-1">
-        <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1.5 text-[11px] font-bold tracking-wide text-slate-600">${initials}</span>
-        <h3 class="font-bold text-base sm:text-lg text-slate-900 group-hover:text-blue-600 transition-colors">${job.title}</h3>
-      </div>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-[15px] sm:text-sm text-slate-500 font-medium">
-        <span class="flex items-center gap-2">
-          <button type="button" class="copy-emoji inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-600 ring-1 ring-blue-100 transition hover:bg-blue-100 sm:h-8 sm:w-8 sm:text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
-          ${companyMarkup}
-        </span>
-        <span class="flex items-center gap-1.5 text-blue-600/80">
-          <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
-          ${job.location || 'Remote'}
-        </span>
-      </div>
-      <div class="mt-3 font-bold text-slate-900 text-sm flex items-center gap-1.5">
-        <button type="button" class="copy-emoji leading-none text-base" data-copy-emoji="💵" title="Copy salary emoji" aria-label="Copy salary emoji">💵</button>
-        ${formatSalary(job.salary)}
+      <div class="min-w-0 flex-grow">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1.5 text-[11px] font-bold tracking-wide text-slate-600" aria-hidden="true">${escapeHtml(initials)}</span>
+          <h3 class="min-w-0 font-bold text-base sm:text-lg text-slate-900 group-hover:text-blue-600 transition-colors break-words">${safeTitle}</h3>
+        </div>
+        <div class="flex flex-col gap-2 text-[15px] text-slate-500 font-medium sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 sm:text-sm">
+          <span class="flex min-w-0 items-center gap-2">
+            <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-600 ring-1 ring-blue-100 transition hover:bg-blue-100 sm:h-8 sm:w-8 sm:text-base" data-copy-emoji="🏢" title="Copy company emoji" aria-label="Copy company emoji">🏢</button>
+            ${companyMarkup}
+          </span>
+          <span class="flex min-w-0 items-center gap-1.5 text-blue-600/80">
+            <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-base sm:h-auto sm:w-auto sm:bg-transparent" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
+            <span class="truncate">${safeLocation}</span>
+          </span>
+        </div>
+        <div class="mt-3 font-bold text-slate-900 text-sm flex items-center gap-1.5">
+          <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-base sm:h-auto sm:w-auto sm:bg-transparent" data-copy-emoji="💵" title="Copy salary emoji" aria-label="Copy salary emoji">💵</button>
+          <span>${escapeHtml(formatSalary(job.salary))}</span>
+        </div>
       </div>
     </div>
-    </div>
-    <div class="flex sm:flex-col gap-2 w-full sm:w-auto shrink-0">
-      <button onclick="window.location.href='job-detail.html?id=${job.id}'" class="flex-grow bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">View Details</button>
+    <div class="flex w-full shrink-0 sm:w-auto">
+      <button type="button" data-job-id="${safeJobId}" class="view-details min-h-11 w-full bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 sm:w-auto">View Details</button>
     </div>
   `;
   return div;
@@ -371,12 +424,11 @@ function applyFilters() {
   const dateVal = dateFilter.value;
 
   const filtered = loadedJobs.filter(job => {
-    const matchKeyword = !keyword || 
-      job.title?.toLowerCase().includes(keyword) || 
-      job.company?.toLowerCase().includes(keyword);
-    
-    const matchLocation = !location || 
-      (job.location || "remote").toLowerCase().includes(location);
+    const titleText = String(job.title || "").toLowerCase();
+    const companyText = String(job.company || "").toLowerCase();
+    const locationText = String(job.location || "remote").toLowerCase();
+    const matchKeyword = !keyword || titleText.includes(keyword) || companyText.includes(keyword);
+    const matchLocation = !location || locationText.includes(location);
 
     let matchDate = true;
     if (dateVal !== "all") {
@@ -395,9 +447,12 @@ function applyFilters() {
 
 function renderList(jobs) {
   jobsList.innerHTML = "";
+  jobCount.innerText = jobs.length === 1 ? "1 Opportunity" : `${jobs.length} Opportunities`;
   if (jobs.length === 0) {
     emptyState.classList.remove("hidden");
     loadMoreBtn.classList.add("hidden");
+    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+    filterSummary.innerText = isSearching ? "No results match your current filters" : "No verified job postings are available yet";
   } else {
     emptyState.classList.add("hidden");
     const fragment = document.createDocumentFragment();
@@ -446,6 +501,7 @@ function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
 }
 
 async function fetchJobs(isLoadMore = false) {
+  if (!db) return;
   try {
     const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
 
@@ -482,11 +538,15 @@ async function fetchJobs(isLoadMore = false) {
     }, (err) => {
       console.error("Realtime Firestore Error:", err);
       jobCount.innerText = "Error loading jobs";
+      filterSummary.innerText = "We could not load jobs right now. Please refresh or try again later.";
+      emptyState.classList.remove("hidden");
     });
 
   } catch (err) {
     console.error("Firestore Error:", err);
     jobCount.innerText = "Error loading jobs";
+    filterSummary.innerText = "We could not load jobs right now. Please refresh or try again later.";
+    emptyState.classList.remove("hidden");
   }
 }
 
@@ -502,8 +562,15 @@ document.addEventListener("click", (event) => {
 });
 jobsList.addEventListener("click", (event) => {
   const copyButton = event.target.closest("[data-copy-emoji]");
-  if (!copyButton) return;
-  copyEmoji(copyButton.dataset.copyEmoji);
+  if (copyButton) {
+    copyEmoji(copyButton.dataset.copyEmoji);
+    return;
+  }
+
+  const detailsButton = event.target.closest("[data-job-id]");
+  if (detailsButton) {
+    window.location.href = `job-detail.html?id=${detailsButton.dataset.jobId}`;
+  }
 });
 
 // Initial Load
