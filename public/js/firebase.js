@@ -8,5 +8,10 @@
     return loadFirebaseModule(moduleName);
   };
 
-  window.firebaseServicesReady = singletonModule.then(({ getFirebaseServices }) => getFirebaseServices());
+  window.firebaseServicesReady = singletonModule.then(({ getFirebaseServices, firebaseMessagingVapidKey }) => {
+    window.firebaseMessagingVapidKey = firebaseMessagingVapidKey;
+    return getFirebaseServices();
+  });
+
+  window.firebaseMessagingReady = window.firebaseServicesReady.then(({ messaging }) => messaging);
 })();

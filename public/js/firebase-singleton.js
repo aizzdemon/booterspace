@@ -1,4 +1,6 @@
-const FIREBASE_VERSION = "10.12.5";
+const FIREBASE_VERSION = "10.13.2";
+
+export const firebaseMessagingVapidKey = "BEXXcNApWgB7q2zcauzld7kL5nyI4ahXVr8xN3OSgjhtqzz2dQwkKIbMTjy4deMO2vcTseaGdWXuonaxcdpf8cI";
 
 const moduleCache = new Map();
 let servicesPromise = null;
@@ -40,12 +42,14 @@ export async function getFirebaseServices() {
       const { initializeApp, getApp, getApps } = await loadFirebaseModule("firebase-app.js");
       const { getAuth } = await loadFirebaseModule("firebase-auth.js");
       const { getFirestore } = await loadFirebaseModule("firebase-firestore.js");
+      const { getMessaging, isSupported } = await loadFirebaseModule("firebase-messaging.js");
 
       const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const messaging = (await isSupported()) ? getMessaging(app) : null;
 
-      return { app, auth, db };
+      return { app, auth, db, messaging };
     })();
   }
 
