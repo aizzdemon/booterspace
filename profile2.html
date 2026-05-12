@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>BooterSpace | Profile</title>
+  <meta name="description" content="View and manage your BooterSpace profile, activity, and network information in one dashboard.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/profile.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="BooterSpace | Search & Profile">
+  <meta property="og:description" content="View and manage your BooterSpace profile, activity, and network information in one dashboard.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/profile.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BooterSpace | Search & Profile">
+  <meta name="twitter:description" content="View and manage your BooterSpace profile, activity, and network information in one dashboard.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"BooterSpace | Search & Profile","description":"View and manage your BooterSpace profile, activity, and network information in one dashboard.","url":"https://aizzdemon.github.io/booterspace/profile.html","isPartOf":{"@type":"WebSite","name":"BooterSpace","url":"https://aizzdemon.github.io/booterspace/"}}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="assets/css/shared.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase (required for navbar login/logout state) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+function getEnvVar(...keys) {
+  const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+  const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+  for (const key of keys) { if (runtimeEnv[key]) return runtimeEnv[key]; if (processEnv[key]) return processEnv[key]; }
+  return "";
+}
+const firebaseConfig = {
+  apiKey: getEnvVar("VITE_FIREBASE_API_KEY","NEXT_PUBLIC_FIREBASE_API_KEY","REACT_APP_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN","NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN","REACT_APP_FIREBASE_AUTH_DOMAIN"),
+  databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL","NEXT_PUBLIC_FIREBASE_DATABASE_URL","REACT_APP_FIREBASE_DATABASE_URL"),
+  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID","NEXT_PUBLIC_FIREBASE_PROJECT_ID","REACT_APP_FIREBASE_PROJECT_ID"),
+  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET","NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET","REACT_APP_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID","NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID","REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar("VITE_FIREBASE_APP_ID","NEXT_PUBLIC_FIREBASE_APP_ID","REACT_APP_FIREBASE_APP_ID"),
+  measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID","NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID","REACT_APP_FIREBASE_MEASUREMENT_ID")
+};
+const app = initializeApp(firebaseConfig);
+window.app = app;
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<script src="public/js/env-config.js"></script>
+
+<style>
+  * { font-family: 'Sora', sans-serif; }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* ── Profile card header gradient ── */
+  .profile-banner {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #0ea5e9 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .profile-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* ── Section badge pills ── */
+  .section-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Skill tags ── */
+  .skill-tag {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    transition: all .2s;
+  }
+  .skill-tag:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+
+  /* ── Status badge ── */
+  .status-open {
+    background: #dcfce7;
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+  }
+  .status-not-looking {
+    background: #fef9c3;
+    color: #854d0e;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+  }
+
+  /* ── Info rows ── */
+  .info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Completeness bar ── */
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #2563eb, #0ea5e9);
+    transition: width 1s ease;
+  }
+
+  /* ── Modal overlay ── */
+  .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+
+  /* ── Animate in ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp .4s ease both; }
+
+  /* ── Timeline dots ── */
+  .timeline-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #2563eb;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  /* ── Form input focus style ── */
+  .field-input {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    background: #f8fafc;
+  }
+  .field-input:focus {
+    border-color: #2563eb;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  textarea.field-input { resize: vertical; min-height: 80px; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ── Tab active ── */
+  .tab-btn.active {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(37,99,235,.3);
+  }
+  .tab-btn { transition: all .2s; }
+
+  /* search layout transitions */
+  .transition-layout { transition: all .4s ease; }
+  .avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+</style>
+</head>
+
+<body class="bg-slate-100 min-h-screen flex flex-col page-profile" style="background: #f0f4f8;">
+  <!-- 🔥 SaaS Navbar -->
+  <div id="navbar"></div>
+  <script src="public/js/navbar-loader.js"></script>
+  <script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
+
+  <!-- 🔍 SEARCH BAR -->
+  <div class="bg-white border-b sticky top-0 z-20 shadow-sm">
+    <div class="max-w-6xl mx-auto p-4 flex gap-2">
+      <input id="searchInput" type="text" placeholder="Search people, skills, education, university..."
+        class="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner bg-slate-50"
+      />
+      <button id="searchBtn" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md">
+        Search
+      </button>
+    </div>
+  </div>
+
+  <!-- 📐 MAIN LAYOUT -->
+  <div id="mainContainer" class="flex-1 max-w-6xl mx-auto p-4 w-full relative">
+    <div id="gridWrapper" class="grid grid-cols-1 gap-6 transition-layout">
+
+      <!-- 👈 LEFT PANEL (Search Results) -->
+      <div id="leftPanel" class="hidden transition-all duration-500 opacity-0 transform -translate-x-4">
+        <div id="resultsListContainer">
+          <div id="resultsHeader" class="mb-4 flex justify-between items-center hidden">
+            <h3 class="font-bold text-gray-700 text-lg">Search Results</h3>
+            <span id="resultsCount" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0 found</span>
+          </div>
+          <div id="resultsView" class="space-y-4"></div>
+        </div>
+        <div id="detailViewContainer" class="hidden bg-white rounded-2xl shadow-lg overflow-hidden border"></div>
+      </div>
+
+      <!-- 👉 RIGHT PANEL (My Profile) -->
+      <div id="rightPanel" class="w-full max-w-2xl mx-auto transition-layout">
+
+        <!-- ── PROFILE CARD ── -->
+        <div id="myProfileCard" class="bg-white rounded-2xl shadow-lg border overflow-hidden relative opacity-0 transition-opacity duration-500 fade-up">
+
+          <!-- Banner -->
+          <div class="profile-banner h-36 relative">
+            <!-- Open to work badge -->
+            <div id="workStatusBadge" class="absolute bottom-3 right-3 hidden">
+              <span id="workStatusText" class="status-open">● Open to Work</span>
+            </div>
+          </div>
+
+          <!-- Avatar + Core Info -->
+          <div class="px-6 pb-4 relative">
+            <div class="flex items-end justify-between -mt-12 mb-4">
+              <div class="relative group cursor-pointer" onclick="openAvatarModal()">
+                <img id="myPhoto" src="https://i.imgur.com/6VBx3io.png"
+                  class="w-24 h-24 rounded-2xl border-4 border-white shadow-lg bg-gray-200 object-cover group-hover:brightness-75 transition">
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-2xl">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="openEditModal()" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-semibold hover:bg-slate-200 text-sm transition">Edit Profile</button>
+                <button onclick="document.getElementById('profileCompletionBlock').scrollIntoView({behavior:'smooth'})" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-semibold hover:bg-blue-100 text-sm transition">Stats</button>
+              </div>
+            </div>
+
+            <h1 id="myName" class="text-2xl font-bold text-gray-900">Loading...</h1>
+            <p id="myRole" class="text-blue-600 font-semibold text-sm mt-0.5"></p>
+            <p id="myLoc" class="text-gray-400 text-sm mt-0.5 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+              <span id="myLocText">--</span>
+            </p>
+            <p id="myBio" class="text-gray-600 text-sm mt-3 leading-relaxed italic"></p>
+          </div>
+
+          <!-- ── PROFILE TABS ── -->
+          <div class="px-6 pb-2 flex gap-2 overflow-x-auto border-t pt-4">
+            <button class="tab-btn active text-xs font-bold px-4 py-2 rounded-xl bg-blue-600 text-white" onclick="switchTab('overview', this)">Overview</button>
+            <button class="tab-btn text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-600" onclick="switchTab('experience', this)">Experience</button>
+            <button class="tab-btn text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-600" onclick="switchTab('education', this)">Education</button>
+            <button class="tab-btn text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-600" onclick="switchTab('skills', this)">Skills</button>
+            <button class="tab-btn text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-600" onclick="switchTab('preferences', this)">Job Preferences</button>
+          </div>
+
+          <!-- ── TAB: OVERVIEW ── -->
+          <div id="tab-overview" class="tab-panel px-6 py-5 space-y-5">
+
+            <!-- Profile Completion -->
+            <div id="profileCompletionBlock">
+              <div class="section-pill">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Profile Completion
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="completionBar" class="progress-bar-fill w-0" style="width:0%"></div>
+                </div>
+                <span id="completionPct" class="mono text-xs font-bold text-blue-600">0%</span>
+              </div>
+              <p id="completionHint" class="text-xs text-gray-400 mt-1"></p>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <p id="statExp" class="text-xl font-bold text-blue-700">--</p>
+                <p class="text-xs text-blue-500 font-semibold mt-0.5">Yrs Exp</p>
+              </div>
+              <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                <p id="statSkillCount" class="text-xl font-bold text-emerald-700">--</p>
+                <p class="text-xs text-emerald-500 font-semibold mt-0.5">Skills</p>
+              </div>
+              <div class="bg-violet-50 rounded-xl p-3 text-center">
+                <p id="statProjects" class="text-xl font-bold text-violet-700">--</p>
+                <p class="text-xs text-violet-500 font-semibold mt-0.5">Projects</p>
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div>
+              <div class="section-pill">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                Contact & Links
+              </div>
+              <div id="contactBlock" class="space-y-1">
+                <div class="info-row">
+                  <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg></div>
+                  <div><p class="text-xs text-gray-400 font-semibold">Email</p><p id="myEmail" class="text-sm text-gray-700">--</p></div>
+                </div>
+                <div class="info-row">
+                  <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg></div>
+                  <div><p class="text-xs text-gray-400 font-semibold">Phone</p><p id="myPhone" class="text-sm text-gray-700">--</p></div>
+                </div>
+                <div class="info-row">
+                  <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/></svg></div>
+                  <div><p class="text-xs text-gray-400 font-semibold">LinkedIn / Portfolio</p><p id="myLinkedin" class="text-sm text-blue-600 truncate">--</p></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Skills Preview -->
+            <div>
+              <div class="section-pill">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                Top Skills
+              </div>
+              <div id="topSkillsPreview" class="flex flex-wrap gap-2">
+                <span class="skill-tag text-gray-300">No skills added yet</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB: EXPERIENCE ── -->
+          <div id="tab-experience" class="tab-panel hidden px-6 py-5">
+            <div class="section-pill">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/><path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z"/></svg>
+              Work Experience
+            </div>
+            <div id="expTimeline" class="space-y-4">
+              <p class="text-sm text-gray-400 italic">No experience added. Click Edit Profile to add.</p>
+            </div>
+          </div>
+
+          <!-- ── TAB: EDUCATION ── -->
+          <div id="tab-education" class="tab-panel hidden px-6 py-5">
+            <div class="section-pill">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z"/><path d="M3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
+              Education
+            </div>
+            <div id="eduTimeline" class="space-y-4">
+              <p class="text-sm text-gray-400 italic">No education added. Click Edit Profile to add.</p>
+            </div>
+          </div>
+
+          <!-- ── TAB: SKILLS ── -->
+          <div id="tab-skills" class="tab-panel hidden px-6 py-5">
+            <div class="section-pill">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+              Skills & Expertise
+            </div>
+            <div id="skillsBlock" class="space-y-4">
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2">Technical Skills</p>
+                <div id="techSkillsDisplay" class="flex flex-wrap gap-2"><span class="skill-tag text-gray-300 text-xs">None added</span></div>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2">Soft Skills</p>
+                <div id="softSkillsDisplay" class="flex flex-wrap gap-2"><span class="skill-tag text-gray-300 text-xs">None added</span></div>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2">Languages Known</p>
+                <div id="languagesDisplay" class="flex flex-wrap gap-2"><span class="skill-tag text-gray-300 text-xs">None added</span></div>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2">Certifications</p>
+                <div id="certsDisplay" class="text-sm text-gray-500">None added</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB: JOB PREFERENCES ── -->
+          <div id="tab-preferences" class="tab-panel hidden px-6 py-5">
+            <div class="section-pill">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+              Job Preferences
+            </div>
+            <div class="space-y-3">
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Desired Role</p><p id="prefRole" class="text-sm text-gray-700">--</p></div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Preferred Location</p><p id="prefLocation" class="text-sm text-gray-700">--</p></div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Expected Salary</p><p id="prefSalary" class="text-sm text-gray-700">--</p></div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Work Type</p><p id="prefWorkType" class="text-sm text-gray-700">--</p></div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Job Sector</p><p id="prefSector" class="text-sm text-gray-700">--</p></div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon"><svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></div>
+                <div><p class="text-xs text-gray-400 font-semibold">Notice Period</p><p id="prefNotice" class="text-sm text-gray-700">--</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="h-4"></div>
+        </div><!-- end myProfileCard -->
+
+        <div id="searchHint" class="text-center mt-6 text-gray-400 text-sm animate-pulse">Type above to search for people...</div>
+      </div><!-- end rightPanel -->
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🖼 AVATAR PICKER MODAL (unchanged)
+  ═══════════════════════════════════════ -->
+  <div id="avatarModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-gray-800">Choose Avatar</h3>
+        <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      </div>
+      <div class="p-4 max-h-[60vh] overflow-y-auto avatar-grid" id="avatarGrid"></div>
+      <div class="p-4 border-t bg-gray-50 flex justify-end">
+        <button onclick="closeAvatarModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       📝 COMPREHENSIVE EDIT PROFILE MODAL
+  ═══════════════════════════════════════ -->
+  <div id="editModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:92vh">
+
+      <!-- Modal Header -->
+      <div class="p-5 border-b flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div>
+          <h3 class="font-bold text-white text-lg">Edit Profile</h3>
+          <p class="text-blue-100 text-xs mt-0.5">Complete your job seeker profile</p>
+        </div>
+        <button onclick="closeEditModal()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="flex border-b bg-slate-50 overflow-x-auto">
+        <button class="modal-tab-btn px-4 py-3 text-xs font-bold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap" onclick="switchModalTab('basic', this)">Basic Info</button>
+        <button class="modal-tab-btn px-4 py-3 text-xs font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap hover:text-gray-600" onclick="switchModalTab('experience-form', this)">Experience</button>
+        <button class="modal-tab-btn px-4 py-3 text-xs font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap hover:text-gray-600" onclick="switchModalTab('education-form', this)">Education</button>
+        <button class="modal-tab-btn px-4 py-3 text-xs font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap hover:text-gray-600" onclick="switchModalTab('skills-form', this)">Skills</button>
+        <button class="modal-tab-btn px-4 py-3 text-xs font-bold text-gray-400 border-b-2 border-transparent whitespace-nowrap hover:text-gray-600" onclick="switchModalTab('job-pref-form', this)">Job Prefs</button>
+      </div>
+
+      <!-- Modal Body (scrollable) -->
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- ── BASIC INFO ── -->
+        <div id="modal-basic" class="modal-tab-panel p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="field-label">Full Name *</label>
+              <input id="editName" type="text" class="field-input" placeholder="John Doe">
+            </div>
+            <div>
+              <label class="field-label">Phone Number</label>
+              <input id="editPhone" type="tel" class="field-input" placeholder="+91 9876543210">
+            </div>
+            <div>
+              <label class="field-label">Date of Birth</label>
+              <input id="editDob" type="date" class="field-input">
+            </div>
+            <div>
+              <label class="field-label">Gender</label>
+              <select id="editGender" class="field-input">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Nationality</label>
+              <input id="editNationality" type="text" class="field-input" placeholder="Indian">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Current City / Location</label>
+              <input id="editLocation" type="text" class="field-input" placeholder="Mumbai, Maharashtra">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Professional Headline</label>
+              <input id="editHeadline" type="text" class="field-input" placeholder="Senior Software Engineer | React | Node.js">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Bio / About Me</label>
+              <textarea id="editBio" class="field-input" placeholder="A brief summary about yourself, your passion, and career goals..."></textarea>
+            </div>
+            <div>
+              <label class="field-label">LinkedIn Profile URL</label>
+              <input id="editLinkedin" type="url" class="field-input" placeholder="https://linkedin.com/in/...">
+            </div>
+            <div>
+              <label class="field-label">Portfolio / GitHub URL</label>
+              <input id="editPortfolio" type="url" class="field-input" placeholder="https://github.com/...">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── EXPERIENCE FORM ── -->
+        <div id="modal-experience-form" class="modal-tab-panel hidden p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="field-label">Current / Latest Position *</label>
+              <input id="editPos" type="text" class="field-input" placeholder="Software Engineer">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Current / Latest Employer</label>
+              <input id="editEmployer" type="text" class="field-input" placeholder="Google India">
+            </div>
+            <div>
+              <label class="field-label">Total Experience (Years)</label>
+              <input id="editYears" type="number" min="0" max="50" class="field-input" placeholder="3">
+            </div>
+            <div>
+              <label class="field-label">Employment Type</label>
+              <select id="editEmpType" class="field-input">
+                <option value="">Select</option>
+                <option>Full-time</option>
+                <option>Part-time</option>
+                <option>Freelance</option>
+                <option>Contract</option>
+                <option>Internship</option>
+                <option>Self-employed</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Start Year</label>
+              <input id="editStartYear" type="number" min="1990" max="2030" class="field-input" placeholder="2021">
+            </div>
+            <div>
+              <label class="field-label">End Year (or "Present")</label>
+              <input id="editEndYear" type="text" class="field-input" placeholder="Present">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Key Responsibilities / Achievements</label>
+              <textarea id="editResponsibilities" class="field-input" placeholder="Describe your role, key achievements, and contributions..."></textarea>
+            </div>
+            <div>
+              <label class="field-label">Current CTC (LPA)</label>
+              <input id="editCurrentCtc" type="text" class="field-input" placeholder="8 LPA">
+            </div>
+            <div>
+              <label class="field-label">Total Projects Done</label>
+              <input id="editProjects" type="number" min="0" class="field-input" placeholder="12">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── EDUCATION FORM ── -->
+        <div id="modal-education-form" class="modal-tab-panel hidden p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="field-label">Highest Education *</label>
+              <select id="editEdu" class="field-input">
+                <option value="">Select</option>
+                <option>10th / SSC</option>
+                <option>12th / HSC</option>
+                <option>Diploma</option>
+                <option>Bachelor's (B.Tech / BA / B.Com / B.Sc)</option>
+                <option>Master's (M.Tech / MBA / M.Sc / MA)</option>
+                <option>PhD / Doctorate</option>
+                <option>Post-Doctoral</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">University / Institute *</label>
+              <input id="editUni" type="text" class="field-input" placeholder="IIT Bombay">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Field of Study / Specialization</label>
+              <input id="editField" type="text" class="field-input" placeholder="Computer Science & Engineering">
+            </div>
+            <div>
+              <label class="field-label">Graduation Year</label>
+              <input id="editGradYear" type="number" min="1990" max="2030" class="field-input" placeholder="2022">
+            </div>
+            <div>
+              <label class="field-label">Grade / CGPA / Percentage</label>
+              <input id="editGrade" type="text" class="field-input" placeholder="8.5 CGPA / 85%">
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Additional Qualifications / Certifications</label>
+              <textarea id="editCerts" class="field-input" placeholder="AWS Certified Developer (2023), Google Analytics Certificate..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SKILLS FORM ── -->
+        <div id="modal-skills-form" class="modal-tab-panel hidden p-6 space-y-4">
+          <div class="space-y-4">
+            <div>
+              <label class="field-label">Technical Skills (comma-separated)</label>
+              <textarea id="editTechSkills" class="field-input" placeholder="React, Node.js, Python, SQL, Docker, AWS..."></textarea>
+              <p class="text-xs text-gray-400 mt-1">Separate each skill with a comma</p>
+            </div>
+            <div>
+              <label class="field-label">Soft Skills (comma-separated)</label>
+              <textarea id="editSoftSkills" class="field-input" placeholder="Leadership, Communication, Problem Solving, Teamwork..."></textarea>
+            </div>
+            <div>
+              <label class="field-label">Languages Known (comma-separated)</label>
+              <input id="editLanguages" type="text" class="field-input" placeholder="Hindi, English, Tamil...">
+            </div>
+            <div>
+              <label class="field-label">Tools & Platforms</label>
+              <input id="editTools" type="text" class="field-input" placeholder="VS Code, Jira, Figma, Git, Postman...">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── JOB PREFERENCES FORM ── -->
+        <div id="modal-job-pref-form" class="modal-tab-panel hidden p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="field-label">Job Seeking Status</label>
+              <select id="editJobStatus" class="field-input">
+                <option value="">Select status</option>
+                <option value="open">Actively Looking</option>
+                <option value="open-passive">Open to Opportunities</option>
+                <option value="not-looking">Not Looking Currently</option>
+                <option value="employed">Employed - Not Looking</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Desired Job Title / Role</label>
+              <input id="editDesiredRole" type="text" class="field-input" placeholder="Senior Frontend Developer">
+            </div>
+            <div>
+              <label class="field-label">Preferred Work Location</label>
+              <input id="editPrefLocation" type="text" class="field-input" placeholder="Bangalore, Remote">
+            </div>
+            <div>
+              <label class="field-label">Work Type Preference</label>
+              <select id="editWorkType" class="field-input">
+                <option value="">Select</option>
+                <option>On-site</option>
+                <option>Remote</option>
+                <option>Hybrid</option>
+                <option>Any</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Expected CTC (LPA)</label>
+              <input id="editExpectedCtc" type="text" class="field-input" placeholder="12-15 LPA">
+            </div>
+            <div>
+              <label class="field-label">Notice Period</label>
+              <select id="editNoticePeriod" class="field-input">
+                <option value="">Select</option>
+                <option>Immediate</option>
+                <option>15 Days</option>
+                <option>1 Month</option>
+                <option>2 Months</option>
+                <option>3 Months</option>
+                <option>More than 3 Months</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Preferred Job Sector</label>
+              <select id="editSector" class="field-input">
+                <option value="">Select sector</option>
+                <option>IT / Software</option>
+                <option>Government / PSU</option>
+                <option>Banking / Finance</option>
+                <option>Healthcare</option>
+                <option>Education</option>
+                <option>Manufacturing</option>
+                <option>Retail / E-Commerce</option>
+                <option>Startup</option>
+                <option>Consulting</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="field-label">Additional Notes for Recruiters</label>
+              <textarea id="editRecruiterNote" class="field-input" placeholder="Anything specific you'd like recruiters to know..."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end modal body -->
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t flex gap-3 items-center">
+        <button onclick="closeEditModal()" class="px-5 py-2.5 border rounded-xl font-bold text-gray-600 hover:bg-white text-sm transition">Cancel</button>
+        <button id="saveProfileBtn" onclick="saveProfile()" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 text-sm transition shadow-md">
+          Save All Changes
+        </button>
+        <div id="saveStatus" class="text-xs text-green-600 font-semibold hidden">✓ Saved!</div>
+      </div>
+    </div>
+  </div>
+
+<!-- ════════════════════════════════════════════════
+     🔥 SCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ── Firebase config ── */
+const firebaseConfig = {
+  apiKey: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_API_KEY","NEXT_PUBLIC_FIREBASE_API_KEY","REACT_APP_FIREBASE_API_KEY") : "",
+  authDomain: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_AUTH_DOMAIN","NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN","REACT_APP_FIREBASE_AUTH_DOMAIN") : "",
+  databaseURL: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_DATABASE_URL","NEXT_PUBLIC_FIREBASE_DATABASE_URL","REACT_APP_FIREBASE_DATABASE_URL") : "",
+  projectId: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_PROJECT_ID","NEXT_PUBLIC_FIREBASE_PROJECT_ID","REACT_APP_FIREBASE_PROJECT_ID") : "",
+  storageBucket: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_STORAGE_BUCKET","NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET","REACT_APP_FIREBASE_STORAGE_BUCKET") : "",
+  messagingSenderId: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID","NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID","REACT_APP_FIREBASE_MESSAGING_SENDER_ID") : "",
+  appId: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_APP_ID","NEXT_PUBLIC_FIREBASE_APP_ID","REACT_APP_FIREBASE_APP_ID") : "",
+  measurementId: typeof getEnvVar === "function" ? getEnvVar("VITE_FIREBASE_MEASUREMENT_ID","NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID","REACT_APP_FIREBASE_MEASUREMENT_ID") : ""
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+const state = {
+  isSearching: false,
+  searchResults: [],
+  currentUser: null,
+  profileData: {},
+  requestStatusMap: {}
+};
+
+/* ── Auth ── */
+auth.onAuthStateChanged(user => {
+  if (user) {
+    state.currentUser = user;
+    fetchAndRenderMyProfile(user.uid);
+  } else {
+    document.getElementById('myName').innerText = "Guest User";
+    document.getElementById('myProfileCard').classList.remove('opacity-0');
+  }
+});
+
+/* ── Fetch & render my profile ── */
+async function fetchAndRenderMyProfile(uid) {
+  try {
+    const doc = await db.collection("users").doc(uid).get();
+    if (doc.exists) {
+      const d = doc.data();
+      state.profileData = d;
+      renderProfile(d);
+    }
+  } catch (err) { console.error(err); }
+  finally { document.getElementById('myProfileCard').classList.remove('opacity-0'); }
+}
+
+function renderProfile(d) {
+  // Core
+  document.getElementById('myName').innerText    = d.fullName || d.name || "User Name";
+  document.getElementById('myRole').innerText    = d.headline || d.position || "Job Seeker";
+  document.getElementById('myLocText').innerText = d.location || d.city || "--";
+  document.getElementById('myBio').innerText     = d.bio || "";
+  document.getElementById('myPhoto').src         = d.photoURL || "https://i.imgur.com/6VBx3io.png";
+
+  // Contact
+  document.getElementById('myEmail').innerText    = d.email || auth.currentUser?.email || "--";
+  document.getElementById('myPhone').innerText    = d.phone || "--";
+  document.getElementById('myLinkedin').innerText = d.linkedin || d.portfolio || "--";
+
+  // Stats
+  document.getElementById('statExp').innerText         = d.expYears ? `${d.expYears}` : "--";
+  document.getElementById('statSkillCount').innerText  = countSkills(d.techSkills);
+  document.getElementById('statProjects').innerText    = d.projectsCount ? `${d.projectsCount}` : "--";
+
+  // Work status badge
+  const badge = document.getElementById('workStatusBadge');
+  const badgeText = document.getElementById('workStatusText');
+  if (d.jobStatus === 'open' || d.jobStatus === 'open-passive') {
+    badge.classList.remove('hidden');
+    if (d.jobStatus === 'open-passive') {
+      badgeText.className = 'status-not-looking';
+      badgeText.innerText = '● Open to Opportunities';
+    } else {
+      badgeText.className = 'status-open';
+      badgeText.innerText = '● Open to Work';
+    }
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  // Overview
+  document.getElementById('myEdu') && (document.getElementById('myEdu').innerText = `${d.education || "No education info"} at ${d.university || "..."}`);
+
+  // Skills tab
+  renderSkillTags('techSkillsDisplay', d.techSkills);
+  renderSkillTags('softSkillsDisplay', d.softSkills);
+  renderSkillTags('languagesDisplay', d.languages);
+  document.getElementById('certsDisplay').innerText = d.certifications || 'None added';
+
+  // Top skills preview (overview)
+  renderSkillTags('topSkillsPreview', d.techSkills, 6);
+
+  // Experience tab
+  renderExpTimeline(d);
+
+  // Education tab
+  renderEduTimeline(d);
+
+  // Job Preferences
+  document.getElementById('prefRole').innerText     = d.desiredRole || "--";
+  document.getElementById('prefLocation').innerText = d.prefLocation || "--";
+  document.getElementById('prefSalary').innerText   = d.expectedCtc || "--";
+  document.getElementById('prefWorkType').innerText = d.workType || "--";
+  document.getElementById('prefSector').innerText   = d.sector || "--";
+  document.getElementById('prefNotice').innerText   = d.noticePeriod || "--";
+
+  // Profile completion
+  updateCompletion(d);
+}
+
+function countSkills(raw) {
+  if (!raw) return "--";
+  const arr = raw.split(",").map(s => s.trim()).filter(Boolean);
+  return arr.length > 0 ? String(arr.length) : "--";
+}
+
+function renderSkillTags(containerId, raw, limit = 999) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!raw) { el.innerHTML = '<span class="skill-tag text-gray-300 text-xs">None added</span>'; return; }
+  const arr = raw.split(",").map(s => s.trim()).filter(Boolean).slice(0, limit);
+  if (!arr.length) { el.innerHTML = '<span class="skill-tag text-gray-300 text-xs">None added</span>'; return; }
+  el.innerHTML = arr.map(s => `<span class="skill-tag text-xs">${s}</span>`).join('');
+}
+
+function renderExpTimeline(d) {
+  const el = document.getElementById('expTimeline');
+  if (!d.position && !d.employer) {
+    el.innerHTML = '<p class="text-sm text-gray-400 italic">No experience added. Click Edit Profile to add.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="flex gap-3">
+      <div class="flex flex-col items-center">
+        <div class="timeline-dot"></div>
+        <div class="flex-1 w-px bg-blue-100 mt-1"></div>
+      </div>
+      <div class="pb-4">
+        <p class="font-bold text-gray-800 text-sm">${d.position || "Position"}</p>
+        <p class="text-blue-600 text-xs font-semibold">${d.employer || "Company"}</p>
+        <p class="text-gray-400 text-xs mono">${d.startYear || ''} – ${d.endYear || 'Present'} · ${d.expYears ? d.expYears + ' yrs' : ''}</p>
+        <p class="text-xs text-gray-500 mt-1">${d.employmentType || ''}</p>
+        ${d.responsibilities ? `<p class="text-xs text-gray-600 mt-2 leading-relaxed">${d.responsibilities}</p>` : ''}
+      </div>
+    </div>
+    ${d.currentCtc ? `<div class="bg-slate-50 rounded-xl p-3 text-sm"><span class="text-xs font-bold text-gray-400 uppercase">Current CTC</span><p class="font-bold text-gray-800 mt-1">${d.currentCtc}</p></div>` : ''}
+  `;
+}
+
+function renderEduTimeline(d) {
+  const el = document.getElementById('eduTimeline');
+  if (!d.education && !d.university) {
+    el.innerHTML = '<p class="text-sm text-gray-400 italic">No education added. Click Edit Profile to add.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="flex gap-3">
+      <div class="flex flex-col items-center">
+        <div class="timeline-dot" style="background:#7c3aed"></div>
+        <div class="flex-1 w-px bg-violet-100 mt-1"></div>
+      </div>
+      <div class="pb-4">
+        <p class="font-bold text-gray-800 text-sm">${d.education || "Degree"}</p>
+        <p class="text-violet-600 text-xs font-semibold">${d.university || "Institution"}</p>
+        ${d.fieldOfStudy ? `<p class="text-gray-500 text-xs">${d.fieldOfStudy}</p>` : ''}
+        <p class="text-gray-400 text-xs mono">${d.graduationYear ? 'Class of ' + d.graduationYear : ''} ${d.grade ? '· ' + d.grade : ''}</p>
+      </div>
+    </div>
+    ${d.certifications ? `<div class="mt-2"><p class="text-xs font-bold text-gray-400 uppercase mb-2">Certifications</p><p class="text-xs text-gray-600">${d.certifications}</p></div>` : ''}
+  `;
+}
+
+function updateCompletion(d) {
+  const fields = [
+    d.fullName || d.name, d.phone, d.bio, d.location,
+    d.position, d.employer, d.expYears,
+    d.education, d.university,
+    d.techSkills, d.desiredRole, d.jobStatus
+  ];
+  const filled = fields.filter(Boolean).length;
+  const pct = Math.round((filled / fields.length) * 100);
+  document.getElementById('completionBar').style.width = pct + '%';
+  document.getElementById('completionPct').innerText = pct + '%';
+
+  const missing = [];
+  if (!d.phone) missing.push('phone');
+  if (!d.bio) missing.push('bio');
+  if (!d.techSkills) missing.push('skills');
+  if (!d.desiredRole) missing.push('desired role');
+  document.getElementById('completionHint').innerText = pct < 100 ? `Add: ${missing.slice(0,3).join(', ')} to improve visibility` : 'Profile complete!';
+}
+
+/* ── Tab Switching (profile card) ── */
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('tab-' + tabId).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active', 'bg-blue-600', 'text-white');
+    b.classList.add('bg-slate-100', 'text-slate-600');
+  });
+  btn.classList.add('active', 'bg-blue-600', 'text-white');
+  btn.classList.remove('bg-slate-100', 'text-slate-600');
+}
+
+/* ── Tab Switching (edit modal) ── */
+function switchModalTab(tabId, btn) {
+  document.querySelectorAll('.modal-tab-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('modal-' + tabId).classList.remove('hidden');
+  document.querySelectorAll('.modal-tab-btn').forEach(b => {
+    b.classList.remove('text-blue-600', 'border-blue-600');
+    b.classList.add('text-gray-400', 'border-transparent');
+  });
+  btn.classList.add('text-blue-600', 'border-blue-600');
+  btn.classList.remove('text-gray-400', 'border-transparent');
+}
+
+/* ── Open Edit Modal ── */
+function openEditModal() {
+  const d = state.profileData;
+  // Basic
+  document.getElementById('editName').value       = d.fullName || d.name || "";
+  document.getElementById('editPhone').value      = d.phone || "";
+  document.getElementById('editDob').value        = d.dob || "";
+  document.getElementById('editGender').value     = d.gender || "";
+  document.getElementById('editNationality').value= d.nationality || "";
+  document.getElementById('editLocation').value   = d.location || d.city || "";
+  document.getElementById('editHeadline').value   = d.headline || d.position || "";
+  document.getElementById('editBio').value        = d.bio || "";
+  document.getElementById('editLinkedin').value   = d.linkedin || "";
+  document.getElementById('editPortfolio').value  = d.portfolio || "";
+  // Experience
+  document.getElementById('editPos').value           = d.position || "";
+  document.getElementById('editEmployer').value      = d.employer || "";
+  document.getElementById('editYears').value         = d.expYears || "";
+  document.getElementById('editEmpType').value       = d.employmentType || "";
+  document.getElementById('editStartYear').value     = d.startYear || "";
+  document.getElementById('editEndYear').value       = d.endYear || "";
+  document.getElementById('editResponsibilities').value = d.responsibilities || "";
+  document.getElementById('editCurrentCtc').value    = d.currentCtc || "";
+  document.getElementById('editProjects').value      = d.projectsCount || "";
+  // Education
+  document.getElementById('editEdu').value     = d.education || "";
+  document.getElementById('editUni').value     = d.university || "";
+  document.getElementById('editField').value   = d.fieldOfStudy || "";
+  document.getElementById('editGradYear').value= d.graduationYear || "";
+  document.getElementById('editGrade').value   = d.grade || "";
+  document.getElementById('editCerts').value   = d.certifications || "";
+  // Skills
+  document.getElementById('editTechSkills').value  = d.techSkills || "";
+  document.getElementById('editSoftSkills').value  = d.softSkills || "";
+  document.getElementById('editLanguages').value   = d.languages || "";
+  document.getElementById('editTools').value       = d.tools || "";
+  // Preferences
+  document.getElementById('editJobStatus').value    = d.jobStatus || "";
+  document.getElementById('editDesiredRole').value  = d.desiredRole || "";
+  document.getElementById('editPrefLocation').value = d.prefLocation || "";
+  document.getElementById('editWorkType').value     = d.workType || "";
+  document.getElementById('editExpectedCtc').value  = d.expectedCtc || "";
+  document.getElementById('editNoticePeriod').value = d.noticePeriod || "";
+  document.getElementById('editSector').value       = d.sector || "";
+  document.getElementById('editRecruiterNote').value= d.recruiterNote || "";
+
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.add('hidden');
+}
+
+/* ── Save Profile ── */
+async function saveProfile() {
+  const btn = document.getElementById('saveProfileBtn');
+  const status = document.getElementById('saveStatus');
+  btn.innerText = "Saving...";
+  btn.disabled = true;
+
+  const updatedData = {
+    // Basic
+    fullName:      document.getElementById('editName').value.trim(),
+    name:          document.getElementById('editName').value.trim(),
+    phone:         document.getElementById('editPhone').value.trim(),
+    dob:           document.getElementById('editDob').value,
+    gender:        document.getElementById('editGender').value,
+    nationality:   document.getElementById('editNationality').value.trim(),
+    location:      document.getElementById('editLocation').value.trim(),
+    headline:      document.getElementById('editHeadline').value.trim(),
+    bio:           document.getElementById('editBio').value.trim(),
+    linkedin:      document.getElementById('editLinkedin').value.trim(),
+    portfolio:     document.getElementById('editPortfolio').value.trim(),
+    // Experience
+    position:         document.getElementById('editPos').value.trim(),
+    employer:         document.getElementById('editEmployer').value.trim(),
+    expYears:         parseInt(document.getElementById('editYears').value) || 0,
+    employmentType:   document.getElementById('editEmpType').value,
+    startYear:        document.getElementById('editStartYear').value.trim(),
+    endYear:          document.getElementById('editEndYear').value.trim(),
+    responsibilities: document.getElementById('editResponsibilities').value.trim(),
+    currentCtc:       document.getElementById('editCurrentCtc').value.trim(),
+    projectsCount:    parseInt(document.getElementById('editProjects').value) || 0,
+    // Education
+    education:     document.getElementById('editEdu').value,
+    university:    document.getElementById('editUni').value.trim(),
+    fieldOfStudy:  document.getElementById('editField').value.trim(),
+    graduationYear:document.getElementById('editGradYear').value.trim(),
+    grade:         document.getElementById('editGrade').value.trim(),
+    certifications:document.getElementById('editCerts').value.trim(),
+    // Skills
+    techSkills:  document.getElementById('editTechSkills').value.trim(),
+    softSkills:  document.getElementById('editSoftSkills').value.trim(),
+    languages:   document.getElementById('editLanguages').value.trim(),
+    tools:       document.getElementById('editTools').value.trim(),
+    // Preferences
+    jobStatus:     document.getElementById('editJobStatus').value,
+    desiredRole:   document.getElementById('editDesiredRole').value.trim(),
+    prefLocation:  document.getElementById('editPrefLocation').value.trim(),
+    workType:      document.getElementById('editWorkType').value,
+    expectedCtc:   document.getElementById('editExpectedCtc').value.trim(),
+    noticePeriod:  document.getElementById('editNoticePeriod').value,
+    sector:        document.getElementById('editSector').value,
+    recruiterNote: document.getElementById('editRecruiterNote').value.trim(),
+    updatedAt:     firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection("users").doc(state.currentUser.uid).set(updatedData, { merge: true });
+    state.profileData = { ...state.profileData, ...updatedData };
+    renderProfile(state.profileData);
+    closeEditModal();
+    // flash
+    status.classList.remove('hidden');
+    setTimeout(() => status.classList.add('hidden'), 2500);
+  } catch (err) {
+    console.error(err);
+    alert("Error saving profile. Please try again.");
+  } finally {
+    btn.innerText = "Save All Changes";
+    btn.disabled = false;
+  }
+}
+
+/* ── Avatar Picker ── */
+function openAvatarModal() {
+  const grid = document.getElementById('avatarGrid');
+  grid.innerHTML = '';
+  const sets = ['avataaars', 'bottts', 'lorelei', 'notionists'];
+  for (let i = 0; i < 40; i++) {
+    const seed = Math.random().toString(36).substring(7);
+    const set  = sets[i % sets.length];
+    const url  = `https://api.dicebear.com/7.x/${set}/svg?seed=${seed}`;
+    const div  = document.createElement('div');
+    div.className = "cursor-pointer hover:scale-110 transition p-1 border rounded-xl hover:border-blue-500 bg-gray-50";
+    div.onclick = () => selectAvatar(url);
+    div.innerHTML = `<img src="${url}" class="w-full h-full">`;
+    grid.appendChild(div);
+  }
+  document.getElementById('avatarModal').classList.remove('hidden');
+}
+
+function closeAvatarModal() { document.getElementById('avatarModal').classList.add('hidden'); }
+
+async function selectAvatar(url) {
+  document.getElementById('myPhoto').src = url;
+  try {
+    await db.collection("users").doc(state.currentUser.uid).set({ photoURL: url }, { merge: true });
+    state.profileData.photoURL = url;
+  } catch (e) { console.error(e); }
+  closeAvatarModal();
+}
+
+/* ══════════════════════════════════════
+   SEARCH LOGIC (unchanged from original)
+══════════════════════════════════════ */
+const input              = document.getElementById("searchInput");
+const searchBtn          = document.getElementById("searchBtn");
+const resultsView        = document.getElementById("resultsView");
+const gridWrapper        = document.getElementById("gridWrapper");
+const leftPanel          = document.getElementById("leftPanel");
+const rightPanel         = document.getElementById("rightPanel");
+const searchHint         = document.getElementById("searchHint");
+const resultsListContainer = document.getElementById("resultsListContainer");
+const detailViewContainer  = document.getElementById("detailViewContainer");
+const resultsHeader      = document.getElementById("resultsHeader");
+const resultsCount       = document.getElementById("resultsCount");
+
+searchBtn.addEventListener("click", runSearch);
+input.addEventListener("keypress", e => { if (e.key === "Enter") runSearch(); });
+
+async function runSearch() {
+  const q = input.value.toLowerCase().trim();
+  if (!q) return;
+  activateSearchLayout();
+  resultsView.innerHTML = `<div class="flex justify-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>`;
+  showResultsList();
+  try {
+    const snapshot = await db.collection("users").get();
+    const results = [];
+    snapshot.forEach(doc => {
+      if (state.currentUser && doc.id === state.currentUser.uid) return;
+      const u = doc.data();
+      const searchable = `${u.fullName} ${u.name} ${u.education} ${u.university} ${u.position} ${u.techSkills} ${u.sector}`.toLowerCase();
+      if (searchable.includes(q)) results.push({ id: doc.id, ...u });
+    });
+    await hydrateRequestStatuses(results);
+    state.searchResults = results;
+    renderResults(results);
+  } catch (error) { console.error(error); }
+}
+
+async function hydrateRequestStatuses(users) {
+  const nextStatusMap = {};
+  if (!state.currentUser) {
+    users.forEach(u => { nextStatusMap[u.id] = "guest"; });
+    state.requestStatusMap = nextStatusMap;
+    return;
+  }
+  const requestsRef = db.collection("connections");
+  await Promise.all(users.map(async (u) => {
+    try {
+      const [sentSnap, receivedSnap] = await Promise.all([
+        requestsRef.where("senderId","==",state.currentUser.uid).where("receiverId","==",u.id).limit(1).get(),
+        requestsRef.where("senderId","==",u.id).where("receiverId","==",state.currentUser.uid).limit(1).get()
+      ]);
+      const sentDoc     = sentSnap.empty     ? null : sentSnap.docs[0].data();
+      const receivedDoc = receivedSnap.empty ? null : receivedSnap.docs[0].data();
+      if (receivedDoc) {
+        nextStatusMap[u.id] = receivedDoc.status === "accepted" ? "connected" : "received";
+      } else if (sentDoc) {
+        nextStatusMap[u.id] = sentDoc.status === "accepted" ? "connected" : "pending";
+      } else {
+        nextStatusMap[u.id] = "none";
+      }
+    } catch (err) { console.error(err); nextStatusMap[u.id] = "none"; }
+  }));
+  state.requestStatusMap = nextStatusMap;
+}
+
+function getRequestButtonConfig(status) {
+  const configMap = {
+    guest:     { label: "Login Required",    classes: "bg-gray-100 text-gray-500",       disabled: true  },
+    none:      { label: "Send Request",      classes: "bg-blue-600 text-white hover:bg-blue-700", disabled: false },
+    pending:   { label: "Request Sent",      classes: "bg-amber-100 text-amber-700",     disabled: true  },
+    received:  { label: "Request Received",  classes: "bg-emerald-100 text-emerald-700", disabled: true  },
+    connected: { label: "Connected",         classes: "bg-green-100 text-green-700",     disabled: true  }
+  };
+  return configMap[status] || configMap.none;
+}
+
+window.sendConnectionRequest = async function(userId, event) {
+  if (event) event.stopPropagation();
+  if (!state.currentUser) return alert("Please login first.");
+  const currentStatus = state.requestStatusMap[userId] || "none";
+  if (currentStatus !== "none") return;
+  const requestPayload = {
+    senderId: state.currentUser.uid,
+    receiverId: userId,
+    status: "pending",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    await db.collection("connections").add(requestPayload);
+    state.requestStatusMap[userId] = "pending";
+    renderResults(state.searchResults);
+    const detailBtn = document.getElementById("detailRequestBtn");
+    if (detailBtn) {
+      const cfg = getRequestButtonConfig("pending");
+      detailBtn.innerText = cfg.label;
+      detailBtn.className = `px-6 py-2 rounded-xl font-bold shadow-sm transition ${cfg.classes}`;
+      detailBtn.disabled = true;
+    }
+  } catch (err) { console.error(err); alert("Unable to send request right now."); }
+};
+
+function activateSearchLayout() {
+  if (state.isSearching) return;
+  state.isSearching = true;
+  gridWrapper.classList.remove('grid-cols-1');
+  gridWrapper.classList.add('lg:grid-cols-3');
+  rightPanel.classList.remove('max-w-2xl', 'mx-auto');
+  rightPanel.classList.add('lg:col-span-1');
+  searchHint.classList.add('hidden');
+  leftPanel.classList.remove('hidden');
+  setTimeout(() => leftPanel.classList.remove('opacity-0', '-translate-x-4'), 50);
+  leftPanel.classList.add('lg:col-span-2');
+}
+
+function renderResults(users) {
+  resultsHeader.classList.remove('hidden');
+  resultsCount.innerText = `${users.length} found`;
+  resultsView.innerHTML = users.length ? '' : '<div class="p-8 bg-white rounded-2xl border text-center text-gray-400">No matches found</div>';
+  users.forEach(u => {
+    const status = state.requestStatusMap[u.id] || "none";
+    const requestBtn = getRequestButtonConfig(status);
+    const card = document.createElement('div');
+    card.className = "bg-white p-4 rounded-2xl border hover:shadow-md transition flex justify-between items-center cursor-pointer group";
+    card.onclick = () => openDetailView(u.id);
+    card.innerHTML = `
+      <div class="flex gap-4 items-center">
+        <img src="${u.photoURL || 'https://i.imgur.com/6VBx3io.png'}" class="w-12 h-12 rounded-xl border bg-gray-50 object-cover">
+        <div>
+          <p class="font-bold text-gray-800 group-hover:text-blue-600 text-sm">${u.fullName || u.name || "User"}</p>
+          <p class="text-xs text-gray-500">${u.headline || u.position || u.education || "Professional"}</p>
+          ${u.jobStatus === 'open' ? '<span class="text-xs text-green-600 font-semibold">● Open to Work</span>' : ''}
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="sendConnectionRequest('${u.id}', event)" ${requestBtn.disabled ? 'disabled' : ''} class="px-3 py-1 rounded-full text-xs font-bold transition ${requestBtn.classes}">${requestBtn.label}</button>
+        <button class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs font-bold">View</button>
+      </div>
+    `;
+    resultsView.appendChild(card);
+  });
+}
+
+function openDetailView(userId) {
+  const user = state.searchResults.find(u => u.id === userId);
+  if (!user) return;
+  const status = state.requestStatusMap[user.id] || "none";
+  const requestBtn = getRequestButtonConfig(status);
+  resultsListContainer.classList.add('hidden');
+  detailViewContainer.classList.remove('hidden');
+
+  const skillsHtml = user.techSkills
+    ? user.techSkills.split(',').map(s => `<span class="skill-tag text-xs">${s.trim()}</span>`).join('')
+    : '<span class="text-gray-400 text-xs">--</span>';
+
+  detailViewContainer.innerHTML = `
+    <div class="bg-blue-50 border-b px-6 py-4 flex items-center gap-3">
+      <button onclick="showResultsList()" class="text-blue-600 font-bold text-sm flex items-center gap-1">← Back</button>
+    </div>
+    <div class="p-6">
+      <div class="flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
+        <img src="${user.photoURL || 'https://i.imgur.com/6VBx3io.png'}" class="w-24 h-24 rounded-2xl border-4 border-white shadow-lg">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
+            <h2 class="text-2xl font-bold text-gray-900">${user.fullName || user.name || "User"}</h2>
+            ${user.jobStatus === 'open' ? '<span class="status-open">● Open to Work</span>' : ''}
+          </div>
+          <p class="text-blue-600 font-semibold">${user.headline || user.position || "Professional"}</p>
+          <p class="text-gray-500 text-sm">${user.education || ''} ${user.university ? '@ ' + user.university : ''}</p>
+          <p class="text-gray-400 text-xs mt-1">${user.location || ''}</p>
+          <div class="mt-4 flex gap-2 flex-wrap justify-center md:justify-start">
+            <button id="detailRequestBtn" onclick="sendConnectionRequest('${user.id}', event)" ${requestBtn.disabled ? 'disabled' : ''} class="px-5 py-2 rounded-xl font-bold shadow-sm transition text-sm ${requestBtn.classes}">${requestBtn.label}</button>
+            <button onclick="openMessageComposer('${user.id}')" class="px-5 py-2 border rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition text-sm">Message</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-3 gap-3">
+        <div class="p-3 bg-blue-50 rounded-xl text-center">
+          <p class="text-lg font-bold text-blue-700">${user.expYears || '0'}</p>
+          <p class="text-xs text-blue-500 font-semibold">Yrs Exp</p>
+        </div>
+        <div class="p-3 bg-violet-50 rounded-xl text-center">
+          <p class="text-lg font-bold text-violet-700">${user.projectsCount || '0'}</p>
+          <p class="text-xs text-violet-500 font-semibold">Projects</p>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded-xl text-center">
+          <p class="text-lg font-bold text-emerald-700">${user.sector || 'Any'}</p>
+          <p class="text-xs text-emerald-500 font-semibold">Sector</p>
+        </div>
+      </div>
+
+      ${user.bio ? `<div class="mt-4 p-4 bg-slate-50 rounded-xl"><p class="text-xs font-bold text-gray-400 uppercase mb-1">About</p><p class="text-sm text-gray-600">${user.bio}</p></div>` : ''}
+
+      <div class="mt-4">
+        <p class="text-xs font-bold text-gray-400 uppercase mb-2">Skills</p>
+        <div class="flex flex-wrap gap-2">${skillsHtml}</div>
+      </div>
+
+      ${user.desiredRole || user.prefLocation ? `
+      <div class="mt-4 p-4 bg-slate-50 rounded-xl">
+        <p class="text-xs font-bold text-gray-400 uppercase mb-2">Job Preferences</p>
+        <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+          ${user.desiredRole ? `<div><span class="font-semibold">Desired Role:</span> ${user.desiredRole}</div>` : ''}
+          ${user.prefLocation ? `<div><span class="font-semibold">Location:</span> ${user.prefLocation}</div>` : ''}
+          ${user.workType ? `<div><span class="font-semibold">Work Type:</span> ${user.workType}</div>` : ''}
+          ${user.noticePeriod ? `<div><span class="font-semibold">Notice:</span> ${user.noticePeriod}</div>` : ''}
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+window.openMessageComposer = function(userId) {
+  if (!state.currentUser) { alert("Please login first."); return; }
+  window.location.href = `messages.html?composeTo=${encodeURIComponent(userId)}`;
+};
+
+function showResultsList() {
+  detailViewContainer.classList.add('hidden');
+  resultsListContainer.classList.remove('hidden');
+}
+</script>
+
+<script src="/booterspace/public/js/firebase.js"></script>
+<script src="/booterspace/public/js/auth-guard.js"></script>
+<script src="/booterspace/public/js/navbar.js"></script>
+<script type="module" src="public/js/browser-notifications.js"></script>
+</body>
+</html>
