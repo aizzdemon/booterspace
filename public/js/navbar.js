@@ -62,12 +62,18 @@ function normalizeProfileName(value) {
   return name;
 }
 
+function toFirstName(value) {
+  const fullName = normalizeProfileName(value);
+  if (!fullName) return "";
+  return fullName.split(/\s+/)[0] || "";
+}
+
 function resolveProfileName(user, profileData) {
   return (
-    normalizeProfileName(profileData?.fullName) ||
-    normalizeProfileName(profileData?.name) ||
-    normalizeProfileName(profileData?.username) ||
-    normalizeProfileName(user.displayName) ||
+    toFirstName(profileData?.fullName) ||
+    toFirstName(profileData?.name) ||
+    toFirstName(profileData?.username) ||
+    toFirstName(user.displayName) ||
     "User"
   );
 }
@@ -76,6 +82,12 @@ function resolveProfilePhoto(user, profileData) {
   if (user.photoURL) return user.photoURL;
   if (profileData?.photoURL) return profileData.photoURL;
   if (profileData?.avatar) return profileData.avatar;
+
+  const email = (user.email || profileData?.email || "").trim().toLowerCase();
+  if (email && email.endsWith("@gmail.com")) {
+    return `https://www.google.com/s2/photos/profile/${encodeURIComponent(email)}?sz=128`;
+  }
+
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
 }
 
