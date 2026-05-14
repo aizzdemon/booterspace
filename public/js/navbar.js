@@ -46,6 +46,7 @@ function getNavbarElements() {
     mNotificationCount: document.getElementById("mNotificationCount"),
     mTopNotificationBtn: document.getElementById("mTopNotificationBtn"),
     mTopNotificationCount: document.getElementById("mTopNotificationCount"),
+    mTopMessageBtn: document.getElementById("mTopMessageBtn"),
     messageBtn: document.getElementById("messageBtn"),
     messageDropdown: document.getElementById("messageDropdown"),
     messageNotificationList: document.getElementById("messageNotificationList"),
@@ -62,12 +63,18 @@ function normalizeProfileName(value) {
   return name;
 }
 
+function toFirstName(value) {
+  const fullName = normalizeProfileName(value);
+  if (!fullName) return "";
+  return fullName.split(/\s+/)[0] || "";
+}
+
 function resolveProfileName(user, profileData) {
   return (
-    normalizeProfileName(profileData?.fullName) ||
-    normalizeProfileName(profileData?.name) ||
-    normalizeProfileName(profileData?.username) ||
-    normalizeProfileName(user.displayName) ||
+    toFirstName(profileData?.fullName) ||
+    toFirstName(profileData?.name) ||
+    toFirstName(profileData?.username) ||
+    toFirstName(user.displayName) ||
     "User"
   );
 }
@@ -76,6 +83,12 @@ function resolveProfilePhoto(user, profileData) {
   if (user.photoURL) return user.photoURL;
   if (profileData?.photoURL) return profileData.photoURL;
   if (profileData?.avatar) return profileData.avatar;
+
+  const email = (user.email || profileData?.email || "").trim().toLowerCase();
+  if (email && email.endsWith("@gmail.com")) {
+    return `https://www.google.com/s2/photos/profile/${encodeURIComponent(email)}?sz=128`;
+  }
+
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
 }
 
@@ -299,29 +312,32 @@ async function bindMessageCenter(user, elements) {
   }
 
   const { db } = await getFirebaseServices();
-  const { collection, onSnapshot, orderBy, query, where } = await loadFirebaseModule("firebase-firestore.js");
-  const q = query(collection(db, "chats"), where("participants", "array-contains", user.uid), orderBy("timestamp", "desc"));
+  const { collection, onSnapshot, query, where } = await loadFirebaseModule("firebase-firestore.js");
+  const q = query(collection(db, "chats"), where("participants", "array-contains", user.uid));
 
   navbarState.messagesUnsubscribe = onSnapshot(q, async (snap) => {
     const unreadChats = snap.docs
       .map((d) => {
         const data = d.data() || {};
-        return { id: d.id, data, unreadCount: Number(getMapValueForUser(data.unreadBy, user.uid) || 0) };
+        const ts = data.timestamp;
+        const sortTs = typeof ts?.toMillis === "function" ? ts.toMillis() : Number(ts || 0);
+        return { id: d.id, data, sortTs, unreadCount: Number(getMapValueForUser(data.unreadBy, user.uid) || 0) };
       })
       .filter((chat) => !getMapValueForUser(chat.data.deletedFor, user.uid))
-      .filter((chat) => chat.unreadCount > 0);
+      .filter((chat) => chat.unreadCount > 0)
+      .sort((a, b) => b.sortTs - a.sortTs);
 
     const uniquePartnerIds = [...new Set(unreadChats.map((chat) => getChatPartnerId(chat.data, user.uid)).filter(Boolean))];
     const namesByUid = new Map(await Promise.all(uniquePartnerIds.map(async (uid) => [uid, await getUserDisplayName(uid)])));
-    const totalUnread = unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0);
+    const unreadChatCount = unreadChats.length;
 
     renderMessageDropdown(messageNotificationList, unreadChats, namesByUid, user.uid);
-    messageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
-    if (mMessageCount) mMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
-    if (mTopMessageCount) mTopMessageCount.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
-    messageCount.classList.toggle("hidden", totalUnread === 0);
-    mMessageCount?.classList.toggle("hidden", totalUnread === 0);
-    mTopMessageCount?.classList.toggle("hidden", totalUnread === 0);
+    messageCount.textContent = unreadChatCount > 99 ? "99+" : String(unreadChatCount);
+    if (mMessageCount) mMessageCount.textContent = unreadChatCount > 99 ? "99+" : String(unreadChatCount);
+    if (mTopMessageCount) mTopMessageCount.textContent = unreadChatCount > 99 ? "99+" : String(unreadChatCount);
+    messageCount.classList.toggle("hidden", unreadChatCount === 0);
+    mMessageCount?.classList.toggle("hidden", unreadChatCount === 0);
+    mTopMessageCount?.classList.toggle("hidden", unreadChatCount === 0);
   }, () => {
     messageNotificationList.innerHTML = '<p class="text-center text-sm text-red-400 py-6">Failed to load messages</p>';
   });
@@ -377,7 +393,7 @@ async function bindNotificationCenter(user, elements) {
 
 async function initNavbarUI() {
   const elements = getNavbarElements();
-  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn, mTopNotificationBtn, messageBtn, messageDropdown } = elements;
+  const { loginBtn, mLoginBtn, menuBtn, mobileMenu, logoutBtn, mLogoutBtn, notificationBtn, notificationDropdown, mNotificationBtn, mTopNotificationBtn, messageBtn, mTopMessageBtn, messageDropdown } = elements;
 
   if (!loginBtn && !mLoginBtn) return;
   if (elements.navRoot && navbarState.boundNav === elements.navRoot) return;
@@ -393,11 +409,14 @@ async function initNavbarUI() {
     notificationDropdown?.classList.toggle("hidden");
   });
 
-  messageBtn?.addEventListener("click", (event) => {
+  const onMessageToggle = (event) => {
     event.stopPropagation();
     notificationDropdown?.classList.add("hidden");
     messageDropdown?.classList.toggle("hidden");
-  });
+  };
+
+  messageBtn?.addEventListener("click", onMessageToggle);
+  mTopMessageBtn?.addEventListener("click", onMessageToggle);
 
   document.addEventListener("click", (event) => {
     const target = event.target;
