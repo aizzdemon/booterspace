@@ -1,7 +1,7 @@
 (function initNavbarLoader() {
   const NAVBAR_CONTAINER_ID = "navbar";
-  const NAVBAR_CACHE_KEY = "booterspace:navbar:html:v1";
-  const NAVBAR_CACHE_TIME_KEY = "booterspace:navbar:cachedAt:v1";
+  const NAVBAR_CACHE_KEY = "booterspace:navbar:html:v2";
+  const NAVBAR_CACHE_TIME_KEY = "booterspace:navbar:cachedAt:v2";
   const NAVBAR_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
   const NAVBAR_HTML_PATH = "navbar.html";
   const NAVBAR_SCRIPT_SRC = "public/js/navbar.js";
