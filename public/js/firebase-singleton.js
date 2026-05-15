@@ -2,6 +2,7 @@ const FIREBASE_VERSION = "10.13.2";
 
 const moduleCache = new Map();
 let servicesPromise = null;
+let analyticsPromise = null;
 
 const defaultFirebaseEnv = {
   VITE_FIREBASE_API_KEY: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
@@ -72,6 +73,20 @@ export async function getFirebaseServices() {
   }
 
   return servicesPromise;
+}
+
+export async function getFirebaseAnalytics() {
+  if (!analyticsPromise) {
+    analyticsPromise = (async () => {
+      const { app } = await getFirebaseServices();
+      const { getAnalytics, isSupported } = await loadFirebaseModule("firebase-analytics.js");
+
+      // Firebase Analytics is browser-only; return null in unsupported contexts.
+      return (await isSupported()) ? getAnalytics(app) : null;
+    })();
+  }
+
+  return analyticsPromise;
 }
 
 export async function waitForInitialAuthUser() {
