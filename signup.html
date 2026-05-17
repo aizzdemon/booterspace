@@ -6,7 +6,7 @@
 <title>Sign Up | BooterSpace</title>
 
 <!-- Tailwind CSS -->
-<link rel="stylesheet" href="output.css">
+<script src="https://cdn.tailwindcss.com"></script>
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Google Fonts: Inter -->
@@ -17,6 +17,26 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50: '#fff7ed',
+            100: '#ffedd5',
+            500: '#f97316',
+            600: '#ea580c',
+            700: '#c2410c',
+          }
+        }
+      }
+    }
+  }
+</script>
 
 <style>
   .role-card {
