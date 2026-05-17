@@ -1,22 +1,10 @@
 {
   "name": "booterspace",
   "version": "1.0.0",
-  "description": "🚀 **Booter** is an open-source career platform that helps job seekers and professionals connect with opportunities, explore hangout places, and build their careers with ease.   It integrates **job listings, resumes, profiles, and community features** – all in one platform.",
-  "main": "firebase-messaging-sw.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "private": true,
   "scripts": {
-    "build:css": "tailwindcss -c tailwind.config.js -i ./input.css -o ./output.css --minify",
-    "watch:css": "tailwindcss -c tailwind.config.js -i ./input.css -o ./output.css --watch",
-    "build": "npm run build:css",
-    "firebase:build": "npm run build",
-    "github-pages:build": "npm run build"
+    "build:css": "tailwindcss -i ./src/input.css -o ./output.css --minify"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
     "tailwindcss": "^3.4.17"
   }
