@@ -194,6 +194,7 @@ const auth = window.auth;
 const db = window.db;
 let currentUser=null;
 let currentJobId=null;
+let applyNowOpenSecondaryNext = true;
 
 const feedbackBoxEl = document.getElementById("feedbackBox");
 const feedbackEmailEl = document.getElementById("feedbackEmail");
@@ -309,7 +310,12 @@ function renderJob(job){
 
 window.applyJob=(link)=>{
   if(!currentUser) return showLoginPopup();
-  window.open(link,"_blank");
+  const secondaryLink = "https://omg10.com/4/11022056";
+  const nextLink = applyNowOpenSecondaryNext ? secondaryLink : link;
+  if (nextLink) {
+    window.open(nextLink, "_blank", "noopener,noreferrer");
+  }
+  applyNowOpenSecondaryNext = !applyNowOpenSecondaryNext;
 };
 
 const LOCAL_SAVED_JOBS_KEY = "booterspace_saved_jobs";
