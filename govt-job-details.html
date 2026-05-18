@@ -200,7 +200,7 @@
       bodyElement.innerHTML = `${cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>'}
         <div class="p-4 md:col-span-2 bg-slate-50">
           ${officialLink
-            ? `<a href="${escapeHtml(officialLink)}" target="_blank" rel="noopener noreferrer" data-secondary-link="https://omg10.com/4/11022056" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition">Apply Now</a>`
+            ? `<a href="#" role="button" data-primary-link="${escapeHtml(officialLink)}" data-secondary-link="https://omg10.com/4/11022056" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition">Apply Now</a>`
             : '<p class="text-sm text-slate-500">Official application link is not available for this post.</p>'}
         </div>`;
     }
@@ -208,7 +208,12 @@
     document.addEventListener("click", (event) => {
       const applyButton = event.target.closest("a[data-secondary-link]");
       if (!applyButton) return;
+      event.preventDefault();
+      const primaryLink = applyButton.getAttribute("data-primary-link");
       const secondaryLink = applyButton.getAttribute("data-secondary-link");
+      if (primaryLink) {
+        window.open(primaryLink, "_blank", "noopener,noreferrer");
+      }
       if (!secondaryLink) return;
       window.open(secondaryLink, "_blank", "noopener,noreferrer");
     });
