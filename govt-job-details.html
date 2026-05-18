@@ -197,6 +197,8 @@
         })
         .join("");
 
+      const detailsUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+
       bodyElement.innerHTML = `${cards || '<div class="p-4 text-slate-500 text-sm md:col-span-2">No additional details available for this job.</div>'}
         <div class="p-4 md:col-span-2 bg-slate-50">
           ${officialLink
