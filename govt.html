@@ -801,12 +801,38 @@ const firebaseConfig = {
 
     searchStateBtn.addEventListener("click", fetchJobsByState);
 
-    const govtJobsQuery = query(collection(db, "govtJobs"), orderBy("createdAt", "desc"));
+    async function subscribeToGovtJobs() {
+      const queries = [
+        query(collection(db, "govtJobs"), orderBy("createdAt", "desc")),
+        query(collection(db, "govtJobs"), orderBy("timestamp", "desc"))
+      ];
 
-    onSnapshot(govtJobsQuery, snapshot => {
-      allJobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (!stateFilter.value) renderJobs(allJobs);
-    }, err => renderError(err.message));
+      for (const govtJobsQuery of queries) {
+        const connected = await new Promise((resolve) => {
+          const unsubscribe = onSnapshot(
+            govtJobsQuery,
+            (snapshot) => {
+              allJobs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+              if (!stateFilter.value) renderJobs(allJobs);
+              resolve(true);
+            },
+            (err) => {
+              unsubscribe();
+              resolve(false);
+              if (!/createdAt|timestamp|index/i.test(err.message || "")) {
+                renderError(err.message);
+              }
+            }
+          );
+        });
+
+        if (connected) return;
+      }
+
+      renderError("Unable to load jobs feed right now. Please try again in a moment.");
+    }
+
+    subscribeToGovtJobs();
   </script>
   <script type="module" src="public/js/analytics.js"></script>
   <script type="module" src="public/js/browser-notifications.js"></script>
