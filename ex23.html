@@ -3,537 +3,570 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Page Intel — Web Extractor</title>
+<title>Govt Recruitment Extractor</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;--border:#e2e0d8;--border2:#ccc9be;
+  --text:#1a1a18;--muted:#6b6960;--accent:#1a5cff;--accent-bg:#eef2ff;
+  --green:#0a7c4e;--green-bg:#e8f7f1;--red:#c1392b;--amber:#b45309;--amber-bg:#fef9ec;
+  --mono:'IBM Plex Mono',monospace;--sans:'Outfit',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:2rem 1rem 5rem}
+.wrap{max-width:1100px;margin:0 auto}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Header */
+.header{display:flex;align-items:flex-start;gap:16px;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:22px;height:22px;color:#fff}
+.header-text h1{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
+.header-text p{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:3px}
 
-  :root {
-    --bg: #0d0d0f;
-    --surface: #16161a;
-    --surface2: #1e1e24;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #e8e8f0;
-    --muted: #7a7a8c;
-    --accent: #7c6cfa;
-    --accent2: #a594f9;
-    --green: #3ecf8e;
-    --red: #f87171;
-    --amber: #fbbf24;
-    --mono: 'DM Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
+/* Input */
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.input-row{display:flex;gap:10px;align-items:center}
+.url-label{font-size:12px;font-family:var(--mono);color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:500}
+input[type=text]{flex:1;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]::placeholder{color:var(--muted)}
+input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,92,255,.1)}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s,transform .1s;flex-shrink:0}
+.btn:hover{background:#0044dd}
+.btn:active{transform:scale(.97)}
+.btn:disabled{background:#b0b8d0;cursor:not-allowed}
+.hint{margin-top:10px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.note{margin-top:8px;font-size:11px;color:var(--amber);font-family:var(--mono);background:var(--amber-bg);padding:7px 10px;border-radius:6px;border:1px solid rgba(180,83,9,.15)}
 
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; padding: 2rem 1rem 4rem; }
-  .wrap { max-width: 980px; margin: 0 auto; }
+/* Status */
+.status{display:none;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:1.5rem;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.status.on{display:flex}
+.spin{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
-  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-  .logo-icon svg { width: 18px; height: 18px; color: #fff; }
-  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  .tagline { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 4px; }
+/* Results */
+.results{display:none}.results.on{display:block}
+.err{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.25rem;color:var(--red);font-size:13px;font-family:var(--mono);margin-bottom:1rem}
 
-  .input-area { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
-  .url-row { display: flex; gap: 10px; align-items: center; }
-  .url-prefix { font-family: var(--mono); font-size: 12px; color: var(--accent2); white-space: nowrap; flex-shrink: 0; }
+/* Section */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:1.25rem;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.section-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.section-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-icon svg{width:14px;height:14px}
+.si-blue{background:var(--accent-bg);color:var(--accent)}
+.si-green{background:var(--green-bg);color:var(--green)}
+.section-title{font-size:13px;font-weight:600;letter-spacing:.01em}
+.section-badge{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:5px}
 
-  input[type="text"] { flex: 1; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 13px; padding: 10px 14px; outline: none; transition: border-color 0.2s; }
-  input[type="text"]::placeholder { color: var(--muted); }
-  input[type="text"]:focus { border-color: var(--accent); }
+/* Detail table */
+.dtable{width:100%;border-collapse:collapse}
+.dtable tr{border-bottom:1px solid var(--border)}
+.dtable tr:last-child{border-bottom:none}
+.dtable td{padding:12px 18px;vertical-align:top;line-height:1.5}
+.dtable td.k{font-family:var(--mono);font-size:11px;color:var(--muted);width:220px;font-weight:500;white-space:nowrap}
+.dtable td.v{font-size:13px;color:var(--text);word-break:break-word}
+.dtable td.v a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:12px}
+.dtable td.v a:hover{text-decoration:underline}
+.missing{color:var(--muted);font-style:italic;font-size:12px}
+.found{color:var(--green)}
+.pill{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-family:var(--mono);font-weight:500}
+.pill-blue{background:var(--accent-bg);color:var(--accent)}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-red{background:#fef2f2;color:var(--red)}
 
-  .btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s, transform 0.1s; flex-shrink: 0; }
-  .btn:hover { background: #6a5be0; }
-  .btn:active { transform: scale(0.97); }
-  .btn:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
-  .btn-sm { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 6px; color: var(--muted); font-family: var(--mono); font-size: 11px; padding: 4px 10px; cursor: pointer; transition: color 0.2s; }
-  .btn-sm:hover { color: var(--text); }
+/* Vacancy table */
+.vtable-wrap{overflow-x:auto;padding:0}
+.vtable{width:100%;border-collapse:collapse;font-size:13px}
+.vtable thead th{padding:10px 14px;text-align:left;font-size:11px;font-family:var(--mono);font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+.vtable thead th.num{text-align:right}
+.vtable tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+.vtable tbody tr:hover{background:var(--surface2)}
+.vtable tbody tr.total-row{background:var(--accent-bg);font-weight:600;border-top:2px solid var(--accent)}
+.vtable tbody td{padding:9px 14px;vertical-align:middle;font-size:13px}
+.vtable tbody td.num{text-align:right;font-family:var(--mono);font-size:12px}
+.vtable tbody td.state{font-weight:500}
+.vtable tbody td.lang{font-size:12px;color:var(--muted)}
+.vtable tbody td.total-num{text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)}
+.vtable .dash{color:var(--muted)}
 
-  .hint { margin-top: 10px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
-  .proxy-note { margin-top: 8px; font-size: 11px; color: var(--amber); font-family: var(--mono); opacity: 0.8; }
+/* Action bar */
+.action-bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:1rem}
+.btn-outline{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);font-family:var(--mono);font-size:11px;padding:6px 12px;cursor:pointer;transition:color .2s,border-color .2s}
+.btn-outline:hover{color:var(--text);border-color:var(--text)}
 
-  .status-bar { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-family: var(--mono); margin-bottom: 1.5rem; padding: 10px 14px; background: var(--surface); border-radius: 8px; border: 0.5px solid var(--border); }
-  .status-bar.active { display: flex; }
-  .spinner { width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .results { display: none; }
-  .results.active { display: block; }
-
-  .section-tabs { display: flex; gap: 4px; margin-bottom: 1rem; border-bottom: 0.5px solid var(--border); }
-  .tab { background: none; border: none; color: var(--muted); font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 16px 10px; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; margin-bottom: -0.5px; }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
-
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* Table */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table thead th { text-align: left; padding: 10px 14px; font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0.5px solid var(--border2); background: var(--surface); }
-  .data-table tbody tr { border-bottom: 0.5px solid var(--border); transition: background 0.15s; }
-  .data-table tbody tr:hover { background: var(--surface); }
-  .data-table td { padding: 11px 14px; vertical-align: top; line-height: 1.5; }
-  .data-table td.key { font-family: var(--mono); font-size: 11px; color: var(--accent2); white-space: nowrap; width: 200px; }
-  .data-table td.val { color: var(--text); font-size: 13px; word-break: break-word; }
-  .data-table td.val a { color: var(--accent2); text-decoration: none; font-family: var(--mono); font-size: 12px; }
-  .data-table td.val a:hover { text-decoration: underline; }
-
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: var(--mono); font-weight: 500; }
-  .bg { background: rgba(62,207,142,0.12); color: var(--green); }
-  .ba { background: rgba(251,191,36,0.12); color: var(--amber); }
-  .br { background: rgba(248,113,113,0.12); color: var(--red); }
-  .bp { background: rgba(124,108,250,0.12); color: var(--accent2); }
-
-  /* Cards */
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
-  .info-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1rem 1.25rem; transition: border-color 0.2s; }
-  .info-card:hover { border-color: rgba(124,108,250,0.3); }
-  .card-label { font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .card-value { font-size: 14px; line-height: 1.5; word-break: break-word; }
-  .card-value.large { font-size: 24px; font-weight: 700; color: var(--accent2); }
-
-  /* Tags */
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); color: var(--muted); cursor: default; }
-  .tag:hover { color: var(--text); }
-
-  .section-header { font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin: 1.5rem 0 0.75rem; }
-  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
-
-  /* OG Preview */
-  .og-preview { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
-  .og-banner { height: 4px; background: linear-gradient(90deg, var(--accent), #a594f9, #6ee7f7); }
-  .og-body { padding: 1.25rem; }
-  .og-url { font-family: var(--mono); font-size: 11px; color: var(--green); margin-bottom: 6px; }
-  .og-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
-  .og-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-  /* JSON */
-  .json-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; color: var(--text); }
-
-  .error-box { background: rgba(248,113,113,0.07); border: 0.5px solid rgba(248,113,113,0.25); border-radius: 10px; padding: 1rem 1.25rem; color: var(--red); font-size: 13px; font-family: var(--mono); margin-bottom: 1rem; }
-
-  .summary-box { background: var(--surface); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; font-size: 13px; line-height: 1.7; color: var(--muted); }
-
-  .heading-h1 { color: var(--text); font-weight: 600; }
-  .heading-h2 { color: var(--muted); padding-left: 12px; }
-  .heading-h3 { color: var(--muted); padding-left: 24px; font-size: 12px; opacity: 0.8; }
+/* Summary strip */
+.summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.scard-label{font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.scard-val{font-size:22px;font-weight:700;color:var(--accent)}
+.scard-sub{font-size:11px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-      </div>
-      <h1>Page Intel</h1>
-    </div>
-    <p class="tagline">// free browser-based web page extractor · no API key required</p>
-  </header>
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>Govt Recruitment Extractor</h1>
+    <p>// extracts recruitment details + state-wise vacancy table from any govt job page</p>
+  </div>
+</div>
 
-  <div class="input-area">
-    <div class="url-row">
-      <span class="url-prefix">URL →</span>
-      <input type="text" id="urlInput" placeholder="https://example.com/page" autocomplete="off" spellcheck="false" />
-      <button class="btn" id="extractBtn" onclick="extractPage()">Extract</button>
-    </div>
-    <p class="hint">// extracts title, meta tags, headings, links, keywords, OG data &amp; more · 100% free</p>
-    <p class="proxy-note">⚠ Uses a public CORS proxy (corsproxy.io) to fetch pages. Works on most public sites.</p>
+<div class="input-card">
+  <div class="input-row">
+    <span class="url-label">PAGE URL →</span>
+    <input type="text" id="urlInput" placeholder="https://sbi.co.in/web/careers/..." autocomplete="off" spellcheck="false"/>
+    <button class="btn" id="goBtn" onclick="run()">Extract</button>
+  </div>
+  <p class="hint">// works on SBI, SSC, IBPS, Railway, State PSC & similar govt recruitment pages</p>
+  <p class="note">⚠ Uses free CORS proxy (corsproxy.io). Pages behind login or CAPTCHA cannot be fetched.</p>
+</div>
+
+<div class="status" id="status"><div class="spin"></div><span id="statusTxt">Fetching…</span></div>
+
+<div class="results" id="results">
+  <div class="err" id="err" style="display:none"></div>
+
+  <div class="action-bar">
+    <button class="btn-outline" onclick="copyJSON()">⬇ Copy JSON</button>
+    <button class="btn-outline" onclick="copyCSV()">⬇ Copy CSV</button>
   </div>
 
-  <div class="status-bar" id="statusBar">
-    <div class="spinner"></div>
-    <span id="statusText">Fetching page…</span>
+  <!-- Summary strip -->
+  <div class="summary-strip" id="strip"></div>
+
+  <!-- Section 1: Recruitment Info -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon si-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <span class="section-title">Recruitment Information</span>
+      <span class="section-badge" id="badge1">—</span>
+    </div>
+    <table class="dtable" id="infoTable"></table>
   </div>
 
-  <div class="results" id="results">
-    <div id="errorBox" class="error-box" style="display:none;"></div>
-
-    <div id="ogPreview" class="og-preview" style="display:none;">
-      <div class="og-banner"></div>
-      <div class="og-body">
-        <div class="og-url" id="ogUrl"></div>
-        <div class="og-title" id="ogTitle"></div>
-        <div class="og-desc" id="ogDesc"></div>
+  <!-- Section 2: Exam & Eligibility -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon si-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
+      <span class="section-title">Exam &amp; Eligibility</span>
+      <span class="section-badge" id="badge2">—</span>
     </div>
+    <table class="dtable" id="examTable"></table>
+  </div>
 
-    <div class="section-tabs">
-      <button class="tab active" onclick="showTab('overview')">Overview</button>
-      <button class="tab" onclick="showTab('meta')">Meta & SEO</button>
-      <button class="tab" onclick="showTab('content')">Content</button>
-      <button class="tab" onclick="showTab('links')">Links</button>
-      <button class="tab" onclick="showTab('json')">JSON Export</button>
-    </div>
-
-    <div class="tab-panel active" id="tab-overview">
-      <div class="card-grid" id="overviewCards"></div>
-      <p class="section-header">// page summary</p>
-      <div class="summary-box" id="summaryBox"></div>
-    </div>
-
-    <div class="tab-panel" id="tab-meta">
-      <table class="data-table">
-        <thead><tr><th>Field</th><th>Value</th></tr></thead>
-        <tbody id="metaBody"></tbody>
-      </table>
-    </div>
-
-    <div class="tab-panel" id="tab-content">
-      <p class="section-header">// extracted keywords</p>
-      <div class="tags" id="keywordTags"></div>
-      <hr class="divider">
-      <p class="section-header">// heading structure</p>
-      <table class="data-table">
-        <thead><tr><th style="width:80px;">Level</th><th>Text</th></tr></thead>
-        <tbody id="headingsBody"></tbody>
-      </table>
-      <hr class="divider">
-      <p class="section-header">// images found</p>
-      <table class="data-table">
-        <thead><tr><th style="width:60%;">src</th><th>alt text</th></tr></thead>
-        <tbody id="imagesBody"></tbody>
-      </table>
-    </div>
-
-    <div class="tab-panel" id="tab-links">
-      <p class="section-header">// internal links</p>
-      <table class="data-table" id="internalLinksTable">
-        <thead><tr><th style="width:40%;">Text</th><th>URL</th></tr></thead>
-        <tbody id="internalBody"></tbody>
-      </table>
-      <hr class="divider">
-      <p class="section-header">// external links</p>
-      <table class="data-table">
-        <thead><tr><th style="width:40%;">Text</th><th>URL</th></tr></thead>
-        <tbody id="externalBody"></tbody>
-      </table>
-    </div>
-
-    <div class="tab-panel" id="tab-json">
-      <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
-        <button class="btn-sm" onclick="copyJSON()">copy JSON</button>
+  <!-- Section 3: Vacancy Table -->
+  <div class="section" id="vacancySection" style="display:none">
+    <div class="section-head">
+      <div class="section-icon si-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       </div>
-      <pre class="json-box" id="rawJSON"></pre>
+      <span class="section-title">State / UT Wise Vacancy Distribution</span>
+      <span class="section-badge" id="vacBadge">—</span>
+    </div>
+    <div class="vtable-wrap">
+      <table class="vtable">
+        <thead>
+          <tr>
+            <th>State / UT</th><th>Local Language</th>
+            <th class="num">SC</th><th class="num">ST</th><th class="num">OBC</th>
+            <th class="num">EWS</th><th class="num">UR</th><th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody id="vacBody"></tbody>
+      </table>
     </div>
   </div>
 
 </div>
+</div>
 
 <script>
-let extractedData = null;
+let gData = null;
 
-function showTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  const names = ['overview','meta','content','links','json'];
-  document.querySelectorAll('.tab')[names.indexOf(name)].classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-}
+const PROXIES = [
+  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+];
 
-function setStatus(t) { document.getElementById('statusText').textContent = t; }
+function st(t){document.getElementById('statusTxt').textContent = t}
 
-function getMeta(doc, names) {
-  for (const name of names) {
-    const el = doc.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-    if (el) { const v = el.getAttribute('content'); if (v) return v; }
+async function fetchHtml(url){
+  for(const p of PROXIES){
+    try{
+      const r = await fetch(p(url),{signal:AbortSignal.timeout(14000)});
+      if(!r.ok) continue;
+      return await r.text();
+    }catch{}
   }
   return null;
 }
 
-function extractKeywords(doc) {
-  const stopwords = new Set(['the','and','for','are','but','not','you','all','can','her','was','one','our','out','day','get','has','him','his','how','man','new','now','old','see','two','way','who','boy','did','its','let','put','say','she','too','use','than','that','they','this','will','with','have','from','been','were','said','what','when','your','more','also','into','just','come','over','like','some','then','them','very','even','back','much','well','only','know','take','time','need','most','make','good','many','give','want','here','think','where','after','other','these','those','about','which','their','there','first','would','could','there','being','been','have','more','such','each','both','page']);
-  const texts = [];
-  doc.querySelectorAll('h1,h2,h3,h4,p,li,td,th,strong,b').forEach(el => {
-    if (el.children.length === 0 || el.tagName !== 'P') texts.push(el.textContent.trim());
-  });
-  const words = texts.join(' ').toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/);
-  const freq = {};
-  words.forEach(w => { if (w.length > 4 && !stopwords.has(w)) freq[w] = (freq[w] || 0) + 1; });
-  return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 30).map(e => e[0]);
+/* ── smart text extractors ── */
+function norm(s){return (s||'').replace(/\s+/g,' ').trim()}
+
+function findByPatterns(text, patterns){
+  for(const pat of patterns){
+    const m = text.match(pat);
+    if(m && m[1]) return norm(m[1]);
+  }
+  return null;
 }
 
-function countWords(doc) {
-  const body = doc.querySelector('main, article, [role="main"], body');
-  const text = body ? body.innerText || body.textContent : doc.body.textContent;
-  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+function extractText(doc){
+  const clone = doc.cloneNode(true);
+  clone.querySelectorAll('script,style,noscript').forEach(e=>e.remove());
+  return norm(clone.body ? clone.body.innerText||clone.body.textContent : '');
 }
 
-function parseLinks(doc, baseUrl) {
-  const base = new URL(baseUrl);
-  const internal = [], external = [];
-  const seen = new Set();
-  doc.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    const text = a.textContent.trim().substring(0, 80);
-    if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || seen.has(href)) return;
-    seen.add(href);
-    try {
-      const full = new URL(href, baseUrl).href;
-      const u = new URL(full);
-      if (u.hostname === base.hostname) internal.push({ text, url: full });
-      else external.push({ text, url: full });
-    } catch {}
-  });
-  return { internal: internal.slice(0,50), external: external.slice(0,50) };
-}
-
-async function extractPage() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) { alert('Please enter a URL'); return; }
-  if (!url.startsWith('http')) { alert('URL must start with http:// or https://'); return; }
-
-  const btn = document.getElementById('extractBtn');
-  btn.disabled = true;
-  document.getElementById('statusBar').classList.add('active');
-  document.getElementById('results').classList.remove('active');
-  document.getElementById('errorBox').style.display = 'none';
-  setStatus('Connecting to proxy…');
-
-  const proxies = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url='
-  ];
-
-  let html = null;
-  let fetchError = null;
-
-  for (const proxy of proxies) {
-    try {
-      setStatus('Fetching page via ' + new URL(proxy).hostname + '…');
-      const res = await fetch(proxy + encodeURIComponent(url), { signal: AbortSignal.timeout(12000) });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      html = await res.text();
-      break;
-    } catch(e) {
-      fetchError = e.message;
+function extractFromTable(doc, keyFragment){
+  const tds = Array.from(doc.querySelectorAll('td,th'));
+  for(let i=0;i<tds.length;i++){
+    const t = norm(tds[i].textContent).toLowerCase();
+    if(t.includes(keyFragment.toLowerCase())){
+      const next = tds[i+1];
+      if(next){const v=norm(next.textContent); if(v&&v.length<400&&v.toLowerCase()!==t) return v;}
     }
   }
+  return null;
+}
 
-  if (!html) {
-    document.getElementById('errorBox').textContent = '✗ Could not fetch page: ' + fetchError + '. The site may block external requests or require login.';
-    document.getElementById('errorBox').style.display = 'block';
-    document.getElementById('results').classList.add('active');
-    document.getElementById('statusBar').classList.remove('active');
-    btn.disabled = false;
+function extractMeta(doc, names){
+  for(const n of names){
+    const el = doc.querySelector(`meta[name="${n}"],meta[property="${n}"]`);
+    if(el){const c=el.getAttribute('content'); if(c) return norm(c);}
+  }
+  return null;
+}
+
+function tryFind(doc, fullText, tableKeys, patterns, metaNames){
+  let v = null;
+  for(const k of tableKeys){v = extractFromTable(doc,k); if(v) return v;}
+  if(patterns) v = findByPatterns(fullText, patterns);
+  if(v) return v;
+  if(metaNames) v = extractMeta(doc, metaNames);
+  return v;
+}
+
+/* ── vacancy table extractor ── */
+function extractVacancyTable(doc, fullText){
+  // look for tables with SC, ST, OBC columns
+  const tables = Array.from(doc.querySelectorAll('table'));
+  const headers = ['sc','st','obc','ews','ur'];
+  
+  for(const tbl of tables){
+    const rows = Array.from(tbl.querySelectorAll('tr'));
+    if(rows.length < 3) continue;
+    const headerRow = rows.find(r=>{
+      const t = norm(r.textContent).toLowerCase();
+      return t.includes('sc') && t.includes('st') && t.includes('obc');
+    });
+    if(!headerRow) continue;
+
+    // get column indices
+    const hCells = Array.from(headerRow.querySelectorAll('th,td')).map(c=>norm(c.textContent).toLowerCase());
+    const idx = {
+      state: hCells.findIndex(h=>h.includes('state')||h.includes('circle')||h.includes('region')||h.includes('s.no')||h.includes('sl')),
+      lang:  hCells.findIndex(h=>h.includes('lang')||h.includes('language')||h.includes('local')),
+      sc:    hCells.findIndex(h=>h==='sc'||h.includes('sc')),
+      st:    hCells.findIndex(h=>h==='st'||h.includes('st')),
+      obc:   hCells.findIndex(h=>h==='obc'),
+      ews:   hCells.findIndex(h=>h==='ews'),
+      ur:    hCells.findIndex(h=>h==='ur'||h==='gen'||h==='general'),
+      total: hCells.findIndex(h=>h==='total'||h.includes('total'))
+    };
+    if(idx.sc<0||idx.st<0||idx.obc<0) continue;
+
+    const data = [];
+    let stateCol = idx.state >= 0 ? idx.state : 0;
+    
+    for(const row of rows){
+      if(row===headerRow) continue;
+      const cells = Array.from(row.querySelectorAll('td,th')).map(c=>norm(c.textContent));
+      if(cells.length < 4) continue;
+      const state = cells[stateCol]||'';
+      if(!state||state.toLowerCase()==='state'||state.toLowerCase()==='sl.no'||state.length>60) continue;
+      
+      const entry = {
+        state,
+        language: idx.lang>=0 ? cells[idx.lang]||'—' : '—',
+        sc:    cells[idx.sc]    || '—',
+        st:    cells[idx.st]    || '—',
+        obc:   cells[idx.obc]   || '—',
+        ews:   idx.ews>=0 ? cells[idx.ews]||'—' : '—',
+        ur:    idx.ur>=0  ? cells[idx.ur]||'—'  : '—',
+        total: idx.total>=0 ? cells[idx.total]||'—' : '—',
+      };
+      data.push(entry);
+    }
+    if(data.length >= 3) return data;
+  }
+
+  // fallback: parse from raw text patterns like "Gujarat\tGujarati\t15\t32..."
+  const rows2 = [];
+  const lineRe = /([A-Za-z\s\/&]+)\s+([A-Za-z\s\/]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/g;
+  let m;
+  while((m=lineRe.exec(fullText))!==null){
+    rows2.push({state:m[1].trim(),language:m[2].trim(),sc:m[3],st:m[4],obc:m[5],ews:m[6],ur:m[7],total:m[8]});
+    if(rows2.length>50) break;
+  }
+  return rows2.length>=3 ? rows2 : null;
+}
+
+async function run(){
+  const url = document.getElementById('urlInput').value.trim();
+  if(!url){alert('Please enter a URL');return;}
+  if(!url.startsWith('http')){alert('URL must start with http:// or https://');return;}
+
+  const btn = document.getElementById('goBtn');
+  btn.disabled = true;
+  document.getElementById('status').classList.add('on');
+  document.getElementById('results').classList.remove('on');
+  document.getElementById('err').style.display='none';
+  st('Connecting to proxy…');
+
+  const html = await fetchHtml(url);
+  if(!html){
+    document.getElementById('err').textContent = '✗ Could not fetch this page. It may block external requests, require login, or have CAPTCHA protection. Try a direct URL to the notification/advertisement page.';
+    document.getElementById('err').style.display='block';
+    document.getElementById('results').classList.add('on');
+    document.getElementById('status').classList.remove('on');
+    btn.disabled=false;
     return;
   }
 
-  setStatus('Parsing HTML…');
-
+  st('Parsing recruitment data…');
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc = parser.parseFromString(html,'text/html');
+  const fullText = extractText(doc);
 
-  // Remove noise
-  ['script','style','noscript','nav','footer','header','aside'].forEach(tag => {
-    doc.querySelectorAll(tag).forEach(el => el.remove());
-  });
+  // ─── Extract fields ───
+  const D = {};
 
-  const data = {};
+  D.recruitment_name = tryFind(doc, fullText,
+    ['recruitment name','advertisement name','notification name','project name'],
+    [/recruitment\s+name[:\s]+([^\n\r]{5,120})/i,
+     /([A-Z][A-Za-z\s]+(Apprentice|Clerk|Officer|Assistant|Recruitment|Vacancy)\s*\d{4})/i],
+    ['og:title','title']
+  ) || extractMeta(doc,['og:title']) || norm(doc.title) || null;
 
-  // Basic
-  data.url = url;
-  try { data.domain = new URL(url).hostname; } catch { data.domain = url; }
-  data.title = doc.title || getMeta(doc, ['og:title','twitter:title']) || '—';
-  data.description = getMeta(doc, ['description','og:description','twitter:description']) || '—';
-  data.author = getMeta(doc, ['author','article:author']) || '—';
-  data.keywords_meta = getMeta(doc, ['keywords']) || '—';
-  data.language = doc.documentElement.getAttribute('lang') || getMeta(doc, ['language']) || '—';
-  data.charset = (doc.querySelector('meta[charset]') || {getAttribute: ()=>null}).getAttribute('charset') || 
-                 (doc.querySelector('meta[http-equiv="Content-Type"]') || {getAttribute: ()=>null}).getAttribute('content')?.split('charset=')[1] || '—';
-  data.canonical = (doc.querySelector('link[rel="canonical"]') || {href: null}).href || '—';
-  data.robots = getMeta(doc, ['robots']) || '—';
-  data.viewport = getMeta(doc, ['viewport']) || '—';
-  data.theme_color = getMeta(doc, ['theme-color','msapplication-TileColor']) || '—';
+  D.conducting_authority = tryFind(doc, fullText,
+    ['conducting authority','conducted by','organization','department','board','commission','authority'],
+    [/conducted\s+by[:\s]+([^\n\r]{5,100})/i,
+     /organization[:\s]+([^\n\r]{5,100})/i]
+  );
 
-  // OG / Social
-  data.og_title = getMeta(doc, ['og:title']) || '—';
-  data.og_description = getMeta(doc, ['og:description']) || '—';
-  data.og_image = getMeta(doc, ['og:image','twitter:image']) || '—';
-  data.og_type = getMeta(doc, ['og:type']) || '—';
-  data.og_site_name = getMeta(doc, ['og:site_name']) || '—';
-  data.twitter_card = getMeta(doc, ['twitter:card']) || '—';
-  data.twitter_creator = getMeta(doc, ['twitter:creator']) || '—';
+  D.advertisement_number = tryFind(doc, fullText,
+    ['advertisement no','advt no','notification no','adv no','ref no','advt. no','crpd'],
+    [/advertisement\s*(no|number)[.:\s]+([A-Z0-9\/\-\.]+)/i,
+     /advt[\s.]*no[.:\s]+([A-Z0-9\/\-\.]+)/i,
+     /CRPD\/[A-Z\/0-9\-]+/]
+  );
 
-  // Dates
-  data.published_date = getMeta(doc, ['article:published_time','pubdate','date','DC.date','datePublished']) || 
-                        (doc.querySelector('time[datetime]') || {getAttribute: ()=>null}).getAttribute('datetime') || '—';
-  data.modified_date = getMeta(doc, ['article:modified_time','last-modified']) || '—';
+  D.post_name = tryFind(doc, fullText,
+    ['post name','name of post','post applied','designation','post'],
+    [/post\s+name[:\s]+([^\n\r]{3,100})/i,
+     /name\s+of\s+post[:\s]+([^\n\r]{3,100})/i,
+     /designation[:\s]+([^\n\r]{3,80})/i]
+  );
 
-  // Content stats
-  const allText = doc.body ? doc.body.textContent : '';
-  const wc = allText.trim().split(/\s+/).filter(w=>w.length>0).length;
-  data.word_count = wc;
-  data.reading_time = Math.max(1, Math.round(wc / 200)) + ' min';
-  data.images_count = doc.querySelectorAll('img').length;
+  D.total_vacancies = tryFind(doc, fullText,
+    ['total vacancy','total vacancies','total post','total no. of post','no. of vacancy','number of vacancy','total no of vacancy'],
+    [/total\s+vacanc(?:y|ies)[:\s]+(\d[\d,]*)/i,
+     /(\d[\d,]+)\s+(?:total\s+)?vacanc(?:y|ies)/i,
+     /total\s+post[s]?[:\s]+(\d[\d,]*)/i]
+  );
 
-  // Schema
-  const schemas = [];
-  doc.querySelectorAll('script[type="application/ld+json"]').forEach(s => {
-    try { const j = JSON.parse(s.textContent); schemas.push(j['@type'] || '?'); } catch {}
-  });
-  data.schema_types = schemas.length ? schemas.join(', ') : '—';
+  D.application_start_date = tryFind(doc, fullText,
+    ['start date','registration start','apply from','opening date','application opens','start of registration','commencement'],
+    [/start\s+date[:\s]+([^\n\r]{5,60})/i,
+     /application\s+(?:start|open(?:s|ing)?)\s*(?:date|from)?[:\s]+([^\n\r]{5,60})/i,
+     /registration\s+(?:start|open(?:s|ing)?)[:\s]+([^\n\r]{5,60})/i]
+  );
 
-  // Tech hints
-  const rawHtml = html.toLowerCase();
-  const techs = [];
-  if (rawHtml.includes('wp-content') || rawHtml.includes('wordpress')) techs.push('WordPress');
-  if (rawHtml.includes('shopify')) techs.push('Shopify');
-  if (rawHtml.includes('react') || rawHtml.includes('_next/')) techs.push('React/Next.js');
-  if (rawHtml.includes('nuxt') || rawHtml.includes('__nuxt')) techs.push('Nuxt/Vue');
-  if (rawHtml.includes('gatsby')) techs.push('Gatsby');
-  if (rawHtml.includes('angular')) techs.push('Angular');
-  if (rawHtml.includes('bootstrap')) techs.push('Bootstrap');
-  if (rawHtml.includes('tailwind')) techs.push('Tailwind');
-  if (rawHtml.includes('jquery')) techs.push('jQuery');
-  if (rawHtml.includes('gtag') || rawHtml.includes('google-analytics')) techs.push('Google Analytics');
-  if (rawHtml.includes('hubspot')) techs.push('HubSpot');
-  data.technologies = techs.length ? techs.join(', ') : '—';
+  D.last_date_to_apply = tryFind(doc, fullText,
+    ['last date','closing date','apply before','end date','last date to apply','last date of registration','registration ends'],
+    [/last\s+date[:\s]+([^\n\r]{5,80})/i,
+     /closing\s+date[:\s]+([^\n\r]{5,80})/i,
+     /(?:apply|register)\s+(?:before|by)[:\s]+([^\n\r]{5,80})/i]
+  );
 
-  // Headings
-  data.headings = [];
-  doc.querySelectorAll('h1,h2,h3,h4').forEach(h => {
-    const t = h.textContent.trim();
-    if (t && t.length < 200) data.headings.push({ level: h.tagName.toLowerCase(), text: t });
-  });
+  D.application_mode = tryFind(doc, fullText,
+    ['application mode','mode of application','apply mode','how to apply'],
+    [/application\s+mode[:\s]+([^\n\r]{3,80})/i,
+     /mode\s+of\s+application[:\s]+([^\n\r]{3,80})/i]
+  ) || (fullText.toLowerCase().includes('online') ? 'Online' : null);
 
-  // Keywords
-  data.keywords = extractKeywords(doc);
+  D.training_duration = tryFind(doc, fullText,
+    ['training duration','duration of training','training period','period of training','contract period','tenure'],
+    [/training\s+duration[:\s]+([^\n\r]{3,100})/i,
+     /duration\s+of\s+training[:\s]+([^\n\r]{3,100})/i,
+     /(\d+\s*(?:year|month|week)s?\s*training)/i]
+  );
 
-  // Images
-  data.images = [];
-  doc.querySelectorAll('img').forEach(img => {
-    const src = img.getAttribute('src');
-    const alt = img.getAttribute('alt') || '';
-    if (src && !src.startsWith('data:')) data.images.push({ src: src.substring(0,120), alt: alt.substring(0,80) });
-  });
-  data.images = data.images.slice(0, 30);
+  D.educational_qualification = tryFind(doc, fullText,
+    ['educational qualification','qualification','minimum qualification','academic qualification','eligibility'],
+    [/educational\s+qualification[:\s]+([^\n\r]{5,200})/i,
+     /qualification[:\s]+([^\n\r]{10,200})/i,
+     /eligibility[:\s]+([^\n\r]{10,200})/i]
+  );
 
-  // Links
-  const links = parseLinks(doc, url);
-  data.internal_links = links.internal;
-  data.external_links = links.external;
+  D.selection_process = tryFind(doc, fullText,
+    ['selection process','selection procedure','selection criteria','mode of selection'],
+    [/selection\s+process[:\s]+([^\n\r]{5,200})/i,
+     /selection\s+procedure[:\s]+([^\n\r]{5,200})/i]
+  );
 
-  extractedData = data;
-  renderResults(data);
-  document.getElementById('statusBar').classList.remove('active');
-  document.getElementById('results').classList.add('active');
+  D.exam_type = tryFind(doc, fullText,
+    ['exam type','type of exam','type of test','examination type','test type'],
+    [/exam(?:ination)?\s+type[:\s]+([^\n\r]{3,100})/i,
+     /type\s+of\s+(?:exam|test)[:\s]+([^\n\r]{3,100})/i]
+  ) || (fullText.toLowerCase().includes('online test') ? 'Online Test' : 
+        fullText.toLowerCase().includes('written test') ? 'Written Test' : 
+        fullText.toLowerCase().includes('computer based') ? 'Computer Based Test (CBT)' : null);
+
+  D.total_questions = tryFind(doc, fullText,
+    ['total questions','total no. of questions','number of questions','no of questions','total question'],
+    [/total\s+(?:no\.?\s*of\s+)?questions?[:\s]+(\d+)/i,
+     /(\d+)\s+(?:total\s+)?questions?/i]
+  );
+
+  D.total_marks = tryFind(doc, fullText,
+    ['total marks','maximum marks','total marks','max marks','full marks'],
+    [/total\s+marks[:\s]+(\d+)/i,
+     /maximum\s+marks[:\s]+(\d+)/i,
+     /(?:marks|score)\s*[:–-]\s*(\d+)/i]
+  );
+
+  D.official_website = tryFind(doc, fullText,
+    ['official website','website','web'],
+    [/official\s+website[:\s]+(https?:\/\/[^\s<>"]{5,80})/i,
+     /website[:\s]+(https?:\/\/[^\s<>"]{5,80})/i]
+  ) || (()=>{try{return new URL(url).origin}catch{return null}})();
+
+  // Vacancy table
+  st('Looking for vacancy table…');
+  const vacRows = extractVacancyTable(doc, fullText);
+
+  gData = { info: D, vacancy_table: vacRows };
+
+  renderResults(D, vacRows);
+  document.getElementById('status').classList.remove('on');
+  document.getElementById('results').classList.add('on');
   btn.disabled = false;
 }
 
-function renderResults(d) {
-  // OG Preview
-  const ogPrev = document.getElementById('ogPreview');
-  const displayTitle = (d.og_title !== '—' ? d.og_title : d.title);
-  const displayDesc = (d.og_description !== '—' ? d.og_description : d.description);
-  document.getElementById('ogUrl').textContent = d.url;
-  document.getElementById('ogTitle').textContent = displayTitle;
-  document.getElementById('ogDesc').textContent = displayDesc;
-  ogPrev.style.display = 'block';
+function renderResults(D, vacRows){
+  // Summary strip
+  const total = vacRows ? vacRows.find(r=>r.state.toLowerCase()==='total'||r.state.toLowerCase().includes('total')) : null;
+  const totalVac = (D.total_vacancies||total?.total||'—');
+  const states = vacRows ? vacRows.filter(r=>!r.state.toLowerCase().includes('total')).length : 0;
+  const strip = document.getElementById('strip');
+  strip.innerHTML = [
+    {label:'Total Vacancies', val: totalVac, sub:'posts'},
+    {label:'States / UTs', val: states||'—', sub:'in table'},
+    {label:'Post Name', val: D.post_name ? D.post_name.substring(0,20)+(D.post_name.length>20?'…':'') : '—', sub:''},
+    {label:'Last Date', val: D.last_date_to_apply ? D.last_date_to_apply.substring(0,16) : '—', sub:''},
+  ].map(c=>`<div class="scard"><div class="scard-label">${c.label}</div><div class="scard-val">${c.val}</div><div class="scard-sub">${c.sub}</div></div>`).join('');
 
-  // Overview cards
-  const cards = [
-    { label: 'Word Count', value: d.word_count.toLocaleString(), large: true },
-    { label: 'Reading Time', value: d.reading_time, large: true },
-    { label: 'Images', value: d.images_count, large: true },
-    { label: 'Internal Links', value: d.internal_links.length, large: true },
-    { label: 'External Links', value: d.external_links.length, large: true },
-    { label: 'Headings', value: d.headings.length, large: true },
-    { label: 'Language', value: d.language !== '—' ? d.language : 'unknown' },
-    { label: 'Page Type / Schema', value: d.schema_types },
-    { label: 'Technologies', value: d.technologies },
-    { label: 'Theme Color', value: d.theme_color },
+  // Info table
+  const infoRows = [
+    ['Recruitment Name',    D.recruitment_name],
+    ['Conducting Authority',D.conducting_authority],
+    ['Advertisement Number',D.advertisement_number],
+    ['Post Name',           D.post_name],
+    ['Total Vacancies',     D.total_vacancies],
+    ['Application Start Date', D.application_start_date],
+    ['Last Date to Apply',  D.last_date_to_apply],
+    ['Application Mode',    D.application_mode],
+    ['Training Duration',   D.training_duration],
+    ['Official Website',    D.official_website],
   ];
-  const grid = document.getElementById('overviewCards');
-  grid.innerHTML = cards.map(c => `
-    <div class="info-card">
-      <div class="card-label">${c.label}</div>
-      <div class="card-value ${c.large ? 'large' : ''}">${c.value || '—'}</div>
-    </div>`).join('');
-
-  document.getElementById('summaryBox').textContent = d.description !== '—' ? d.description : 'No description found for this page.';
-
-  // Meta & SEO table
-  const metaRows = [
-    ['title', d.title],
-    ['description', d.description],
-    ['canonical url', d.canonical],
-    ['robots', d.robots],
-    ['author', d.author],
-    ['keywords (meta)', d.keywords_meta],
-    ['published date', d.published_date],
-    ['modified date', d.modified_date],
-    ['language', d.language],
-    ['charset', d.charset],
-    ['viewport', d.viewport],
-    ['theme color', d.theme_color],
-    ['og:title', d.og_title],
-    ['og:description', d.og_description],
-    ['og:image', d.og_image],
-    ['og:type', d.og_type],
-    ['og:site_name', d.og_site_name],
-    ['twitter:card', d.twitter_card],
-    ['twitter:creator', d.twitter_creator],
-    ['schema types', d.schema_types],
-  ];
-  document.getElementById('metaBody').innerHTML = metaRows.map(([k,v]) => {
-    const val = v && v !== '—' 
-      ? (k.includes('url') || k.includes('image') || k.includes('canonical')
-          ? `<a href="${v}" target="_blank">${v}</a>`
-          : escHtml(v))
-      : `<span style="color:var(--muted)">—</span>`;
-    const status = (v && v !== '—') ? '<span class="badge bg">✓</span>' : '<span class="badge br">✗</span>';
-    return `<tr><td class="key">${k} ${status}</td><td class="val">${val}</td></tr>`;
+  let infoFound = 0;
+  document.getElementById('infoTable').innerHTML = infoRows.map(([k,v])=>{
+    if(v) infoFound++;
+    const isUrl = v && (v.startsWith('http')||v.startsWith('www'));
+    const val = v 
+      ? (isUrl ? `<a href="${v}" target="_blank">${v}</a>` : esc(v))
+      : `<span class="missing">Not found on this page</span>`;
+    return `<tr><td class="k">${k}</td><td class="v">${val}</td></tr>`;
   }).join('');
+  document.getElementById('badge1').textContent = infoFound + '/' + infoRows.length + ' found';
 
-  // Keywords
-  document.getElementById('keywordTags').innerHTML = d.keywords.map(k =>
-    `<span class="tag">${k}</span>`).join('');
+  // Exam table
+  const examRows = [
+    ['Educational Qualification', D.educational_qualification],
+    ['Selection Process',         D.selection_process],
+    ['Exam Type',                 D.exam_type],
+    ['Total Questions',           D.total_questions],
+    ['Total Marks',               D.total_marks],
+  ];
+  let examFound = 0;
+  document.getElementById('examTable').innerHTML = examRows.map(([k,v])=>{
+    if(v) examFound++;
+    const val = v ? esc(v) : `<span class="missing">Not found on this page</span>`;
+    return `<tr><td class="k">${k}</td><td class="v">${val}</td></tr>`;
+  }).join('');
+  document.getElementById('badge2').textContent = examFound + '/' + examRows.length + ' found';
 
-  // Headings
-  document.getElementById('headingsBody').innerHTML = d.headings.map(h =>
-    `<tr><td class="key"><span class="badge bp">${h.level}</span></td><td class="val ${h.level}">${escHtml(h.text)}</td></tr>`
-  ).join('') || '<tr><td class="val" colspan="2" style="color:var(--muted)">No headings found</td></tr>';
-
-  // Images
-  document.getElementById('imagesBody').innerHTML = d.images.map(img =>
-    `<tr><td class="val" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">${escHtml(img.src)}</td><td class="val">${escHtml(img.alt) || '<span style="color:var(--muted)">no alt text</span>'}</td></tr>`
-  ).join('') || '<tr><td class="val" colspan="2" style="color:var(--muted)">No images found</td></tr>';
-
-  // Links
-  const renderLinks = (arr, tbodyId) => {
-    document.getElementById(tbodyId).innerHTML = arr.map(l =>
-      `<tr><td class="val">${escHtml(l.text) || '<span style="color:var(--muted)">(no text)</span>'}</td><td class="val"><a href="${l.url}" target="_blank">${l.url.substring(0,80)}${l.url.length>80?'…':''}</a></td></tr>`
-    ).join('') || '<tr><td class="val" colspan="2" style="color:var(--muted)">None found</td></tr>';
-  };
-  renderLinks(d.internal_links, 'internalBody');
-  renderLinks(d.external_links, 'externalBody');
-
-  // JSON
-  document.getElementById('rawJSON').textContent = JSON.stringify(d, null, 2);
+  // Vacancy table
+  if(vacRows && vacRows.length > 0){
+    document.getElementById('vacancySection').style.display = 'block';
+    document.getElementById('vacBadge').textContent = vacRows.length + ' rows';
+    document.getElementById('vacBody').innerHTML = vacRows.map(r => {
+      const isTotal = r.state.toLowerCase()==='total'||r.state.toLowerCase().includes('total');
+      const cls = isTotal ? 'total-row' : '';
+      return `<tr class="${cls}">
+        <td class="state">${esc(r.state)}</td>
+        <td class="lang">${esc(r.language)}</td>
+        <td class="num">${r.sc}</td><td class="num">${r.st}</td>
+        <td class="num">${r.obc}</td><td class="num">${r.ews}</td>
+        <td class="num">${r.ur}</td>
+        <td class="${isTotal?'total-num':'num'}">${r.total}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    document.getElementById('vacancySection').style.display = 'none';
+  }
 }
 
-function escHtml(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function copyJSON(){
+  if(!gData) return;
+  navigator.clipboard.writeText(JSON.stringify(gData,null,2)).then(()=>{
+    const b = document.querySelectorAll('.btn-outline')[0];
+    b.textContent='✓ Copied!'; setTimeout(()=>b.textContent='⬇ Copy JSON',1500);
+  });
 }
 
-function copyJSON() {
-  if (!extractedData) return;
-  navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2))
-    .then(() => { const b = document.querySelector('.btn-sm'); b.textContent = 'copied!'; setTimeout(()=>b.textContent='copy JSON', 1500); });
+function copyCSV(){
+  if(!gData) return;
+  const D = gData.info;
+  const lines = [
+    'Field,Value',
+    ...Object.entries(D).map(([k,v])=>`"${k}","${(v||'').replace(/"/g,'""')}"`)
+  ];
+  if(gData.vacancy_table){
+    lines.push('');
+    lines.push('State/UT,Language,SC,ST,OBC,EWS,UR,Total');
+    gData.vacancy_table.forEach(r=>lines.push(`"${r.state}","${r.language}",${r.sc},${r.st},${r.obc},${r.ews},${r.ur},${r.total}`));
+  }
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const b = document.querySelectorAll('.btn-outline')[1];
+    b.textContent='✓ Copied!'; setTimeout(()=>b.textContent='⬇ Copy CSV',1500);
+  });
 }
 
-document.getElementById('urlInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') extractPage();
-});
+document.getElementById('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
 </script>
 </body>
 </html>
