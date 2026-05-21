@@ -272,7 +272,6 @@ window.saveToFirebase=async function(){
     const payload={
       ...window.getEditedData(),
       vacancy_table:window.gData.vacancy_table||[],
-      source_url:document.getElementById('urlInput').value.trim(),
       postName: window.getEditedData().post_name || null,
       organizationName: window.getEditedData().conducting_authority || null,
       lastDateApply: window.getEditedData().last_date_to_apply || null,
