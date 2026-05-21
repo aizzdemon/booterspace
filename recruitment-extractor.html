@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Govt Recruitment Extractor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;--border2:#ccc9be;
+  --text:#1a1a18;--muted:#6b6960;--accent:#1a5cff;--accent-bg:#eef2ff;
+  --green:#0a7c4e;--green-bg:#e8f7f1;--red:#c1392b;--amber:#b45309;--amber-bg:#fef9ec;
+  --mono:'IBM Plex Mono',monospace;--sans:'Outfit',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:2rem 1rem 6rem}
+.wrap{max-width:1100px;margin:0 auto}
+
+/* Header */
+.header{display:flex;align-items:flex-start;gap:16px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:22px;height:22px;color:#fff}
+.header-text h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.header-text p{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+
+/* Firebase config */
+.fb-cfg{background:var(--amber-bg);border:1px solid rgba(180,83,9,.2);border-radius:12px;padding:14px 18px;margin-bottom:1.5rem}
+.fb-cfg summary{font-weight:600;cursor:pointer;color:var(--amber);font-family:var(--mono);font-size:12px;user-select:none}
+.cfg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.cfg-field label{display:block;font-size:10px;font-family:var(--mono);color:var(--muted);margin-bottom:3px}
+.cfg-field input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none}
+.cfg-field input:focus{border-color:var(--accent)}
+.cfg-note{margin-top:8px;font-size:11px;color:var(--amber);font-family:var(--mono)}
+
+/* URL input */
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.input-row{display:flex;gap:10px;align-items:center}
+.url-label{font-size:12px;font-family:var(--mono);color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:500}
+input[type=text],input[type=url]{flex:1;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]::placeholder,input[type=url]::placeholder{color:var(--muted)}
+input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,92,255,.1)}
+.hint{margin-top:10px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.note{margin-top:8px;font-size:11px;color:var(--amber);font-family:var(--mono);background:var(--amber-bg);padding:7px 10px;border-radius:6px;border:1px solid rgba(180,83,9,.15)}
+
+/* Buttons */
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s,transform .1s;flex-shrink:0}
+.btn:hover{background:#0044dd}.btn:active{transform:scale(.97)}.btn:disabled{background:#b0b8d0;cursor:not-allowed}
+.btn-green{background:var(--green)}.btn-green:hover{background:#085f3b}
+.btn-outline{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);font-family:var(--mono);font-size:11px;padding:6px 12px;cursor:pointer;transition:color .2s,border-color .2s}
+.btn-outline:hover{color:var(--text);border-color:var(--border2)}
+
+/* Status */
+.status{display:none;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:1.5rem;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.status.on{display:flex}
+.spin{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results */
+.results{display:none}.results.on{display:block}
+.err{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.25rem;color:var(--red);font-size:13px;font-family:var(--mono);margin-bottom:1rem}
+
+/* Edit mode banner */
+.edit-banner{background:var(--accent-bg);border:1px solid rgba(26,92,255,.25);border-radius:10px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--accent);font-family:var(--mono)}
+.edit-banner svg{width:16px;height:16px;flex-shrink:0}
+
+/* Action bar */
+.action-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.action-left{display:flex;gap:8px;flex-wrap:wrap}
+.action-right{display:flex;gap:8px}
+
+/* Summary strip */
+.summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.scard-label{font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.scard-val{font-size:22px;font-weight:700;color:var(--accent)}
+.scard-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Section */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:1.25rem;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.section-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.section-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-icon svg{width:14px;height:14px}
+.si-blue{background:var(--accent-bg);color:var(--accent)}
+.si-green{background:var(--green-bg);color:var(--green)}
+.section-title{font-size:13px;font-weight:600}
+.section-badge{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:5px}
+
+/* Editable table */
+.dtable{width:100%;border-collapse:collapse}
+.dtable tr{border-bottom:1px solid var(--border)}
+.dtable tr:last-child{border-bottom:none}
+.dtable td{padding:10px 18px;vertical-align:middle;line-height:1.5}
+.dtable td.k{font-family:var(--mono);font-size:11px;color:var(--muted);width:210px;font-weight:500;white-space:nowrap}
+.dtable td.v{font-size:13px;color:var(--text);word-break:break-word}
+.dtable td.v a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:12px}
+.missing{color:var(--muted);font-style:italic;font-size:12px}
+
+/* Edit inputs inside table */
+.edit-input{width:100%;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;transition:border-color .2s,box-shadow .2s}
+.edit-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,92,255,.1)}
+.edit-textarea{width:100%;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;resize:vertical;min-height:60px;transition:border-color .2s}
+.edit-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,92,255,.1)}
+
+/* Vacancy table */
+.vtable-wrap{overflow-x:auto}
+.vtable{width:100%;border-collapse:collapse;font-size:13px}
+.vtable thead th{padding:10px 14px;text-align:left;font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+.vtable thead th.n{text-align:right}
+.vtable tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+.vtable tbody tr:hover{background:var(--surface2)}
+.vtable tbody tr.trow{background:var(--accent-bg);font-weight:600;border-top:2px solid var(--accent)}
+.vtable tbody td{padding:9px 14px;vertical-align:middle}
+.vtable tbody td.n{text-align:right;font-family:var(--mono);font-size:12px}
+.vtable tbody td.tn{text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)}
+
+/* Saved success */
+.saved-bar{display:none;background:var(--green-bg);border:1px solid rgba(10,124,78,.3);border-radius:10px;padding:12px 18px;margin-bottom:1.25rem;font-size:13px;color:var(--green);font-family:var(--mono);align-items:center;gap:10px}
+.saved-bar.on{display:flex}
+.saved-bar a{color:var(--accent);font-weight:600;margin-left:auto;text-decoration:none;font-family:var(--sans);font-size:13px;background:var(--accent-bg);padding:6px 14px;border-radius:6px}
+.saved-bar a:hover{background:#dce8ff}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;padding:12px 20px;border-radius:10px;font-size:13px;font-family:var(--mono);font-weight:500;z-index:999;display:none;animation:fadeup .3s ease;max-width:340px}
+.toast.show{display:block}
+.toast.success{background:var(--green);color:#fff}
+.toast.error{background:var(--red);color:#fff}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>Govt Recruitment Extractor</h1>
+    <p>// extract → edit → save to Firebase → view job details page</p>
+  </div>
+</div>
+
+<!-- Firebase Config -->
+<details class="fb-cfg" id="cfgPanel">
+  <summary>⚙ Firebase Configuration — click to fill credentials</summary>
+  <div class="cfg-grid">
+    <div class="cfg-field"><label>apiKey</label><input id="fb_apiKey" placeholder="AIzaSy..."/></div>
+    <div class="cfg-field"><label>authDomain</label><input id="fb_authDomain" placeholder="app.firebaseapp.com"/></div>
+    <div class="cfg-field"><label>projectId</label><input id="fb_projectId" placeholder="your-project-id"/></div>
+    <div class="cfg-field"><label>storageBucket</label><input id="fb_storageBucket" placeholder="app.appspot.com"/></div>
+    <div class="cfg-field"><label>messagingSenderId</label><input id="fb_messagingSenderId" placeholder="123456789"/></div>
+    <div class="cfg-field"><label>appId</label><input id="fb_appId" placeholder="1:123:web:abc..."/></div>
+  </div>
+  <p class="cfg-note">Credentials auto-saved in localStorage. Make sure Firestore is enabled in your Firebase console.</p>
+</details>
+
+<!-- URL Input -->
+<div class="input-card">
+  <div class="input-row">
+    <span class="url-label">URL →</span>
+    <input type="text" id="urlInput" placeholder="https://sbi.co.in/web/careers/..." autocomplete="off" spellcheck="false"/>
+    <button class="btn" id="goBtn" onclick="run()">Extract</button>
+  </div>
+  <p class="hint">// paste any govt recruitment page URL</p>
+  <p class="note">⚠ Uses free CORS proxy. After extracting, edit any field before saving.</p>
+</div>
+
+<div class="status" id="status"><div class="spin"></div><span id="statusTxt">Fetching…</span></div>
+
+<div class="results" id="results">
+  <div class="err" id="err" style="display:none"></div>
+  <div class="saved-bar" id="savedBar">
+    ✓ Saved to Firebase successfully!
+    <a id="viewJobLink" href="job-details.html" target="_blank">View Job Page →</a>
+  </div>
+  <div class="edit-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    All fields are editable — click any value to modify it before saving.
+  </div>
+
+  <div class="action-bar">
+    <div class="action-left">
+      <button class="btn btn-green" id="saveBtn" onclick="saveToFirebase()">☁ Save to Firebase</button>
+    </div>
+    <div class="action-right">
+      <button class="btn-outline" onclick="copyJSON()">⬇ JSON</button>
+      <button class="btn-outline" onclick="copyCSV()">⬇ CSV</button>
+    </div>
+  </div>
+
+  <div class="summary-strip" id="strip"></div>
+
+  <!-- Section: Recruitment Info -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon si-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <span class="section-title">Recruitment Information</span>
+      <span class="section-badge" id="badge1">—</span>
+    </div>
+    <table class="dtable" id="infoTable"></table>
+  </div>
+
+  <!-- Section: Exam & Eligibility -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon si-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <span class="section-title">Exam &amp; Eligibility</span>
+      <span class="section-badge" id="badge2">—</span>
+    </div>
+    <table class="dtable" id="examTable"></table>
+  </div>
+
+  <!-- Section: Vacancy Table -->
+  <div class="section" id="vacancySection" style="display:none">
+    <div class="section-head">
+      <div class="section-icon si-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <span class="section-title">State / UT Wise Vacancy Distribution</span>
+      <span class="section-badge" id="vacBadge">—</span>
+    </div>
+    <div class="vtable-wrap">
+      <table class="vtable">
+        <thead><tr><th>State / UT</th><th>Local Language</th><th class="n">SC</th><th class="n">ST</th><th class="n">OBC</th><th class="n">EWS</th><th class="n">UR</th><th class="n">Total</th></tr></thead>
+        <tbody id="vacBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const FB_FIELDS = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+
+function loadSavedCfg(){
+  FB_FIELDS.forEach(f=>{const v=localStorage.getItem('fb_'+f);if(v)document.getElementById('fb_'+f).value=v;});
+}
+function getCfg(){
+  const c={};
+  FB_FIELDS.forEach(f=>{const v=document.getElementById('fb_'+f).value.trim();if(v){c[f]=v;localStorage.setItem('fb_'+f,v);}});
+  return c;
+}
+function getDb(){
+  const cfg=getCfg();
+  if(!cfg.apiKey||!cfg.projectId)return null;
+  const name='recruiter-'+cfg.projectId;
+  const existing=getApps().find(a=>a.name===name);
+  const app=existing||initializeApp(cfg,name);
+  return getFirestore(app);
+}
+
+loadSavedCfg();
+
+window.saveToFirebase=async function(){
+  const db=getDb();
+  if(!db){showToast('Fill in Firebase credentials first.','error');document.getElementById('cfgPanel').open=true;return;}
+  if(!window.gData){showToast('Nothing to save.','error');return;}
+
+  // Collect all current edited values
+  const D={};
+  document.querySelectorAll('[data-field]').forEach(el=>{
+    D[el.dataset.field]=el.value.trim()||null;
+  });
+
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true;btn.textContent='⏳ Saving…';
+  try{
+    const payload={
+      ...D,
+      vacancy_table:window.gData.vacancy_table||[],
+      source_url:document.getElementById('urlInput').value.trim(),
+      saved_at:serverTimestamp(),
+    };
+    const ref=await addDoc(collection(db,'recruitments'),payload);
+    const docId=ref.id;
+    const bar=document.getElementById('savedBar');
+    bar.classList.add('on');
+    const link=document.getElementById('viewJobLink');
+    link.href='job-details.html?id='+docId;
+    link.textContent='View Job Page →';
+    showToast('✓ Saved! ID: '+docId,'success');
+    btn.textContent='✓ Saved';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='☁ Save to Firebase';},4000);
+  }catch(e){
+    showToast('Firebase error: '+e.message,'error');
+    btn.disabled=false;btn.textContent='☁ Save to Firebase';
+  }
+};
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',4500);
+}
+window.showToast=showToast;
+</script>
+
+<script>
+// ── PROXY & FETCH ──
+const PROXIES=[u=>'https://corsproxy.io/?'+encodeURIComponent(u),u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u)];
+function st(t){document.getElementById('statusTxt').textContent=t}
+
+async function fetchHtml(url){
+  for(const p of PROXIES){
+    try{const r=await fetch(p(url),{signal:AbortSignal.timeout(14000)});if(!r.ok)continue;return await r.text();}catch{}
+  }
+  return null;
+}
+
+// ── EXTRACTORS ──
+function norm(s){return(s||'').replace(/\s+/g,' ').trim()}
+function extractText(doc){const c=doc.cloneNode(true);c.querySelectorAll('script,style,noscript').forEach(e=>e.remove());return norm(c.body?c.body.innerText||c.body.textContent:'')}
+function getMeta(doc,names){for(const n of names){const el=doc.querySelector(`meta[name="${n}"],meta[property="${n}"]`);if(el){const v=el.getAttribute('content');if(v)return norm(v);}}return null;}
+function fromTable(doc,key){const tds=Array.from(doc.querySelectorAll('td,th'));for(let i=0;i<tds.length;i++){const t=norm(tds[i].textContent).toLowerCase();if(t.includes(key.toLowerCase())){const nxt=tds[i+1];if(nxt){const v=norm(nxt.textContent);if(v&&v.length<400&&v.toLowerCase()!==t)return v;}}}return null;}
+function tryFind(doc,txt,tableKeys,patterns){for(const k of tableKeys){const v=fromTable(doc,k);if(v)return v;}if(patterns){for(const p of patterns){const m=txt.match(p);if(m&&(m[2]||m[1]))return norm(m[2]||m[1]);}}return null;}
+
+function extractVacancyTable(doc){
+  const tables=Array.from(doc.querySelectorAll('table'));
+  for(const tbl of tables){
+    const rows=Array.from(tbl.querySelectorAll('tr'));if(rows.length<3)continue;
+    const hRow=rows.find(r=>{const t=norm(r.textContent).toLowerCase();return t.includes('sc')&&t.includes('st')&&t.includes('obc');});
+    if(!hRow)continue;
+    const hCells=Array.from(hRow.querySelectorAll('th,td')).map(c=>norm(c.textContent).toLowerCase());
+    const idx={state:hCells.findIndex(h=>h.includes('state')||h.includes('circle')||h.includes('region')),lang:hCells.findIndex(h=>h.includes('lang')||h.includes('language')||h.includes('local')),sc:hCells.findIndex(h=>h==='sc'||h.includes('sc')),st:hCells.findIndex(h=>h==='st'||h.includes('st')),obc:hCells.findIndex(h=>h==='obc'),ews:hCells.findIndex(h=>h==='ews'),ur:hCells.findIndex(h=>h==='ur'||h==='gen'||h==='general'),total:hCells.findIndex(h=>h==='total'||h.includes('total'))};
+    if(idx.sc<0||idx.st<0||idx.obc<0)continue;
+    const stateCol=idx.state>=0?idx.state:0;
+    const data=[];
+    for(const row of rows){
+      if(row===hRow)continue;
+      const cells=Array.from(row.querySelectorAll('td,th')).map(c=>norm(c.textContent));
+      if(cells.length<4)continue;
+      const state=cells[stateCol]||'';
+      if(!state||state.toLowerCase()==='state'||state.length>60)continue;
+      data.push({state,language:idx.lang>=0?cells[idx.lang]||'—':'—',sc:cells[idx.sc]||'—',st:cells[idx.st]||'—',obc:cells[idx.obc]||'—',ews:idx.ews>=0?cells[idx.ews]||'—':'—',ur:idx.ur>=0?cells[idx.ur]||'—':'—',total:idx.total>=0?cells[idx.total]||'—':'—'});
+    }
+    if(data.length>=3)return data;
+  }
+  return null;
+}
+
+// ── MAIN EXTRACT ──
+window.gData=null;
+window.run=async function(){
+  const url=document.getElementById('urlInput').value.trim();
+  if(!url){alert('Please enter a URL');return;}
+  if(!url.startsWith('http')){alert('URL must start with http:// or https://');return;}
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;
+  document.getElementById('status').classList.add('on');
+  document.getElementById('results').classList.remove('on');
+  document.getElementById('err').style.display='none';
+  document.getElementById('savedBar').classList.remove('on');
+  st('Connecting to proxy…');
+  const html=await fetchHtml(url);
+  if(!html){
+    document.getElementById('err').textContent='✗ Could not fetch this page. It may block external requests, require login, or use CAPTCHA.';
+    document.getElementById('err').style.display='block';
+    document.getElementById('results').classList.add('on');
+    document.getElementById('status').classList.remove('on');
+    btn.disabled=false;return;
+  }
+  st('Parsing data…');
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+  const fullText=extractText(doc);
+  const D={};
+  D.job_title=tryFind(doc,fullText,['post name','name of post','designation'],[/post\s+name[:\s]+([^\n\r]{3,100})/i])||norm(doc.title).substring(0,80)||null;
+  D.recruitment_name=tryFind(doc,fullText,['recruitment name','advertisement name','notification name'],[/recruitment\s+name[:\s]+([^\n\r]{5,120})/i])||getMeta(doc,['og:title'])||norm(doc.title)||null;
+  D.conducting_authority=tryFind(doc,fullText,['conducting authority','conducted by','organization','department','board'],[/conducted\s+by[:\s]+([^\n\r]{5,100})/i]);
+  D.advertisement_number=tryFind(doc,fullText,['advertisement no','advt no','notification no','adv no','crpd'],[/advertisement\s*(no|number)[.:\s]+([A-Z0-9\/\-\.]+)/i,/advt[\s.]*no[.:\s]+([A-Z0-9\/\-\.]+)/i,/(CRPD\/[A-Z\/0-9\-]+)/]);
+  D.post_name=tryFind(doc,fullText,['post name','name of post','post applied','designation'],[/post\s+name[:\s]+([^\n\r]{3,100})/i,/name\s+of\s+post[:\s]+([^\n\r]{3,100})/i]);
+  D.total_vacancies=tryFind(doc,fullText,['total vacancy','total vacancies','total post','no. of vacancy'],[/total\s+vacanc(?:y|ies)[:\s]+(\d[\d,]*)/i,/(\d[\d,]+)\s+(?:total\s+)?vacanc(?:y|ies)/i]);
+  D.application_start_date=tryFind(doc,fullText,['start date','registration start','apply from','opening date'],[/start\s+date[:\s]+([^\n\r]{5,60})/i]);
+  D.last_date_to_apply=tryFind(doc,fullText,['last date','closing date','apply before','end date'],[/last\s+date[:\s]+([^\n\r]{5,80})/i,/closing\s+date[:\s]+([^\n\r]{5,80})/i]);
+  D.application_mode=tryFind(doc,fullText,['application mode','mode of application'],[/application\s+mode[:\s]+([^\n\r]{3,80})/i])||(fullText.toLowerCase().includes('online')?'Online':null);
+  D.training_duration=tryFind(doc,fullText,['training duration','duration of training','training period','tenure'],[/training\s+duration[:\s]+([^\n\r]{3,100})/i,/(\d+\s*(?:year|month|week)s?\s*training)/i]);
+  D.educational_qualification=tryFind(doc,fullText,['educational qualification','qualification','minimum qualification'],[/educational\s+qualification[:\s]+([^\n\r]{5,200})/i,/qualification[:\s]+([^\n\r]{10,200})/i]);
+  D.selection_process=tryFind(doc,fullText,['selection process','selection procedure'],[/selection\s+process[:\s]+([^\n\r]{5,200})/i]);
+  D.exam_type=tryFind(doc,fullText,['exam type','type of exam','type of test'],[/exam(?:ination)?\s+type[:\s]+([^\n\r]{3,100})/i])||(fullText.toLowerCase().includes('online test')?'Online Test':fullText.toLowerCase().includes('computer based')?'Computer Based Test (CBT)':null);
+  D.total_questions=tryFind(doc,fullText,['total questions','no. of questions'],[/total\s+(?:no\.?\s*of\s+)?questions?[:\s]+(\d+)/i]);
+  D.total_marks=tryFind(doc,fullText,['total marks','maximum marks','max marks'],[/total\s+marks[:\s]+(\d+)/i,/maximum\s+marks[:\s]+(\d+)/i]);
+  D.official_website=tryFind(doc,fullText,['official website','website'],[/official\s+website[:\s]+(https?:\/\/[^\s<>"]{5,80})/i])||(()=>{try{return new URL(url).origin}catch{return null}})();
+  const vacRows=extractVacancyTable(doc);
+  window.gData={info:D,vacancy_table:vacRows};
+  renderResults(D,vacRows);
+  document.getElementById('status').classList.remove('on');
+  document.getElementById('results').classList.add('on');
+  btn.disabled=false;
+};
+
+// ── RENDER with editable inputs ──
+function makeInput(fieldKey, value, isLong){
+  const v=esc(value||'');
+  if(isLong){
+    return`<textarea class="edit-textarea" data-field="${fieldKey}" placeholder="Enter value…">${v}</textarea>`;
+  }
+  return`<input class="edit-input" type="text" data-field="${fieldKey}" value="${v}" placeholder="Enter value…"/>`;
+}
+
+function renderResults(D,vacRows){
+  const total=vacRows?vacRows.find(r=>r.state.toLowerCase().includes('total')):null;
+  const totalVac=D.total_vacancies||total?.total||'—';
+  const states=vacRows?vacRows.filter(r=>!r.state.toLowerCase().includes('total')).length:0;
+  document.getElementById('strip').innerHTML=[
+    {label:'Total Vacancies',val:totalVac,sub:'posts'},
+    {label:'States / UTs',val:states||'—',sub:'in table'},
+    {label:'Post',val:D.post_name?D.post_name.substring(0,16)+(D.post_name.length>16?'…':''):'—',sub:''},
+    {label:'Last Date',val:D.last_date_to_apply?D.last_date_to_apply.substring(0,15):'—',sub:''},
+  ].map(c=>`<div class="scard"><div class="scard-label">${c.label}</div><div class="scard-val">${c.val}</div><div class="scard-sub">${c.sub}</div></div>`).join('');
+
+  // Info rows
+  const infoRows=[
+    ['Job Title','job_title',false],
+    ['Recruitment Name','recruitment_name',false],
+    ['Conducting Authority','conducting_authority',false],
+    ['Advertisement Number','advertisement_number',false],
+    ['Post Name','post_name',false],
+    ['Total Vacancies','total_vacancies',false],
+    ['Application Start Date','application_start_date',false],
+    ['Last Date to Apply','last_date_to_apply',false],
+    ['Application Mode','application_mode',false],
+    ['Training Duration','training_duration',false],
+    ['Official Website','official_website',false],
+  ];
+  let f1=0;
+  document.getElementById('infoTable').innerHTML=infoRows.map(([label,key,long])=>{
+    if(D[key])f1++;
+    return`<tr><td class="k">${label}</td><td class="v">${makeInput(key,D[key],long)}</td></tr>`;
+  }).join('');
+  document.getElementById('badge1').textContent=f1+'/'+infoRows.length+' extracted';
+
+  // Exam rows
+  const examRows=[
+    ['Educational Qualification','educational_qualification',true],
+    ['Selection Process','selection_process',true],
+    ['Exam Type','exam_type',false],
+    ['Total Questions','total_questions',false],
+    ['Total Marks','total_marks',false],
+  ];
+  let f2=0;
+  document.getElementById('examTable').innerHTML=examRows.map(([label,key,long])=>{
+    if(D[key])f2++;
+    return`<tr><td class="k">${label}</td><td class="v">${makeInput(key,D[key],long)}</td></tr>`;
+  }).join('');
+  document.getElementById('badge2').textContent=f2+'/'+examRows.length+' extracted';
+
+  // Vacancy table
+  if(vacRows&&vacRows.length>0){
+    document.getElementById('vacancySection').style.display='block';
+    document.getElementById('vacBadge').textContent=vacRows.length+' rows';
+    document.getElementById('vacBody').innerHTML=vacRows.map(r=>{
+      const isT=r.state.toLowerCase().includes('total');
+      return`<tr class="${isT?'trow':''}"><td class="state">${esc(r.state)}</td><td class="lang"style="font-size:12px;color:var(--muted)">${esc(r.language)}</td><td class="n">${r.sc}</td><td class="n">${r.st}</td><td class="n">${r.obc}</td><td class="n">${r.ews}</td><td class="n">${r.ur}</td><td class="${isT?'tn':'n'}">${r.total}</td></tr>`;
+    }).join('');
+  }else{document.getElementById('vacancySection').style.display='none';}
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+window.copyJSON=function(){
+  if(!window.gData)return;
+  const D={};document.querySelectorAll('[data-field]').forEach(el=>{D[el.dataset.field]=el.value.trim()||null;});
+  navigator.clipboard.writeText(JSON.stringify({info:D,vacancy_table:window.gData.vacancy_table},null,2)).then(()=>{showToast('JSON copied!','success');});
+};
+window.copyCSV=function(){
+  if(!window.gData)return;
+  const D={};document.querySelectorAll('[data-field]').forEach(el=>{D[el.dataset.field]=el.value.trim()||null;});
+  const lines=['Field,Value',...Object.entries(D).map(([k,v])=>`"${k}","${(v||'').replace(/"/g,'""')}"`)] ;
+  if(window.gData.vacancy_table){lines.push('','State/UT,Language,SC,ST,OBC,EWS,UR,Total');window.gData.vacancy_table.forEach(r=>lines.push(`"${r.state}","${r.language}",${r.sc},${r.st},${r.obc},${r.ews},${r.ur},${r.total}`));}
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{showToast('CSV copied!','success');});
+};
+
+document.getElementById('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+</script>
+</body>
+</html>
