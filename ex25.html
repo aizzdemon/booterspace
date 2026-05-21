@@ -154,7 +154,7 @@ input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shad
   <div class="err" id="err" style="display:none"></div>
   <div class="saved-bar" id="savedBar">
     ✓ Saved to Firebase successfully!
-    <a id="viewJobLink" href="job-details.html" target="_blank">View Job Page →</a>
+    <a id="viewJobLink" href="govt-job-details.html" target="_blank">View Job Page →</a>
   </div>
   <div class="edit-banner">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -219,23 +219,38 @@ input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shad
 </div>
 
 <script type="module">
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 
-// 💡 IMPORTANT: If you have a separate file in your repo (e.g., firebase.js), 
-// you can delete this block and just import the db here like this:
-// import { db } from './firebase.js';
+function getEnvVar(...keys){
+  const runtimeEnv=(typeof window!=="undefined"&&window.__ENV__)||(typeof self!=="undefined"&&self.__ENV__)||{};
+  const processEnv=typeof process!=="undefined"&&process.env?process.env:{};
+  const defaults={
+    VITE_FIREBASE_API_KEY:"AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+    VITE_FIREBASE_AUTH_DOMAIN:"kar-kardan.firebaseapp.com",
+    VITE_FIREBASE_PROJECT_ID:"kar-kardan",
+    VITE_FIREBASE_STORAGE_BUCKET:"kar-kardan.firebasestorage.app",
+    VITE_FIREBASE_MESSAGING_SENDER_ID:"554147696994",
+    VITE_FIREBASE_APP_ID:"1:554147696994:web:221dcb883e3b65dcea5c3b"
+  };
+  for(const key of keys){
+    if(runtimeEnv[key]) return runtimeEnv[key];
+    if(processEnv[key]) return processEnv[key];
+    if(defaults[key]) return defaults[key];
+  }
+  return "";
+}
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+const firebaseConfig={
+  apiKey:getEnvVar('VITE_FIREBASE_API_KEY','NEXT_PUBLIC_FIREBASE_API_KEY','REACT_APP_FIREBASE_API_KEY'),
+  authDomain:getEnvVar('VITE_FIREBASE_AUTH_DOMAIN','NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN','REACT_APP_FIREBASE_AUTH_DOMAIN'),
+  projectId:getEnvVar('VITE_FIREBASE_PROJECT_ID','NEXT_PUBLIC_FIREBASE_PROJECT_ID','REACT_APP_FIREBASE_PROJECT_ID'),
+  storageBucket:getEnvVar('VITE_FIREBASE_STORAGE_BUCKET','NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET','REACT_APP_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId:getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID','NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID','REACT_APP_FIREBASE_MESSAGING_SENDER_ID'),
+  appId:getEnvVar('VITE_FIREBASE_APP_ID','NEXT_PUBLIC_FIREBASE_APP_ID','REACT_APP_FIREBASE_APP_ID')
 };
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
+const app=getApps().length===0?initializeApp(firebaseConfig):getApps()[0];
+const db=getFirestore(app);
 
 // Centralized helper to avoid duplicated mapping loops
 window.getEditedData = function() {
@@ -257,15 +272,20 @@ window.saveToFirebase=async function(){
     const payload={
       ...window.getEditedData(),
       vacancy_table:window.gData.vacancy_table||[],
-      source_url:document.getElementById('urlInput').value.trim(),
+      postName: window.getEditedData().post_name || null,
+      organizationName: window.getEditedData().conducting_authority || null,
+      lastDateApply: window.getEditedData().last_date_to_apply || null,
+      publishDate: new Date().toISOString().slice(0,10),
+      state: (window.gData.vacancy_table||[]).find(r=>!r.state.toLowerCase().includes('total'))?.state || null,
+      createdAt:serverTimestamp(),
       saved_at:serverTimestamp(),
     };
-    const ref=await addDoc(collection(db,'recruitments'),payload);
+    const ref=await addDoc(collection(db,'govtJobs'),payload);
     const docId=ref.id;
     const bar=document.getElementById('savedBar');
     bar.classList.add('on');
     const link=document.getElementById('viewJobLink');
-    link.href='job-details.html?id='+docId;
+    link.href='govt-job-details.html?id='+docId;
     link.textContent='View Job Page →';
     showToast('✓ Saved! ID: '+docId,'success');
     btn.textContent='✓ Saved';

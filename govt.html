@@ -699,11 +699,11 @@ const firebaseConfig = {
       govtJobsList.innerHTML = "";
 
       jobs.forEach((job, index) => {
-        const postTitle = escapeHtml(job.postName || job.jobTitle || "Untitled Post");
-        const orgName = escapeHtml(job.organizationName || job.organisationName || "—");
+        const postTitle = escapeHtml(job.postName || job.post_name || job.jobTitle || "Untitled Post");
+        const orgName = escapeHtml(job.organizationName || job.conducting_authority || job.organisationName || "—");
         const jobId = escapeHtml(String(job.id || index));
         const publishDate = escapeHtml(formatDate(job.publishDate));
-        const lastDate = escapeHtml(formatDate(job.lastDateApply));
+        const lastDate = escapeHtml(formatDate(job.lastDateApply || job.last_date_to_apply));
         const state = escapeHtml(formatValue(job.state, "state"));
 
         const card = document.createElement("article");
