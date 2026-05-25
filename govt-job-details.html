@@ -142,6 +142,7 @@
       "createdAt",
       "updatedAt",
       "createdBy",
+      "savedAt",
       "publishDateMode",
       "calendar",
 
@@ -161,7 +162,9 @@
       "official_apply_link",
       "officialApplyLink",
       "apply_url",
-      "applyUrl"
+      "applyUrl",
+      "Official website or link",
+      "official website or link"
     ];
 
     function escapeHtml(value) {
@@ -364,6 +367,29 @@
 
       const seen = new Set();
 
+      const normalizedJob = {
+        ...job
+      };
+
+      if (
+        (
+          normalizedJob.state ===
+          null ||
+          normalizedJob.state ===
+          undefined ||
+          String(
+            normalizedJob.state
+          ).trim() === ""
+        ) &&
+        (
+          "state" in normalizedJob ||
+          "State" in normalizedJob
+        )
+      ) {
+        normalizedJob.state =
+          "All India";
+      }
+
       const cards =
         quickHighlightKeys
           .filter((key) => {
@@ -374,7 +400,7 @@
 
             seen.add(key);
 
-            return key in job;
+            return key in normalizedJob;
           })
           .map((key) => `
             <article class="bg-slate-50 border border-slate-200 rounded-xl p-4">
@@ -386,9 +412,9 @@
               </p>
 
               <p class="text-sm font-semibold text-slate-700 mt-1 break-words">
-                ${escapeHtml(
-                  formatValue(
-                    job[key],
+                    ${escapeHtml(
+                      formatValue(
+                    normalizedJob[key],
                     key
                   )
                 )}
@@ -431,14 +457,51 @@
             .toLowerCase()
         );
 
+      function normalizeKey(rawKey) {
+
+        return String(rawKey || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[\s_-]+/g, "");
+      }
+
+      function shouldHideField(key) {
+
+        const normalizedKey =
+          normalizeKey(key);
+
+        if (
+          hiddenKeysLower.includes(
+            String(key)
+              .trim()
+              .toLowerCase()
+          )
+        ) {
+          return true;
+        }
+
+        if (
+          /(official|apply|application|website|url|link)/i.test(
+            String(key)
+          )
+        ) {
+          return true;
+        }
+
+        if (
+          normalizedKey.includes("savedat") ||
+          normalizedKey === "saveat"
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+
       const cards =
         Object.entries(job)
           .filter(([key]) =>
-            !hiddenKeysLower.includes(
-              String(key)
-                .trim()
-                .toLowerCase()
-            )
+            !shouldHideField(key)
           )
           .map(([key, value], index) => {
 
