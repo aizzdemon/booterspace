@@ -3,148 +3,262 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Private Company Job Extractor</title>
+<title>Job Extractor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
-body{font-family:Arial,sans-serif;background:#f5f5f5;padding:24px}
-.card{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:12px}
-input,textarea{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px}
-button{padding:10px 16px;border:0;border-radius:8px;background:#1a5cff;color:#fff;cursor:pointer}
-table{width:100%;border-collapse:collapse;margin-top:20px}
-td{padding:10px;border-bottom:1px solid #eee;vertical-align:top}
-.k{width:280px;font-weight:bold}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f5f5;padding:1.5rem}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:20px;font-weight:500;color:#111;margin-bottom:4px}
+.sub{font-size:14px;color:#666;margin-bottom:1.5rem}
+.row{display:flex;gap:8px;margin-bottom:1rem}
+input[type=text]{flex:1;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:#fff;color:#111}
+input[type=text]:focus{outline:none;border-color:#888}
+.btn{padding:9px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111;font-size:14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.btn:hover{background:#f0f0f0}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-save{border-color:#16a34a;color:#16a34a}
+.btn-save:hover{background:#f0fdf4}
+.status{font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:1rem;display:none}
+.status.info{background:#eff6ff;color:#1d4ed8;display:block}
+.status.error{background:#fef2f2;color:#dc2626;display:block}
+.status.success{background:#f0fdf4;color:#16a34a;display:block}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:none}
+.card-title{font-size:14px;font-weight:500;color:#666;margin-bottom:1rem}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;color:#666;font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
+.field textarea,.field input[type=text]{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9fafb;color:#111;resize:vertical;min-height:36px;font-family:Arial,sans-serif}
+.field textarea{min-height:80px}
+.field textarea:focus,.field input[type=text]:focus{outline:none;border-color:#aaa;background:#fff}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
+.spinner{width:14px;height:14px;border:2px solid #ccc;border-top-color:#666;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="card">
-<h2>Private Company Job Extractor</h2>
-<p>Paste a company career page (Greenhouse/Lever/Company Careers)</p>
+<div class="wrap">
+  <h1>Job Extractor</h1>
+  <p class="sub">Paste a Greenhouse, Lever, or company career page URL to extract job details</p>
 
-<div style="display:flex;gap:10px">
-<input id="urlInput" placeholder="https://job-boards.greenhouse.io/...">
-<button onclick="runExtract()">Extract</button>
+  <div class="row">
+    <input type="text" id="urlInput" placeholder="Paste job URL here" />
+    <button class="btn" id="extractBtn" onclick="runExtract()">
+      <i class="ti ti-search"></i> Extract
+    </button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="card" id="resultsCard">
+    <div class="card-title">Extracted fields — review and edit before saving</div>
+    <div class="field-grid" id="fieldGrid"></div>
+    <div class="actions">
+      <button class="btn btn-save" id="saveBtn" onclick="saveToFirebase()">
+        <i class="ti ti-database"></i> Save to Firebase
+      </button>
+    </div>
+  </div>
 </div>
 
-<div id="results" style="display:none">
-<h3>Editable Fields</h3>
-<table id="jobTable"></table>
-<button onclick="saveToFirebase()">Save To Firebase (jobs)</button>
-</div>
-</div>
-
-<script type="module">
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
-
-const firebaseConfig={
- apiKey:"AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
- authDomain:"kar-kardan.firebaseapp.com",
- projectId:"kar-kardan",
- storageBucket:"kar-kardan.firebasestorage.app",
- messagingSenderId:"554147696994",
- appId:"1:554147696994:web:221dcb883e3b65dcea5c3b"
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
+  authDomain: "kar-kardan.firebaseapp.com",
+  projectId: "kar-kardan",
+  storageBucket: "kar-kardan.firebasestorage.app",
+  messagingSenderId: "554147696994",
+  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
 };
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-const app=getApps().length?getApps()[0]:initializeApp(firebaseConfig);
-const db=getFirestore(app);
-
-const PROXIES=[
-u=>'https://corsproxy.io/?'+encodeURIComponent(u),
-u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u)
+const FIELDS = [
+  {key:'job_title',label:'Job title'},
+  {key:'company_name',label:'Company name'},
+  {key:'company_website',label:'Company website'},
+  {key:'job_location',label:'Location'},
+  {key:'employment_type',label:'Employment type'},
+  {key:'experience_required',label:'Experience required'},
+  {key:'salary_range',label:'Salary range'},
+  {key:'work_schedule',label:'Work schedule'},
+  {key:'application_deadline',label:'Application deadline'},
+  {key:'posted_date',label:'Posted date'},
+  {key:'job_description',label:'Job description',full:true,area:true},
+  {key:'key_responsibilities',label:'Key responsibilities',full:true,area:true},
+  {key:'required_skills',label:'Required skills',full:true,area:true},
+  {key:'qualifications',label:'Qualifications',full:true,area:true},
+  {key:'benefits_perks',label:'Benefits & perks',full:true,area:true},
+  {key:'company_information',label:'About the company',full:true,area:true},
+  {key:'required_documents',label:'Required documents'},
+  {key:'travel_relocation',label:'Travel / relocation'},
+  {key:'recruiter_details',label:'Recruiter details'},
+  {key:'apply_link',label:'Apply link',full:true},
+  {key:'platform',label:'Platform'},
 ];
 
-function norm(s){return (s||'').replace(/\s+/g,' ').trim()}
-function extractText(doc){
- const c=doc.cloneNode(true);
- c.querySelectorAll('script,style,noscript').forEach(e=>e.remove());
- return norm(c.body?.innerText||'');
+const PROXIES = [
+  u => 'https://corsproxy.io/?'+encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u => 'https://thingproxy.freeboard.io/fetch/'+u,
+];
+
+function setStatus(msg, type='info'){
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status '+type;
 }
-function pick(txt,patterns=[]){
- for(const p of patterns){
-  const m=txt.match(p);
-  if(m&&(m[1]||m[2])) return norm(m[1]||m[2]);
- }
- return null;
+
+function setLoading(on){
+  const btn = document.getElementById('extractBtn');
+  btn.innerHTML = on ? '<span class="spinner"></span> Fetching…' : '<i class="ti ti-search"></i> Extract';
+  btn.disabled = on;
 }
+
 async function fetchHtml(url){
- for(const p of PROXIES){
+  for(const proxy of PROXIES){
+    try{
+      const r = await fetch(proxy(url), {signal: AbortSignal.timeout(12000)});
+      if(r.ok){
+        const t = await r.text();
+        if(t && t.length > 300) return t;
+      }
+    }catch(e){}
+  }
+  return null;
+}
+
+function norm(s){ return (s||'').replace(/\s+/g,' ').trim(); }
+
+function pick(txt, patterns){
+  for(const p of patterns){
+    const m = txt.match(p);
+    if(m){ const val = norm(m[1]||m[2]||m[0]); if(val.length > 1) return val; }
+  }
+  return null;
+}
+
+function pickBlock(txt, headings, maxLen=600){
+  for(const h of headings){
+    const re = new RegExp(h+'[:\\s]*([\\s\\S]{20,'+maxLen+'}?)(?=\\n[A-Z][a-zA-Z ]{2,30}[:\\n]|$)', 'i');
+    const m = txt.match(re);
+    if(m && m[1]) return norm(m[1]);
+  }
+  return null;
+}
+
+function getPlatform(url){
+  if(url.includes('greenhouse.io')) return 'Greenhouse';
+  if(url.includes('lever.co')) return 'Lever';
+  if(url.includes('workday.com')) return 'Workday';
+  if(url.includes('linkedin.com')) return 'LinkedIn';
+  if(url.includes('naukri.com')) return 'Naukri';
+  if(url.includes('indeed.com')) return 'Indeed';
+  return 'Company Career Page';
+}
+
+function extractData(html, url){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,style,noscript,nav,footer,header,aside,[class*="cookie"],[class*="banner"],[id*="cookie"]').forEach(e=>e.remove());
+
+  let jsonLd = null;
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(el=>{
+    try{
+      const obj = JSON.parse(el.textContent);
+      const jobs = [obj].flat().find(o=>o['@type']==='JobPosting'||o['@type']==='jobPosting');
+      if(jobs) jsonLd = jobs;
+    }catch(e){}
+  });
+
+  const txt = norm(doc.body?.innerText||'');
+  const parsedUrl = new URL(url);
+  const D = {};
+
+  D.job_title = norm(jsonLd?.title) || norm(doc.querySelector('meta[property="og:title"]')?.content) || norm(doc.querySelector('h1')?.textContent) || norm(doc.title.split('|')[0].split('-')[0]) || null;
+  D.company_name = norm(jsonLd?.hiringOrganization?.name) || norm(doc.querySelector('[class*="company"],[class*="employer"],[data-company]')?.textContent) || pick(txt,[/(?:company|employer|organisation|organization)[:\s]+([^\n\r]{2,80})/i]) || parsedUrl.hostname.replace('www.','').split('.')[0] || null;
+  D.company_website = norm(jsonLd?.hiringOrganization?.sameAs) || parsedUrl.origin;
+  D.job_location = norm(jsonLd?.jobLocation?.address?.addressLocality) || norm(doc.querySelector('[class*="location"],[class*="city"],[data-location]')?.textContent) || pick(txt,[/location[:\s]+([^\n\r]{2,80})/i,/(?:based in|office in)[:\s]+([^\n\r]{2,60})/i]) || null;
+  D.employment_type = norm(jsonLd?.employmentType) || pick(txt,[/(full[\s-]?time)/i,/(part[\s-]?time)/i,/(internship)/i,/(contract(?:ual)?)/i,/(freelance)/i,/(remote)/i,/(hybrid)/i]) || null;
+  D.experience_required = pick(txt,[/(\d+\s*[-–]\s*\d+\s+years?(?:\s+of\s+experience)?)/i,/(\d+\+?\s+years?(?:\s+of)?\s+(?:relevant\s+)?experience)/i,/(fresher|entry[\s-]?level|no experience)/i]) || null;
+  D.salary_range = norm(jsonLd?.baseSalary?.value?.value ? String(jsonLd.baseSalary.value.value) : null) || pick(txt,[/(₹[\d,\s\-–]+(?:LPA|lpa|L|lakhs?))/i,/(?:salary|ctc|compensation)[:\s]+([\d,\s\-–₹$€£]+(?:LPA|lpa|per\s+(?:month|year|annum))?)/i,/(\$[\d,]+\s*[-–]\s*\$[\d,]+)/]) || null;
+  D.work_schedule = pick(txt,[/(day\s+shift)/i,/(night\s+shift)/i,/(flexible\s+hours?)/i,/(rotational\s+shift)/i,/(monday\s+to\s+friday)/i,/(9\s*(?:am|AM)\s*[-–]\s*(?:5|6)\s*(?:pm|PM))/]) || null;
+  D.application_deadline = norm(jsonLd?.applicationCloseDate) || pick(txt,[/(?:apply\s+before|last\s+date|deadline)[:\s]+([^\n\r]{5,50})/i,/(?:closing\s+date)[:\s]+([^\n\r]{5,50})/i]) || null;
+  D.posted_date = norm(jsonLd?.datePosted) || norm(doc.querySelector('time[datetime]')?.getAttribute('datetime')) || pick(txt,[/posted\s+(\d+\s+days?\s+ago)/i,/(?:date\s+posted|posted\s+on)[:\s]+([^\n\r]{5,40})/i]) || null;
+
+  const descEl = doc.querySelector('#content,#job-description,.job-description,[class*="job-description"],[class*="jobDescription"],[class*="description--"],.posting-description,.job-details');
+  D.job_description = norm(jsonLd?.description?.slice(0,800)) || norm(descEl?.innerText?.slice(0,800)) || pickBlock(txt,['job description','about the role','about this role','the role','role overview']) || txt.slice(0,800) || null;
+  D.key_responsibilities = pickBlock(txt,['key responsibilities','responsibilities','what you.ll do','what you will do','your responsibilities','role & responsibilities','duties'],500) || null;
+  D.required_skills = norm(jsonLd?.skills) || pickBlock(txt,['required skills','skills required','technical skills','key skills','tools & technologies','tech stack'],400) || pick(txt,[/skills[:\s]+([^\n]{10,300})/i]) || null;
+  D.qualifications = pickBlock(txt,['qualifications','minimum qualifications','basic qualifications','education','educational qualification','preferred qualifications'],400) || pick(txt,[/(?:b\.?tech|b\.?e|m\.?tech|mba|bachelor|master|degree)[^\n]{0,120}/i]) || null;
+  D.benefits_perks = pickBlock(txt,['benefits','perks','what we offer','we offer','employee benefits','compensation & benefits'],400) || null;
+  D.company_information = norm(jsonLd?.hiringOrganization?.description?.slice(0,500)) || pickBlock(txt,['about us','about the company','who we are','company overview'],500) || null;
+  D.required_documents = pick(txt,[/(resume|cv|cover\s+letter|portfolio|certificates?|mark\s+sheet)[^\n]{0,60}/i]) || null;
+  D.travel_relocation = pick(txt,[/(relocation\s+(?:required|provided|assistance))/i,/(travel\s+(?:required|up\s+to\s+\d+%))/i,/(willingness\s+to\s+travel)/i]) || null;
+  D.recruiter_details = pick(txt,[/(?:recruiter|talent\s+acquisition|hiring\s+manager)[:\s]+([^\n\r]{3,80})/i,/contact[:\s]+([^\n\r@]{3,60}@[^\n\r]{3,40})/i]) || null;
+  D.apply_link = url;
+  D.platform = getPlatform(url);
+
+  return D;
+}
+
+function buildForm(data){
+  const grid = document.getElementById('fieldGrid');
+  grid.innerHTML = FIELDS.map(f=>{
+    const val = (data[f.key]||'').toString().replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const cls = f.full ? 'field full' : 'field';
+    const input = f.area
+      ? `<textarea data-key="${f.key}">${(data[f.key]||'')}</textarea>`
+      : `<input type="text" data-key="${f.key}" value="${val}" />`;
+    return `<div class="${cls}"><label>${f.label}</label>${input}</div>`;
+  }).join('');
+  document.getElementById('resultsCard').style.display = 'block';
+}
+
+function getFormData(){
+  const out = {};
+  document.querySelectorAll('[data-key]').forEach(el=>{ out[el.dataset.key] = el.value.trim()||null; });
+  return out;
+}
+
+window.runExtract = async function(){
+  const url = document.getElementById('urlInput').value.trim();
+  if(!url || !url.startsWith('http')){ setStatus('Please enter a valid URL starting with https://','error'); return; }
+  setLoading(true);
+  document.getElementById('resultsCard').style.display = 'none';
   try{
-   const r=await fetch(p(url));
-   if(r.ok) return await r.text();
-  }catch(e){}
- }
- return null;
-}
+    setStatus('Fetching page via proxy…');
+    const html = await fetchHtml(url);
+    if(!html){ setStatus('Could not fetch the page. The site may block proxies. Try a Greenhouse or Lever URL.','error'); setLoading(false); return; }
+    setStatus('Parsing job details…');
+    const data = extractData(html, url);
+    buildForm(data);
+    setStatus('Done — review the fields below and save when ready.','success');
+  }catch(e){ setStatus('Error: '+(e.message||'Something went wrong.'),'error'); console.error(e); }
+  setLoading(false);
+};
 
-window.jobData=null;
-
-window.runExtract=async function(){
- const url=document.getElementById('urlInput').value.trim();
- if(!url) return alert('Enter URL');
-
- const html=await fetchHtml(url);
- if(!html) return alert('Could not fetch page');
-
- const doc=new DOMParser().parseFromString(html,'text/html');
- const txt=extractText(doc);
-
- const D={};
- D.job_title=norm(doc.querySelector('h1')?.textContent)||norm(doc.title);
- D.company_name=pick(txt,[/company[:\s]+([^\n\r]{2,100})/i])||new URL(url).hostname.split('.')[0];
-
- const parsedUrl=new URL(url);
- D.company_website=parsedUrl.origin;
-
- D.job_location=norm(doc.querySelector('[class*="location"]')?.textContent)||pick(txt,[/location[:\s]+([^\n\r]{2,80})/i]);
- D.employment_type=pick(txt, [/(full[\s-]?time)/i,/(part[\s-]?time)/i,/(internship)/i,/(contract)/i,/(remote)/i,/(hybrid)/i]);
- D.job_description=pick(txt,[/job description[:\s]+([\s\S]{20,800})/i])||txt.slice(0,1000);
- D.key_responsibilities=pick(txt,[/responsibilities[:\s]+([\s\S]{20,500})/i]);
- D.required_skills=pick(txt,[/skills[:\s]+([^\n\r]{5,300})/i,/requirements[:\s]+([^\n\r]{5,300})/i]);
- D.qualifications=pick(txt,[/qualification[s]?[:\s]+([^\n\r]{5,200})/i,/education[:\s]+([^\n\r]{5,200})/i]);
- D.experience_required=pick(txt,[/(\d+\+?\s+years?\s+(?:of\s+)?experience)/i,/(fresher)/i]);
- D.salary_range=pick(txt,[/(₹[\d,\s\-]+LPA)/i,/salary[:\s]+([^\n\r]{5,60})/i]);
- D.benefits_perks=pick(txt,[/benefits[:\s]+([^\n\r]{10,300})/i]);
- D.application_method='Company Career Page';
- D.application_deadline=pick(txt,[/apply before[:\s]+([^\n\r]{5,50})/i,/last date[:\s]+([^\n\r]{5,50})/i]);
- D.company_information=pick(txt,[/about us[:\s]+([\s\S]{20,500})/i]);
- D.required_documents=pick(txt,[/(resume|cv|cover letter|certificate)/i]);
- D.work_schedule=pick(txt,[/(day shift)/i,/(night shift)/i,/(flexible hours)/i]);
- D.travel_relocation=pick(txt,[/(relocation required)/i,/(travel required)/i]);
- D.skills_tags=D.required_skills;
- D.posted_date=pick(txt,[/posted\s+(\d+\s+days?\s+ago)/i]);
- D.recruiter_details=pick(txt,[/recruiter[:\s]+([^\n\r]{3,80})/i,/hiring manager[:\s]+([^\n\r]{3,80})/i]);
- D.apply_link=url;
- D.source_url=url;
- D.platform=url.includes('greenhouse')?'Greenhouse':url.includes('lever')?'Lever':'Company Career Page';
-
- jobData=D;
-
- const fields=Object.keys(D);
- document.getElementById('jobTable').innerHTML=fields.map(k=>`
-<tr><td class="k">${k.replaceAll('_',' ')}</td>
-<td><textarea data-field="${k}">${D[k]??''}</textarea></td></tr>`).join('');
-
- document.getElementById('results').style.display='block';
-}
-
-function getEditedData(){
- const out={};
- document.querySelectorAll('[data-field]').forEach(el=>{
-   out[el.dataset.field]=el.value.trim()||null;
- });
- return out;
-}
-
-window.saveToFirebase=async function(){
- if(!jobData) return alert('Extract a job first');
- const data=getEditedData();
- await addDoc(collection(db,'jobs'),{
-   ...data,
-   publishDate:new Date().toISOString().slice(0,10),
-   createdAt:serverTimestamp(),
-   savedAt:serverTimestamp()
- });
- alert('Saved in Firestore collection: jobs');
-}
+window.saveToFirebase = async function(){
+  const data = getFormData();
+  if(!data.job_title){ setStatus('Nothing to save — extract a job first.','error'); return; }
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving…';
+  try{
+    await db.collection('jobs').add({
+      ...data,
+      publishDate: new Date().toISOString().slice(0,10),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    setStatus('Saved to Firestore collection "jobs" successfully.','success');
+  }catch(e){ setStatus('Firebase error: '+(e.message||'Save failed.'),'error'); console.error(e); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-database"></i> Save to Firebase';
+};
 </script>
 </body>
 </html>
