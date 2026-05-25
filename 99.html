@@ -94,11 +94,9 @@ const FIELDS = [
   {key:'qualifications',label:'Qualifications',full:true,area:true},
   {key:'benefits_perks',label:'Benefits & perks',full:true,area:true},
   {key:'company_information',label:'About the company',full:true,area:true},
-  {key:'required_documents',label:'Required documents'},
   {key:'travel_relocation',label:'Travel / relocation'},
   {key:'recruiter_details',label:'Recruiter details'},
   {key:'apply_link',label:'Apply link',full:true},
-  {key:'platform',label:'Platform'},
 ];
 
 const PROXIES = [
@@ -151,7 +149,6 @@ function pickBlock(txt, headings, maxLen=600){
   return null;
 }
 
-function getPlatform(url){
   if(url.includes('greenhouse.io')) return 'Greenhouse';
   if(url.includes('lever.co')) return 'Lever';
   if(url.includes('workday.com')) return 'Workday';
@@ -196,11 +193,9 @@ function extractData(html, url){
   D.qualifications = pickBlock(txt,['qualifications','minimum qualifications','basic qualifications','education','educational qualification','preferred qualifications'],400) || pick(txt,[/(?:b\.?tech|b\.?e|m\.?tech|mba|bachelor|master|degree)[^\n]{0,120}/i]) || null;
   D.benefits_perks = pickBlock(txt,['benefits','perks','what we offer','we offer','employee benefits','compensation & benefits'],400) || null;
   D.company_information = norm(jsonLd?.hiringOrganization?.description?.slice(0,500)) || pickBlock(txt,['about us','about the company','who we are','company overview'],500) || null;
-  D.required_documents = pick(txt,[/(resume|cv|cover\s+letter|portfolio|certificates?|mark\s+sheet)[^\n]{0,60}/i]) || null;
   D.travel_relocation = pick(txt,[/(relocation\s+(?:required|provided|assistance))/i,/(travel\s+(?:required|up\s+to\s+\d+%))/i,/(willingness\s+to\s+travel)/i]) || null;
   D.recruiter_details = pick(txt,[/(?:recruiter|talent\s+acquisition|hiring\s+manager)[:\s]+([^\n\r]{3,80})/i,/contact[:\s]+([^\n\r@]{3,60}@[^\n\r]{3,40})/i]) || null;
   D.apply_link = url;
-  D.platform = getPlatform(url);
 
   return D;
 }
