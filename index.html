@@ -243,7 +243,10 @@ async function init() {
             </div>
           </a>`;
       });
-    } catch(e) { console.error("Featured Error:", e); }
+    } catch(e) {
+      console.error("Featured Error:", e);
+      containers.featured.innerHTML = '<div class="p-8 text-center text-red-500">Unable to load featured jobs right now.</div>';
+    }
   }
 
   // 2. Govt Jobs Loader
@@ -293,8 +296,12 @@ async function init() {
   // 3. Updates Loader
   async function loadUpdates() {
     try {
-      const q = query(collection(db, "flashLinks"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
+      let snap = await getDocs(query(collection(db, "flashLinks"), orderBy("timestamp", "desc"), limit(4)));
+
+      // Backward compatibility for older documents that used `createdAt`
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, "flashLinks"), orderBy("createdAt", "desc"), limit(4)));
+      }
       containers.updates.innerHTML = '';
       if(snap.empty) {
         containers.updates.innerHTML = '<div class="p-8 text-center text-gray-500">No updates found.</div>';
@@ -316,14 +323,21 @@ async function init() {
             </div>
           </a>`;
       });
-    } catch(e) { console.error("Updates Error:", e); }
+    } catch(e) {
+      console.error("Updates Error:", e);
+      containers.updates.innerHTML = '<div class="p-8 text-center text-red-500">Unable to load updates right now.</div>';
+    }
   }
 
   // 4. Community Posts Loader
   async function loadCommunity() {
     try {
-      const q = query(collection(db, "communityPosts"), orderBy("timestamp", "desc"), limit(4));
-      const snap = await getDocs(q);
+      let snap = await getDocs(query(collection(db, "communityPosts"), orderBy("timestamp", "desc"), limit(4)));
+
+      // Backward compatibility for older documents that used `createdAt`
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, "communityPosts"), orderBy("createdAt", "desc"), limit(4)));
+      }
       containers.community.innerHTML = '';
       if(snap.empty) {
         containers.community.innerHTML = '<div class="p-8 text-center text-gray-500">No community posts yet. Be the first!</div>';
@@ -346,7 +360,10 @@ async function init() {
             </div>
           </div>`;
       });
-    } catch(e) { console.error("Community Error:", e); }
+    } catch(e) {
+      console.error("Community Error:", e);
+      containers.community.innerHTML = '<div class="p-8 text-center text-red-500">Unable to load community posts right now.</div>';
+    }
   }
 
   // Execute all loaders
