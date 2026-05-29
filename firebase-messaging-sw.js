@@ -24,6 +24,12 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function scopedUrl(path) {
+  const value = path || "notification.html";
+  if (/^https?:\/\//i.test(value)) return value;
+  return new URL(value.replace(/^\//, ""), self.registration.scope).href;
+}
+
 /*
   Background Notifications
   Works when:
@@ -51,11 +57,11 @@ messaging.onBackgroundMessage((payload) => {
     icon:
       notification.icon ||
       payload.data?.icon ||
-      "/favicon.ico",
+      scopedUrl("favicon.ico"),
 
     badge:
       payload.data?.badge ||
-      "/favicon.ico",
+      scopedUrl("favicon.ico"),
 
     image:
       payload.data?.image || undefined,
@@ -66,8 +72,7 @@ messaging.onBackgroundMessage((payload) => {
 
     data: {
       url:
-        payload.data?.url ||
-        "/notification.html"
+        scopedUrl(payload.data?.url || "notification.html")
     }
   };
 
@@ -86,9 +91,9 @@ self.addEventListener("notificationclick", (event) => {
 
   event.notification.close();
 
-  const targetUrl =
-    event.notification?.data?.url ||
-    "/notification.html";
+  const targetUrl = scopedUrl(
+    event.notification?.data?.url || "notification.html"
+  );
 
   event.waitUntil(
     clients.matchAll({

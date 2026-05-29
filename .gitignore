@@ -5,3 +5,6 @@
 
 # Keep examples committed
 !.env.example
+
+# Dependencies
+node_modules/
