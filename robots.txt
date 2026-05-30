@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
+Disallow: /login.html
+Disallow: /signup.html
+Disallow: /messages.html
+Disallow: /notification.html
+Disallow: /profile.html
+Disallow: /profile23.html
+Disallow: /post-job.html
+Disallow: /post-book.html
+Disallow: /post-place.html
+Disallow: /spa-shell.html
 
 Sitemap: https://aizzdemon.github.io/booterspace/sitemap.xml
