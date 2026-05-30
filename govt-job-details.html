@@ -127,8 +127,6 @@
     const importantDatesElement =
       document.getElementById("importantDatesRow");
 
-    let applyNowOpenSecondaryNext = true;
-
     const quickHighlightKeys = [
       "organizationName",
       "organisationName",
@@ -555,7 +553,6 @@
                   href="#"
                   role="button"
                   data-primary-link="${escapeHtml(officialLink)}"
-                  data-secondary-link="https://omg10.com/4/11022056"
                   class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition"
                 >
                   Apply Now
@@ -578,7 +575,7 @@
 
         const applyButton =
           event.target.closest(
-            "a[data-secondary-link]"
+            "a[data-primary-link]"
           );
 
         if (!applyButton) return;
@@ -590,23 +587,7 @@
             "data-primary-link"
           );
 
-        const secondaryLink =
-          applyButton.getAttribute(
-            "data-secondary-link"
-          );
-
-        if (applyNowOpenSecondaryNext) {
-
-          if (secondaryLink) {
-
-            window.open(
-              secondaryLink,
-              "_blank",
-              "noopener,noreferrer"
-            );
-          }
-
-        } else if (primaryLink) {
+        if (primaryLink) {
 
           window.open(
             primaryLink,
@@ -614,9 +595,6 @@
             "noopener,noreferrer"
           );
         }
-
-        applyNowOpenSecondaryNext =
-          !applyNowOpenSecondaryNext;
       }
     );
 
