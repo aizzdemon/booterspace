@@ -630,6 +630,35 @@ body {
   background: var(--line);
 }
 
+
+/* ── ABOUT CTA ───────────────────────────────────────────────────────────── */
+.about-cta {
+  margin: 44px 0 0;
+  padding: 26px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--white) 0%, var(--blue-lt) 100%);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.about-cta h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.about-cta p {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 14px;
+}
+.about-cta .btn-primary { flex-shrink: 0; }
+
 /* ── FOOTER ──────────────────────────────────────────────────────────────── */
 .footer {
   border-top: 1.5px solid var(--line);
@@ -658,6 +687,7 @@ body {
   .panel-head { padding: 14px 16px; }
   .compose-area { padding: 14px 16px; }
   .post-card { margin: 10px 12px; }
+  .about-cta { flex-direction: column; align-items: flex-start; padding: 22px; }
 }
 </style>
 </head>
@@ -826,6 +856,14 @@ body {
       <a href="community.html" class="load-more" style="color:var(--green)">View full community →</a>
     </div>
   </div>
+
+  <section class="about-cta" aria-labelledby="about-cta-title">
+    <div>
+      <h2 id="about-cta-title">Want to know more about BooterSpace?</h2>
+      <p>See how BooterSpace brings jobs, government alerts, community, and connections into one career hub.</p>
+    </div>
+    <a href="about.html" class="btn-primary">About BooterSpace →</a>
+  </section>
 
 </main>
 

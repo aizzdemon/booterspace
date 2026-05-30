@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>About BooterSpace</title>
+<meta name="description" content="Learn about BooterSpace, a career hub for jobs, government opportunities, community conversations, and professional connections.">
+<meta name="keywords" content="About BooterSpace, career hub, jobs, government jobs, community, connections">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://aizzdemon.github.io/booterspace/about.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BooterSpace">
+<meta property="og:title" content="About BooterSpace">
+<meta property="og:description" content="Learn about BooterSpace, a career hub for jobs, government opportunities, community conversations, and professional connections.">
+<meta property="og:url" content="https://aizzdemon.github.io/booterspace/about.html">
+<meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About BooterSpace">
+<meta name="twitter:description" content="Learn about BooterSpace, a career hub for jobs, government opportunities, community conversations, and professional connections.">
+<meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"AboutPage","name":"About BooterSpace","description":"BooterSpace brings jobs, government opportunities, community conversations, and professional connections together in one career hub.","url":"https://aizzdemon.github.io/booterspace/about.html"}
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f7f5f0">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="output.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="public/js/env-config.js"></script>
+<style>
+:root {
+  --canvas:#f7f5f0;
+  --white:#ffffff;
+  --ink:#1a1a2e;
+  --ink2:#2d3561;
+  --muted:#7c829a;
+  --line:#e8e4db;
+  --line2:#d4cfc4;
+  --blue:#2563eb;
+  --blue-lt:#eff4ff;
+  --coral:#f05a28;
+  --coral-lt:#fff1ec;
+  --green:#059669;
+  --green-lt:#ecfdf5;
+  --amber:#d97706;
+  --amber-lt:#fffbeb;
+  --shadow-sm:0 1px 3px rgba(26,26,46,0.06), 0 1px 2px rgba(26,26,46,0.04);
+  --shadow-md:0 4px 16px rgba(26,26,46,0.08), 0 2px 4px rgba(26,26,46,0.04);
+  --shadow-lg:0 12px 40px rgba(26,26,46,0.10), 0 4px 8px rgba(26,26,46,0.05);
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:24px;
+  --font-display:'Plus Jakarta Sans', sans-serif;
+  --font-body:'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  min-height:100vh;
+  overflow-x:hidden;
+  background:var(--canvas);
+  color:var(--ink);
+  font-family:var(--font-body);
+}
+#navbar { position:relative; z-index:100; }
+.blobs, .dot-grid { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:0.55; }
+.blob-1 { width:680px; height:680px; top:-220px; left:-150px; background:radial-gradient(circle, #dbeafe 0%, transparent 70%); }
+.blob-2 { width:460px; height:460px; top:16%; right:-120px; background:radial-gradient(circle, #fde8df 0%, transparent 70%); }
+.blob-3 { width:380px; height:380px; bottom:-80px; left:30%; background:radial-gradient(circle, #d1fae5 0%, transparent 70%); }
+.dot-grid {
+  background-image:radial-gradient(circle, rgba(26,26,46,0.07) 1px, transparent 1px);
+  background-size:28px 28px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 100%);
+}
+.wrap { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:0 24px; }
+.about-hero { padding:72px 0 44px; text-align:center; }
+.eyebrow {
+  display:inline-flex; align-items:center; gap:8px; padding:6px 14px 6px 8px;
+  border:1px solid var(--line2); border-radius:999px; background:var(--white);
+  box-shadow:var(--shadow-sm); color:var(--blue); font-size:12px; font-weight:700;
+  letter-spacing:.04em; text-transform:uppercase; margin-bottom:20px;
+}
+.eyebrow span { width:22px; height:22px; display:grid; place-items:center; border-radius:50%; background:var(--blue-lt); }
+.about-title {
+  font-family:var(--font-display); font-size:clamp(42px, 8vw, 82px); line-height:.98;
+  letter-spacing:-.045em; font-weight:800; max-width:840px; margin:0 auto;
+}
+.about-title strong {
+  color:var(--blue); font-weight:800;
+}
+.about-subtitle {
+  max-width:680px; margin:24px auto 0; color:var(--muted); font-size:18px; line-height:1.75;
+}
+.hero-actions { margin-top:34px; display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+.btn-primary, .btn-secondary {
+  display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:var(--radius-sm);
+  font-size:14px; font-weight:700; text-decoration:none; transition:transform .2s, box-shadow .2s, background .2s, border-color .2s;
+}
+.btn-primary { background:var(--ink); color:#fff; box-shadow:0 4px 14px rgba(26,26,46,.22); }
+.btn-primary:hover { background:var(--ink2); transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,26,46,.28); }
+.btn-secondary { background:var(--white); color:var(--ink); border:1.5px solid var(--line2); box-shadow:var(--shadow-sm); }
+.btn-secondary:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.story-card {
+  display:grid; grid-template-columns:1.1fr .9fr; gap:28px; padding:30px;
+  border:1.5px solid var(--line); border-radius:var(--radius-lg); background:rgba(255,255,255,.92);
+  box-shadow:var(--shadow-lg); margin-bottom:28px;
+}
+.story-card h2, .section-title { font-family:var(--font-display); letter-spacing:-.03em; font-weight:800; }
+.story-card h2 { font-size:30px; margin-bottom:14px; }
+.story-card p { color:#4b5563; line-height:1.75; margin-bottom:14px; }
+.highlight-panel {
+  border-radius:20px; background:linear-gradient(135deg, var(--blue-lt), #fff); border:1.5px solid #bfdbfe;
+  padding:24px; display:flex; flex-direction:column; justify-content:center; gap:16px;
+}
+.highlight-row { display:flex; gap:12px; align-items:flex-start; }
+.highlight-icon { width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background:var(--white); box-shadow:var(--shadow-sm); flex-shrink:0; }
+.highlight-row strong { display:block; font-size:14px; margin-bottom:3px; }
+.highlight-row span { color:var(--muted); font-size:13px; line-height:1.5; }
+.section { margin-top:38px; }
+.section-title { text-align:center; font-size:30px; margin-bottom:22px; }
+.value-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+.value-card {
+  padding:22px; border:1.5px solid var(--line); border-radius:var(--radius-md); background:var(--white);
+  box-shadow:var(--shadow-sm); min-height:178px;
+}
+.value-card .icon { width:42px; height:42px; display:grid; place-items:center; border-radius:12px; margin-bottom:14px; font-size:20px; }
+.value-card h3 { font-size:17px; font-weight:800; margin-bottom:8px; }
+.value-card p { color:var(--muted); font-size:14px; line-height:1.65; }
+.ic-blue { background:var(--blue-lt); }
+.ic-coral { background:var(--coral-lt); }
+.ic-green { background:var(--green-lt); }
+.ic-amber { background:var(--amber-lt); }
+.cta-band {
+  margin:44px 0 74px; padding:28px; border-radius:var(--radius-lg); background:var(--ink); color:#fff;
+  display:flex; align-items:center; justify-content:space-between; gap:20px; box-shadow:var(--shadow-lg);
+}
+.cta-band h2 { font-family:var(--font-display); font-size:26px; letter-spacing:-.03em; margin-bottom:6px; }
+.cta-band p { color:#d7d9e4; line-height:1.6; }
+.cta-band a { background:#fff; color:var(--ink); flex-shrink:0; }
+.footer { border-top:1.5px solid var(--line); padding:36px 24px; text-align:center; background:var(--white); position:relative; z-index:1; }
+.footer-brand { font-family:var(--font-display); font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.03em; margin-bottom:6px; }
+.footer-brand span { color:var(--blue); }
+.footer-copy { font-size:11px; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; }
+@media(max-width:760px) {
+  .about-hero { padding:54px 0 34px; }
+  .story-card, .value-grid { grid-template-columns:1fr; }
+  .story-card { padding:22px; }
+  .cta-band { flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="blobs" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+<div class="dot-grid" aria-hidden="true"></div>
+
+<div id="navbar"></div>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
+
+<header class="about-hero wrap">
+  <div class="eyebrow"><span>🚀</span> About BooterSpace</div>
+  <h1 class="about-title">A smarter home for <strong>career discovery</strong>.</h1>
+  <p class="about-subtitle">
+    BooterSpace brings jobs, government opportunities, community conversations, and professional connections into one simple hub so people can move forward faster.
+  </p>
+  <div class="hero-actions">
+    <a href="jobs.html" class="btn-primary">Explore jobs →</a>
+    <a href="community.html" class="btn-secondary">Join the community</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="story-card" aria-labelledby="mission-title">
+    <div>
+      <h2 id="mission-title">Why we built it</h2>
+      <p>
+        Career growth should not feel scattered. BooterSpace is designed to reduce the time people spend jumping between job boards, government update pages, and social feeds.
+      </p>
+      <p>
+        Our goal is to make opportunity discovery clearer, more community-driven, and more useful for students, job seekers, professionals, and recruiters.
+      </p>
+    </div>
+    <div class="highlight-panel" aria-label="BooterSpace highlights">
+      <div class="highlight-row">
+        <div class="highlight-icon">💼</div>
+        <div><strong>Jobs in one feed</strong><span>Find approved opportunities and quickly open the details that matter.</span></div>
+      </div>
+      <div class="highlight-row">
+        <div class="highlight-icon">🏛️</div>
+        <div><strong>Government alerts</strong><span>Track public-sector updates without losing them in the noise.</span></div>
+      </div>
+      <div class="highlight-row">
+        <div class="highlight-icon">👥</div>
+        <div><strong>Community support</strong><span>Share advice, ask questions, and learn from peers on the same path.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="values-title">
+    <h2 id="values-title" class="section-title">What BooterSpace stands for</h2>
+    <div class="value-grid">
+      <article class="value-card">
+        <div class="icon ic-blue">✅</div>
+        <h3>Clarity</h3>
+        <p>We organize opportunities and updates so users can understand what is new, relevant, and worth exploring.</p>
+      </article>
+      <article class="value-card">
+        <div class="icon ic-coral">⚡</div>
+        <h3>Momentum</h3>
+        <p>Every page is built to help users take the next step, whether that is applying, posting, connecting, or learning.</p>
+      </article>
+      <article class="value-card">
+        <div class="icon ic-green">🤝</div>
+        <h3>Community</h3>
+        <p>Careers grow faster with support, so BooterSpace keeps people and conversations close to the opportunities.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="cta-band" aria-labelledby="cta-title">
+    <div>
+      <h2 id="cta-title">Ready to discover what is next?</h2>
+      <p>Start from the homepage, browse active opportunities, or connect with the BooterSpace community.</p>
+    </div>
+    <a href="index.html" class="btn-secondary">Back to home →</a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-brand">Booter<span>Space</span></div>
+  <div class="footer-copy">© 2026 BooterSpace · All rights reserved</div>
+</footer>
+</body>
+</html>
