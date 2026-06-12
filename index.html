@@ -779,9 +779,6 @@ body {
       <button class="tab-btn" id="btn-govt" onclick="switchTab('govt')">
         <span class="t-icon">🏛️</span> Govt. Jobs
       </button>
-      <button class="tab-btn" id="btn-updates" onclick="switchTab('updates')">
-        <span class="t-icon">🔔</span> Updates
-      </button>
       <button class="tab-btn" id="btn-community" onclick="switchTab('community')">
         <span class="t-icon">👥</span> Community
       </button>
@@ -819,21 +816,6 @@ body {
         <div class="skel-row"><div class="skel skel-av"></div><div class="skel-lines"><div class="skel skel-ln" style="width:50%"></div><div class="skel skel-ln" style="width:44%"></div></div></div>
       </div>
       <a href="govt.html" class="load-more" style="color:var(--coral)">View all govt jobs →</a>
-    </div>
-  </div>
-
-  <!-- ── Updates Panel ──────────────────────────────────────────────────── -->
-  <div id="panel-updates" class="tab-panel">
-    <div class="panel-card">
-      <div class="panel-head">
-        <span class="panel-head-title">🔔 Latest Updates</span>
-        <span class="panel-badge pb-amber" id="count-updates">loading…</span>
-      </div>
-      <div id="latest-updates">
-        <div class="skel-row"><div class="skel" style="width:38px;height:38px;border-radius:10px;flex-shrink:0"></div><div class="skel-lines"><div class="skel skel-ln" style="width:80%"></div><div class="skel skel-ln" style="width:35%"></div></div></div>
-        <div class="skel-row"><div class="skel" style="width:38px;height:38px;border-radius:10px;flex-shrink:0"></div><div class="skel-lines"><div class="skel skel-ln" style="width:65%"></div><div class="skel skel-ln" style="width:30%"></div></div></div>
-      </div>
-      <a href="updates.html" class="load-more" style="color:var(--amber)">View all updates →</a>
     </div>
   </div>
 
@@ -904,27 +886,47 @@ async function init() {
     db = s.db; auth = s.auth;
   } catch(e) {
     console.error("Firebase init failed:", e);
-    ['featured-jobs','govt-jobs','latest-updates','community-posts'].forEach(id => {
+    ['featured-jobs','govt-jobs','community-posts'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = errHtml("Firebase could not connect. Check your config.");
     });
     return;
   }
 
-  const { onAuthStateChanged } = await loadFirebaseModule("firebase-auth.js");
+  const { onAuthStateChanged, signInAnonymously } = await loadFirebaseModule("firebase-auth.js");
   const { collection, getDocs, query, orderBy, limit, where, addDoc, serverTimestamp } = await loadFirebaseModule("firebase-firestore.js");
 
   window.db = db; window.auth = auth;
   let currentUser = null;
 
-  onAuthStateChanged(auth, user => {
-    currentUser = user || null;
-    const btn = document.getElementById("postBtn");
-    if (!btn) return;
-    const ok = Boolean(user && !user.isAnonymous);
-    btn.disabled = !ok;
-    btn.title = ok ? "" : "Please log in to post";
+  const authReady = new Promise(resolve => {
+    let resolved = false;
+    onAuthStateChanged(auth, async user => {
+      currentUser = user || null;
+      const btn = document.getElementById("postBtn");
+      if (btn) {
+        const ok = Boolean(user && !user.isAnonymous);
+        btn.disabled = !ok;
+        btn.title = ok ? "" : "Please log in to post";
+      }
+
+      if (!user) {
+        try {
+          const credential = await signInAnonymously(auth);
+          currentUser = credential.user || null;
+          if (!resolved) { resolved = true; resolve(currentUser); }
+        } catch (authError) {
+          console.warn("Anonymous sign-in failed; continuing with public reads.", authError);
+          if (!resolved) { resolved = true; resolve(null); }
+        }
+        return;
+      }
+
+      if (!resolved) { resolved = true; resolve(user); }
+    });
   });
+
+  await authReady;
 
   // 1. Featured Jobs
   async function loadFeatured() {
@@ -997,39 +999,7 @@ async function init() {
     } catch(e) { console.error(e); c.innerHTML = errHtml("Unable to load govt jobs."); }
   }
 
-  // 3. Updates
-  async function loadUpdates() {
-    const c = document.getElementById("latest-updates");
-    try {
-      let snap = null;
-      for (const f of ["timestamp","createdAt"]) {
-        try {
-          const s = await getDocs(query(collection(db,"flashLinks"), orderBy(f,"desc"), limit(4)));
-          if (!s.empty) { snap=s; break; }
-        } catch(_){}
-      }
-      if (!snap||snap.empty) snap = await getDocs(query(collection(db,"flashLinks"), limit(4)));
-      if (!snap||snap.empty) { c.innerHTML = emptyHtml("No updates yet."); setCount("count-updates",0); return; }
-      let html='', n=0;
-      snap.forEach(doc => {
-        n++;
-        const item = doc.data();
-        html += `
-          <a href="${item.url||'#'}" target="_blank" rel="noopener" class="upd-row">
-            <div class="upd-icon">⚡</div>
-            <div style="flex:1;min-width:0">
-              <div class="upd-title">${item.title||'Update'} <span class="badge-new bn-amber" style="font-size:9px;display:inline">NEW</span></div>
-              <div class="upd-meta">Official Update</div>
-            </div>
-            <span class="row-arrow">→</span>
-          </a>`;
-      });
-      c.innerHTML = html;
-      setCount("count-updates", n);
-    } catch(e) { console.error(e); c.innerHTML = errHtml("Unable to load updates."); }
-  }
-
-  // 4. Community
+  // 3. Community
   async function loadCommunity() {
     const c = document.getElementById("community-posts");
     try {
@@ -1055,8 +1025,8 @@ async function init() {
             </div>
             <p class="post-body">${p.content||''}</p>
             <div class="post-reacts">
-              <button class="react-btn">👍 ${p.likes||0}</button>
-              <button class="react-btn">👎 ${p.dislikes||0}</button>
+              <button class="react-btn">👍 ${p.likesCount ?? p.likes ?? 0}</button>
+              <button class="react-btn">👎 ${p.dislikesCount ?? p.dislikes ?? 0}</button>
             </div>
           </div>`;
       });
@@ -1065,7 +1035,7 @@ async function init() {
     } catch(e) { console.error(e); c.innerHTML = errHtml("Unable to load community posts."); }
   }
 
-  await Promise.all([loadFeatured(), loadGovt(), loadUpdates(), loadCommunity()]);
+  await Promise.all([loadFeatured(), loadGovt(), loadCommunity()]);
 
   document.getElementById("postBtn").addEventListener("click", async () => {
     if (!currentUser) { alert("Please log in to post."); return; }
@@ -1079,7 +1049,8 @@ async function init() {
         userName : currentUser.displayName || "User_" + currentUser.uid.substring(0,4),
         userId   : currentUser.uid,
         timestamp: serverTimestamp(),
-        likes:0, dislikes:0
+        likesCount: 0,
+        dislikesCount: 0
       });
       document.getElementById("postContent").value = '';
       await loadCommunity();
