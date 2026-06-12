@@ -1,0 +1,263 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ================= HELPERS ================= */
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.uid == "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+    }
+
+    function isSelf(uid) {
+      return isSignedIn()
+        && request.auth.uid == uid;
+    }
+
+    function chatDoc(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId));
+    }
+
+    function chatExists(chatId) {
+      return exists(/databases/$(database)/documents/chats/$(chatId));
+    }
+
+    function isChatParticipant(chatId) {
+      return isSignedIn()
+        && chatExists(chatId)
+        && request.auth.uid in chatDoc(chatId).data.participants;
+    }
+
+    /* ================= USERS ================= */
+
+    match /users/{userId} {
+
+      // signed-in users can search/select users
+      allow read: if isSignedIn();
+
+      allow create: if isSelf(userId)
+        && request.resource.data.email is string;
+
+      allow update: if isSelf(userId)
+        && request.resource.data.diff(resource.data)
+          .changedKeys()
+          .hasOnly([
+            "name",
+            "fullName",
+            "username",
+            "photoURL",
+            "avatar"
+          ]);
+
+      allow delete: if false;
+
+      match /connections/{connectionId} {
+        allow read, write: if isSelf(userId);
+      }
+    }
+
+    /* ================= CHATS ================= */
+
+    match /chats/{chatId} {
+
+      // create chat
+      allow create: if isSignedIn()
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() >= 2
+        && request.auth.uid in request.resource.data.participants;
+
+      // allow participants to read
+      allow get: if isSignedIn()
+        && (
+          !exists(/databases/$(database)/documents/chats/$(chatId))
+          || request.auth.uid in resource.data.participants
+        );
+
+      // allow chat listing
+      allow list: if isSignedIn();
+
+      // allow participants to update
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participants;
+
+      // allow participants to soft delete chats
+      allow delete: if isSignedIn()
+        && request.auth.uid in resource.data.participants;
+    }
+
+    /* ================= MESSAGES ================= */
+
+    match /messages/{messageId} {
+
+      // send message
+      allow create: if isSignedIn()
+        && request.resource.data.sender == request.auth.uid
+        && request.resource.data.receiver is string
+        && request.resource.data.chatId is string
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && isChatParticipant(request.resource.data.chatId);
+
+      // read messages only if chat participant
+      allow read: if isSignedIn()
+        && resource.data.chatId is string
+        && isChatParticipant(resource.data.chatId);
+
+      // prevent editing messages
+      allow update: if false;
+
+      // prevent deleting messages
+      allow delete: if false;
+    }
+
+    /* ================= CONNECTIONS ================= */
+
+    match /connections/{connectionId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.senderId == request.auth.uid;
+
+      allow read: if isSignedIn()
+        && (
+          request.auth.uid == resource.data.senderId
+          || request.auth.uid == resource.data.receiverId
+        );
+
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.receiverId;
+
+      allow delete: if false;
+    }
+
+    /* ================= NOTIFICATIONS ================= */
+
+    match /notifications/{notificationId} {
+
+      allow read: if isSignedIn()
+        && request.auth.uid == resource.data.toUid;
+
+      allow create: if isSignedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.message is string;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.toUid;
+
+      allow delete: if false;
+    }
+
+    /* ================= REVIEWS ================= */
+
+    match /reviews/{reviewId} {
+
+      // public reviews
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.rating is number;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.userId;
+
+      allow delete: if isAdmin();
+    }
+
+    /* ================= JOBS ================= */
+
+    match /jobs/{jobId} {
+
+      allow read: if resource.data.status == "approved"
+        || isAdmin();
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && request.auth.uid == resource.data.userId
+        );
+
+      allow delete: if isAdmin()
+        || (
+          isSignedIn()
+          && request.auth.uid == resource.data.userId
+        );
+    }
+
+    /* ================= GOVERNMENT JOBS ================= */
+
+    match /govtJobs/{jobId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* ================= COMMUNITY ================= */
+
+    match /communityPosts/{postId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0;
+
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          "likesCount",
+          "dislikesCount"
+        ]);
+
+      allow delete: if isAdmin()
+        || (isSignedIn() && request.auth.uid == resource.data.userId);
+
+      match /reactions/{userId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create: if isSelf(userId)
+          && request.resource.data.type in ["like", "dislike"];
+        allow update, delete: if false;
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0;
+        allow update, delete: if isAdmin()
+          || (isSignedIn() && request.auth.uid == resource.data.userId);
+      }
+    }
+
+    /* ================= BOOKS ================= */
+
+    match /books/{bookId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* ================= FEEDBACK ================= */
+
+    match /feedback/{feedbackId} {
+      allow create: if isSignedIn()
+        && request.resource.data.email is string
+        && request.resource.data.feedback is string
+        && request.resource.data.feedback.size() > 0;
+      allow read, update, delete: if isAdmin();
+    }
+
+    /* ================= DEFAULT DENY ================= */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
