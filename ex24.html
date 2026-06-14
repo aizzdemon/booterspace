@@ -242,13 +242,27 @@ import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12
 import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const FB_FIELDS = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I',
+  authDomain: 'kar-kardan.firebaseapp.com',
+  projectId: 'kar-kardan',
+  storageBucket: 'kar-kardan.firebasestorage.app',
+  messagingSenderId: '554147696994',
+  appId: '1:554147696994:web:221dcb883e3b65dcea5c3b',
+};
 
 function loadSavedCfg(){
-  FB_FIELDS.forEach(f=>{const v=localStorage.getItem('fb_'+f);if(v)document.getElementById('fb_'+f).value=v;});
+  FB_FIELDS.forEach(f=>{
+    const v=localStorage.getItem('fb_'+f)||DEFAULT_FIREBASE_CONFIG[f]||'';
+    if(v)document.getElementById('fb_'+f).value=v;
+  });
 }
 function getCfg(){
   const c={};
-  FB_FIELDS.forEach(f=>{const v=document.getElementById('fb_'+f).value.trim();if(v){c[f]=v;localStorage.setItem('fb_'+f,v);}});
+  FB_FIELDS.forEach(f=>{
+    const v=document.getElementById('fb_'+f).value.trim()||DEFAULT_FIREBASE_CONFIG[f]||'';
+    if(v){c[f]=v;localStorage.setItem('fb_'+f,v);}
+  });
   return c;
 }
 function getDb(){
