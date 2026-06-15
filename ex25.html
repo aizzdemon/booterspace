@@ -27,11 +27,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .input-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .input-row{display:flex;gap:10px;align-items:center}
 .url-label{font-size:12px;font-family:var(--mono);color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:500}
-input[type=text],input[type=url]{flex:1;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
-input[type=text]::placeholder,input[type=url]::placeholder{color:var(--muted)}
-input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,92,255,.1)}
+input[type=text],input[type=url],input[type=password]{flex:1;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]::placeholder,input[type=url]::placeholder,input[type=password]::placeholder{color:var(--muted)}
+input[type=text]:focus,input[type=url]:focus,input[type=password]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,92,255,.1)}
 .hint{margin-top:10px;font-size:12px;color:var(--muted);font-family:var(--mono)}
 .note{margin-top:8px;font-size:11px;color:var(--amber);font-family:var(--mono);background:var(--amber-bg);padding:7px 10px;border-radius:6px;border:1px solid rgba(180,83,9,.15)}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.auth-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.auth-row input{min-width:190px;flex:1}
+.auth-status{margin-top:10px;font-size:12px;font-family:var(--mono);color:var(--muted)}
+.auth-status.ok{color:var(--green)}
+.auth-status.bad{color:var(--red)}
 
 /* Buttons */
 .btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s,transform .1s;flex-shrink:0}
@@ -148,6 +154,17 @@ input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shad
   <p class="note">⚠ Uses free CORS proxy. After extracting, edit any field before saving.</p>
 </div>
 
+<div class="auth-card">
+  <div class="auth-row">
+    <span class="url-label">ADMIN →</span>
+    <input type="text" id="adminEmail" placeholder="admin email" autocomplete="email"/>
+    <input type="password" id="adminPassword" placeholder="admin password" autocomplete="current-password"/>
+    <button class="btn" id="loginBtn" onclick="adminLogin()">Sign in</button>
+    <button class="btn-outline" id="logoutBtn" onclick="adminLogout()" style="display:none">Sign out</button>
+  </div>
+  <div class="auth-status" id="authStatus">Sign in with the Firebase admin account before saving. Firestore rules only allow admin writes to govtJobs.</div>
+</div>
+
 <div class="status" id="status"><div class="spin"></div><span id="statusTxt">Fetching…</span></div>
 
 <div class="results" id="results">
@@ -221,6 +238,7 @@ input[type=text]:focus,input[type=url]:focus{border-color:var(--accent);box-shad
 <script type="module">
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
 function getEnvVar(...keys){
   const runtimeEnv=(typeof window!=="undefined"&&window.__ENV__)||(typeof self!=="undefined"&&self.__ENV__)||{};
@@ -251,6 +269,56 @@ const firebaseConfig={
 };
 const app=getApps().length===0?initializeApp(firebaseConfig):getApps()[0];
 const db=getFirestore(app);
+const auth=getAuth(app);
+const ADMIN_UID='nkXAUBb7ffZQ5CtyShWl6YcQ39t2';
+let currentUser=null;
+
+function updateAuthUI(user){
+  currentUser=user;
+  const isAdmin=user?.uid===ADMIN_UID;
+  const status=document.getElementById('authStatus');
+  const loginBtn=document.getElementById('loginBtn');
+  const logoutBtn=document.getElementById('logoutBtn');
+  const email=document.getElementById('adminEmail');
+  const password=document.getElementById('adminPassword');
+  const saveBtn=document.getElementById('saveBtn');
+
+  status.className='auth-status '+(isAdmin?'ok':user?'bad':'');
+  status.textContent=isAdmin
+    ? 'Signed in as admin. You can save govtJobs documents.'
+    : user
+      ? 'Signed in, but this account is not the Firestore admin allowed to write govtJobs.'
+      : 'Sign in with the Firebase admin account before saving. Firestore rules only allow admin writes to govtJobs.';
+  loginBtn.style.display=isAdmin?'none':'';
+  logoutBtn.style.display=user?'':'none';
+  email.disabled=!!isAdmin;
+  password.disabled=!!isAdmin;
+  if(saveBtn) saveBtn.disabled=!isAdmin;
+}
+
+onAuthStateChanged(auth, updateAuthUI);
+
+window.adminLogin=async function(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const password=document.getElementById('adminPassword').value;
+  if(!email||!password){showToast('Enter admin email and password.','error');return;}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.textContent='Signing in…';
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+    document.getElementById('adminPassword').value='';
+    showToast('Signed in.','success');
+  }catch(e){
+    showToast('Login error: '+e.message,'error');
+  }finally{
+    btn.disabled=false;btn.textContent='Sign in';
+  }
+};
+
+window.adminLogout=async function(){
+  await signOut(auth);
+  showToast('Signed out.','success');
+};
 
 // Centralized helper to avoid duplicated mapping loops
 window.getEditedData = function() {
@@ -263,6 +331,8 @@ window.getEditedData = function() {
 
 window.saveToFirebase=async function(){
   if(!db){showToast('Firebase is not configured.','error');return;}
+  if(!currentUser){showToast('Please sign in before saving.','error');return;}
+  if(currentUser.uid!==ADMIN_UID){showToast('This account is not allowed to save govtJobs.','error');return;}
   if(!window.gData){showToast('Nothing to save.','error');return;}
 
   const btn=document.getElementById('saveBtn');
