@@ -421,12 +421,126 @@
     }
 
     // EXTRACTION WITH CORS PROXY (Guarantees zero-config GitHub Pages compatibility)
+    const PROXY_FETCHERS = [
+      {
+        name: "corsproxy.io",
+        url: (targetUrl) => `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "allorigins raw",
+        url: (targetUrl) => `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "allorigins json",
+        url: (targetUrl) => `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+        read: async (response) => {
+          const data = await response.json();
+          return data.contents || "";
+        }
+      }
+    ];
+
+    function isValidHttpUrl(value) {
+      try {
+        const parsedUrl = new URL(value);
+        return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function normalizeText(value) {
+      return (value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function resolveUrl(value, baseUrl) {
+      if (!value) return "";
+      try {
+        return new URL(value, baseUrl).href;
+      } catch (error) {
+        return value;
+      }
+    }
+
+    async function fetchHtmlThroughProxy(targetUrl) {
+      const errors = [];
+
+      for (const proxy of PROXY_FETCHERS) {
+        try {
+          const response = await fetch(proxy.url(targetUrl), {
+            signal: AbortSignal.timeout(18000),
+            headers: { "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8" }
+          });
+
+          if (!response.ok) {
+            errors.push(`${proxy.name}: HTTP ${response.status}`);
+            continue;
+          }
+
+          const html = await proxy.read(response);
+          if (html && html.trim().length > 200) return html;
+          errors.push(`${proxy.name}: empty response`);
+        } catch (error) {
+          errors.push(`${proxy.name}: ${error.message}`);
+        }
+      }
+
+      throw new Error(errors.join(" | ") || "All proxy services failed.");
+    }
+
+    function collectJsonLdItems(value, items = []) {
+      if (!value) return items;
+      if (Array.isArray(value)) {
+        value.forEach((entry) => collectJsonLdItems(entry, items));
+        return items;
+      }
+      if (typeof value !== "object") return items;
+
+      items.push(value);
+      collectJsonLdItems(value["@graph"], items);
+      return items;
+    }
+
+    function getJobLocation(jobLocation) {
+      const locations = Array.isArray(jobLocation) ? jobLocation : [jobLocation];
+      for (const loc of locations.filter(Boolean)) {
+        if (typeof loc === "string") return loc;
+        const address = loc.address || loc;
+        const parts = [
+          address.streetAddress,
+          address.addressLocality,
+          address.addressRegion,
+          address.postalCode,
+          address.addressCountry?.name || address.addressCountry
+        ].filter(Boolean);
+        if (parts.length) return parts.join(", ");
+        if (loc.name) return loc.name;
+      }
+      return "";
+    }
+
+    function getSalary(baseSalary) {
+      const salaries = Array.isArray(baseSalary) ? baseSalary : [baseSalary];
+      for (const salary of salaries.filter(Boolean)) {
+        const value = salary.value || salary;
+        const currency = salary.currency || "";
+        if (typeof value !== "object") return normalizeText(`${currency} ${value}`);
+        const min = value.minValue || value.value || "";
+        const max = value.maxValue || "";
+        const unit = value.unitText ? ` / ${value.unitText}` : "";
+        if (min || max) return normalizeText(`${currency} ${min}${max ? ` - ${max}` : ""}${unit}`);
+      }
+      return "";
+    }
+
     document.getElementById("autoFillBtn").addEventListener("click", async () => {
       const urlInput = document.getElementById("scrapedJobUrl");
       const jobUrl = urlInput.value.trim();
 
-      if (!jobUrl) {
-        showToast("Please enter a valid job page URL first.", "error");
+      if (!jobUrl || !isValidHttpUrl(jobUrl)) {
+        showToast("Please enter a valid http(s) job page URL first.", "error");
         return;
       }
 
@@ -443,16 +557,9 @@
       aiStatusMessage.classList.remove("hidden");
 
       try {
-        // Fetch external HTML via standard proxy bypass endpoint
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(jobUrl)}`;
-        const response = await fetch(proxyUrl);
-        
-        if (!response.ok) throw new Error("Proxy connection failed.");
-        
-        const wrapperData = await response.json();
-        const htmlContent = wrapperData.contents;
-
-        if (!htmlContent) throw new Error("Target page returned empty payload.");
+        // Fetch external HTML through multiple CORS proxy fallbacks. Free proxies can be
+        // intermittent, so the extractor retries before giving up.
+        const htmlContent = await fetchHtmlThroughProxy(jobUrl);
 
         // Parse HTML content safely inside a sandbox Document structure
         const parser = new DOMParser();
@@ -476,9 +583,9 @@
         for (const script of ldJsonScripts) {
           try {
             const parsed = JSON.parse(script.textContent);
-            const items = Array.isArray(parsed) ? parsed : [parsed];
+            const items = collectJsonLdItems(parsed);
             
-            // Look recursively for JobPosting schema
+            // Look recursively for JobPosting schema, including @graph payloads.
             const jobPosting = items.find(item => 
               item["@type"] === "JobPosting" || 
               (Array.isArray(item["@type"]) && item["@type"].includes("JobPosting"))
@@ -490,7 +597,7 @@
               
               if (jobPosting.hiringOrganization) {
                 extracted.company = jobPosting.hiringOrganization.name || "";
-                extracted.website = jobPosting.hiringOrganization.sameAs || "";
+                extracted.website = jobPosting.hiringOrganization.sameAs || jobPosting.hiringOrganization.url || "";
                 if (jobPosting.hiringOrganization.logo) {
                   extracted.logo = typeof jobPosting.hiringOrganization.logo === 'string' 
                     ? jobPosting.hiringOrganization.logo 
@@ -498,28 +605,8 @@
                 }
               }
 
-              if (jobPosting.jobLocation) {
-                const loc = jobPosting.jobLocation;
-                if (loc.address) {
-                  const parts = [
-                    loc.address.addressLocality,
-                    loc.address.addressRegion,
-                    loc.address.addressCountry
-                  ].filter(Boolean);
-                  extracted.location = parts.join(", ");
-                } else if (loc.name) {
-                  extracted.location = loc.name;
-                }
-              }
-
-              if (jobPosting.baseSalary && jobPosting.baseSalary.value) {
-                const salaryVal = jobPosting.baseSalary.value;
-                if (typeof salaryVal === 'object') {
-                  extracted.salary = salaryVal.value || `${salaryVal.minValue || ""} - ${salaryVal.maxValue || ""}`;
-                } else {
-                  extracted.salary = salaryVal;
-                }
-              }
+              extracted.location = getJobLocation(jobPosting.jobLocation) || (jobPosting.jobLocationType === "TELECOMMUTE" ? "Remote" : "");
+              extracted.salary = getSalary(jobPosting.baseSalary);
 
               parsedLdJson = true;
               break;
@@ -539,6 +626,7 @@
           
           extracted.logo = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || 
                            doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href') || "";
+          extracted.logo = resolveUrl(extracted.logo, jobUrl);
           
           extracted.company = doc.querySelector('meta[property="og:site_name"]')?.getAttribute('content') || "";
           
@@ -574,7 +662,7 @@
 
       } catch (err) {
         console.error("Extractor error:", err);
-        showToast("Unable to fetch data from this link. You can still input metadata manually.", "error");
+        showToast("Unable to fetch data through the available proxies. Some job boards block proxy access; you can still input metadata manually.", "error");
       } finally {
         // Reset states
         autoFillBtn.disabled = false;
