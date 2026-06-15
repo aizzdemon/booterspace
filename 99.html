@@ -1,259 +1,588 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Job Extractor</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f5f5f5;padding:1.5rem}
-.wrap{max-width:900px;margin:0 auto}
-h1{font-size:20px;font-weight:500;color:#111;margin-bottom:4px}
-.sub{font-size:14px;color:#666;margin-bottom:1.5rem}
-.row{display:flex;gap:8px;margin-bottom:1rem}
-input[type=text]{flex:1;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:#fff;color:#111}
-input[type=text]:focus{outline:none;border-color:#888}
-.btn{padding:9px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111;font-size:14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.btn:hover{background:#f0f0f0}
-.btn:active{transform:scale(0.98)}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
-.btn-save{border-color:#16a34a;color:#16a34a}
-.btn-save:hover{background:#f0fdf4}
-.status{font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:1rem;display:none}
-.status.info{background:#eff6ff;color:#1d4ed8;display:block}
-.status.error{background:#fef2f2;color:#dc2626;display:block}
-.status.success{background:#f0fdf4;color:#16a34a;display:block}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:none}
-.card-title{font-size:14px;font-weight:500;color:#666;margin-bottom:1rem}
-.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.field{display:flex;flex-direction:column;gap:4px}
-.field.full{grid-column:1/-1}
-.field label{font-size:12px;color:#666;font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
-.field textarea,.field input[type=text]{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9fafb;color:#111;resize:vertical;min-height:36px;font-family:Arial,sans-serif}
-.field textarea{min-height:80px}
-.field textarea:focus,.field input[type=text]:focus{outline:none;border-color:#aaa;background:#fff}
-.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
-.spinner{width:14px;height:14px;border:2px solid #ccc;border-top-color:#666;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-</style>
+  <meta charset="UTF-8" />
+  <title>Post a Job - KARDAN</title>
+  <meta name="description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/post-job.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="Post a Job - KARDAN">
+  <meta property="og:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/post-job.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Post a Job - KARDAN">
+  <meta name="twitter:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Post a Job - KARDAN",
+    "description": "Publish job openings from your organization and reach qualified candidates on BooterSpace.",
+    "url": "https://aizzdemon.github.io/booterspace/post-job.html",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "BooterSpace",
+      "url": "https://aizzdemon.github.io/booterspace/"
+    }
+  }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Tailwind CSS CDN to guarantee full modern utility rendering -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-gradient {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+    .form-input {
+      transition: all 0.2s ease-in-out;
+    }
+    .form-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    /* Loading spinner animation */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  </style>
 </head>
-<body>
-<div class="wrap">
-  <h1>Job Extractor</h1>
-  <p class="sub">Paste a Greenhouse, Lever, or company career page URL to extract job details</p>
 
-  <div class="row">
-    <input type="text" id="urlInput" placeholder="Paste job URL here" />
-    <button class="btn" id="extractBtn" onclick="runExtract()">
-      <i class="ti ti-search"></i> Extract
-    </button>
-  </div>
+<body class="bg-slate-50 min-h-screen pb-12 text-slate-800">
 
-  <div class="status" id="status"></div>
-
-  <div class="card" id="resultsCard">
-    <div class="card-title">Extracted fields — review and edit before saving</div>
-    <div class="field-grid" id="fieldGrid"></div>
-    <div class="actions">
-      <button class="btn btn-save" id="saveBtn" onclick="saveToFirebase()">
-        <i class="ti ti-database"></i> Save to Firebase
-      </button>
+  <!-- HEADER / NAVIGATION -->
+  <header class="custom-gradient text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between">
+      <div class="flex items-center space-x-3 mb-4 md:mb-0">
+        <div class="bg-white text-blue-600 font-extrabold text-xl px-4 py-2 rounded-xl shadow-md tracking-wider">
+          KARDAN
+        </div>
+        <span class="text-sm font-medium text-blue-100 hidden sm:inline-block">/ Recruiting Redefined</span>
+      </div>
+      
+      <nav class="flex flex-wrap justify-center gap-2">
+        <a href="index.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+          <i class="fas fa-home text-xs"></i> <span>Home</span>
+        </a>
+        <a href="jobs.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+          <i class="fas fa-briefcase text-xs"></i> <span>Jobs</span>
+        </a>
+        <a href="companies.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+          <i class="fas fa-building text-xs"></i> <span>Companies</span>
+        </a>
+        <a href="profile.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+          <i class="fas fa-user text-xs"></i> <span>Profile</span>
+        </a>
+      </nav>
     </div>
-  </div>
-</div>
+  </header>
 
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBeGZBE1u1-y1hDWbRouchgwkgp89D973I",
-  authDomain: "kar-kardan.firebaseapp.com",
-  projectId: "kar-kardan",
-  storageBucket: "kar-kardan.firebasestorage.app",
-  messagingSenderId: "554147696994",
-  appId: "1:554147696994:web:221dcb883e3b65dcea5c3b"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  <!-- NOTIFICATION BANNER CONTAINER -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-const FIELDS = [
-  {key:'job_title',label:'Job title'},
-  {key:'company_name',label:'Company name'},
-  {key:'company_website',label:'Company website'},
-  {key:'job_location',label:'Location'},
-  {key:'employment_type',label:'Employment type'},
-  {key:'experience_required',label:'Experience required'},
-  {key:'salary_range',label:'Salary range'},
-  {key:'work_schedule',label:'Work schedule'},
-  {key:'application_deadline',label:'Application deadline'},
-  {key:'posted_date',label:'Posted date'},
-  {key:'job_description',label:'Job description',full:true,area:true},
-  {key:'key_responsibilities',label:'Key responsibilities',full:true,area:true},
-  {key:'required_skills',label:'Required skills',full:true,area:true},
-  {key:'qualifications',label:'Qualifications',full:true,area:true},
-  {key:'benefits_perks',label:'Benefits & perks',full:true,area:true},
-  {key:'company_information',label:'About the company',full:true,area:true},
-  {key:'travel_relocation',label:'Travel / relocation'},
-  {key:'recruiter_details',label:'Recruiter details'},
-  {key:'apply_link',label:'Apply link',full:true},
-];
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-3xl mx-auto px-4 mt-10">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create a Job Opening</h1>
+      <p class="text-slate-500 mt-2">Publish job listings to reach qualified candidates on BooterSpace instantly.</p>
+    </div>
 
-const PROXIES = [
-  u => 'https://corsproxy.io/?'+encodeURIComponent(u),
-  u => 'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-  u => 'https://thingproxy.freeboard.io/fetch/'+u,
-];
+    <!-- AI SMART EXTRACTOR SECTION -->
+    <div class="bg-gradient-to-r from-violet-600 to-indigo-700 rounded-2xl p-6 shadow-xl text-white mb-8 border border-violet-500/30">
+      <div class="flex items-start space-x-4">
+        <div class="bg-white/15 p-3 rounded-xl">
+          <i class="fas fa-wand-magic-sparkles text-2xl text-yellow-300"></i>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            AI Smart Post Filler 
+            <span class="text-[10px] bg-yellow-400 text-slate-900 font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">New</span>
+          </h2>
+          <p class="text-sm text-indigo-100 mt-1">
+            Have an existing job post on LinkedIn, Indeed, or your company career site? Paste the URL below and let our AI automatically fill the entire form for you.
+          </p>
+          
+          <div class="mt-4 flex flex-col sm:flex-row gap-2">
+            <input 
+              id="scrapedJobUrl" 
+              type="url" 
+              placeholder="Paste job link (e.g. https://careers.google.com/jobs/spec...)" 
+              class="flex-1 px-4 py-2.5 rounded-xl text-slate-900 placeholder-slate-400 border border-transparent focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm shadow-inner"
+            >
+            <button 
+              id="autoFillBtn"
+              type="button"
+              class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            >
+              <i id="aiBtnIcon" class="fas fa-robot text-sm"></i>
+              <span id="aiBtnText">Auto-Fill Form</span>
+            </button>
+          </div>
+          <p id="aiStatusMessage" class="hidden text-xs text-yellow-200 mt-2 flex items-center gap-1.5 font-medium">
+            <i class="fas fa-circle-notch spinner text-xs"></i> <span>Parsing job listing with Gemini AI... please wait up to 10 seconds.</span>
+          </p>
+        </div>
+      </div>
+    </div>
 
-function setStatus(msg, type='info'){
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = 'status '+type;
-}
+    <!-- FORM CARD -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+      <form id="jobForm" class="space-y-6">
+        
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobTitle">Job Title <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <i class="fas fa-heading text-sm"></i>
+            </span>
+            <input 
+              id="jobTitle" 
+              type="text" 
+              placeholder="e.g. Senior Frontend Engineer" 
+              class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+              required
+            >
+          </div>
+        </div>
 
-function setLoading(on){
-  const btn = document.getElementById('extractBtn');
-  btn.innerHTML = on ? '<span class="spinner"></span> Fetching…' : '<i class="ti ti-search"></i> Extract';
-  btn.disabled = on;
-}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyName">Company Name <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-building text-sm"></i>
+              </span>
+              <input 
+                id="companyName" 
+                type="text" 
+                placeholder="e.g. Acme Corporation" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
 
-async function fetchHtml(url){
-  for(const proxy of PROXIES){
-    try{
-      const r = await fetch(proxy(url), {signal: AbortSignal.timeout(12000)});
-      if(r.ok){
-        const t = await r.text();
-        if(t && t.length > 300) return t;
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyWebsite">Company Website</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-globe text-sm"></i>
+              </span>
+              <input 
+                id="companyWebsite" 
+                type="url" 
+                placeholder="https://acme.org" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobPlace">Location <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-map-marker-alt text-sm"></i>
+              </span>
+              <input 
+                id="jobPlace" 
+                type="text" 
+                placeholder="e.g. San Francisco, CA (or Remote)" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="salary">Salary / Compensation</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-dollar-sign text-sm"></i>
+              </span>
+              <input 
+                id="salary" 
+                type="text" 
+                placeholder="e.g. $120,000 - $150,000" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyLogo">Company Logo URL</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-image text-sm"></i>
+              </span>
+              <input 
+                id="companyLogo" 
+                type="url" 
+                placeholder="https://example.com/logo.jpg" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobLink">Job Detail / Application Link <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-link text-sm"></i>
+              </span>
+              <input 
+                id="jobLink" 
+                type="url" 
+                placeholder="https://careers.acme.org/jobs/frontend-dev" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobDescription">Job Description <span class="text-red-500">*</span></label>
+          <textarea 
+            id="jobDescription" 
+            rows="6" 
+            placeholder="Tell candidates about the role, key responsibilities, requirements, and company benefits..." 
+            class="form-input w-full p-4 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+            required
+          ></textarea>
+        </div>
+
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-98"
+          >
+            <i class="fas fa-paper-plane text-sm"></i>
+            <span>Publish Job Listing</span>
+          </button>
+        </div>
+      </form>
+
+      <div id="successMessage" class="hidden mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-start gap-3">
+        <div class="bg-emerald-100 text-emerald-700 p-1 rounded-full shrink-0">
+          <i class="fas fa-check text-xs"></i>
+        </div>
+        <div>
+          <p class="font-bold text-sm">Success!</p>
+          <p class="text-xs text-emerald-700 mt-0.5">Job successfully posted and is currently pending admin approval. Users will receive notifications about this listing.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- POPUP TOAST SYSTEM -->
+  <script>
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toastContainer");
+      
+      const toast = document.createElement("div");
+      toast.className = `flex items-center gap-3 p-4 rounded-xl shadow-xl border text-sm pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+      
+      if (type === "success") {
+        toast.className += " bg-emerald-50 border-emerald-200 text-emerald-800";
+        toast.innerHTML = `<i class="fas fa-check-circle text-lg text-emerald-500 shrink-0"></i><div class="flex-1">${message}</div>`;
+      } else if (type === "error") {
+        toast.className += " bg-rose-50 border-rose-200 text-rose-800";
+        toast.innerHTML = `<i class="fas fa-exclamation-circle text-lg text-rose-500 shrink-0"></i><div class="flex-1">${message}</div>`;
+      } else {
+        toast.className += " bg-blue-50 border-blue-200 text-blue-800";
+        toast.innerHTML = `<i class="fas fa-info-circle text-lg text-blue-500 shrink-0"></i><div class="flex-1">${message}</div>`;
       }
-    }catch(e){}
-  }
-  return null;
-}
 
-function norm(s){ return (s||'').replace(/\s+/g,' ').trim(); }
+      container.appendChild(toast);
+      
+      // Trigger animations
+      setTimeout(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      }, 50);
 
-function pick(txt, patterns){
-  for(const p of patterns){
-    const m = txt.match(p);
-    if(m){ const val = norm(m[1]||m[2]||m[0]); if(val.length > 1) return val; }
-  }
-  return null;
-}
+      // Dismiss after 4 seconds
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y--2");
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 4000);
+    }
+  </script>
 
-function pickBlock(txt, headings, maxLen=600){
-  for(const h of headings){
-    const re = new RegExp(h+'[:\\s]*([\\s\\S]{20,'+maxLen+'}?)(?=\\n[A-Z][a-zA-Z ]{2,30}[:\\n]|$)', 'i');
-    const m = txt.match(re);
-    if(m && m[1]) return norm(m[1]);
-  }
-  return null;
-}
+  <!-- SCRIPTS & EXTRACTION ENGINE -->
+  <script>
+    // Environment helper variables
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'kardan-app-id';
+    const apiKey = ""; // Set default for Gemini API execution context
 
-  if(url.includes('greenhouse.io')) return 'Greenhouse';
-  if(url.includes('lever.co')) return 'Lever';
-  if(url.includes('workday.com')) return 'Workday';
-  if(url.includes('linkedin.com')) return 'LinkedIn';
-  if(url.includes('naukri.com')) return 'Naukri';
-  if(url.includes('indeed.com')) return 'Indeed';
-  return 'Company Career Page';
-}
+    // Secure Firestore Collections Paths Rule 1
+    // Public paths: /artifacts/{appId}/public/data/{collectionName}
+    const publicJobsPath = `artifacts/${appId}/public/data/jobs`;
+    const publicNotificationsPath = `artifacts/${appId}/public/data/notifications`;
+    const publicUsersPath = `artifacts/${appId}/public/data/users`; // Adjusted to safely fetch list of users
 
-function extractData(html, url){
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  doc.querySelectorAll('script,style,noscript,nav,footer,header,aside,[class*="cookie"],[class*="banner"],[id*="cookie"]').forEach(e=>e.remove());
+    // Firebase Config Resolver
+    function getEnvVar(...keys) {
+      const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+      const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
 
-  let jsonLd = null;
-  doc.querySelectorAll('script[type="application/ld+json"]').forEach(el=>{
-    try{
-      const obj = JSON.parse(el.textContent);
-      const jobs = [obj].flat().find(o=>o['@type']==='JobPosting'||o['@type']==='jobPosting');
-      if(jobs) jsonLd = jobs;
-    }catch(e){}
-  });
+      for (const key of keys) {
+        if (runtimeEnv[key]) return runtimeEnv[key];
+        if (processEnv[key]) return processEnv[key];
+      }
+      return "";
+    }
 
-  const txt = norm(doc.body?.innerText||'');
-  const parsedUrl = new URL(url);
-  const D = {};
+    const firebaseConfig = {
+      apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+      authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+      databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL", "NEXT_PUBLIC_FIREBASE_DATABASE_URL", "REACT_APP_FIREBASE_DATABASE_URL"),
+      projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
+      storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
+      messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+      appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID"),
+      measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
+    };
 
-  D.job_title = norm(jsonLd?.title) || norm(doc.querySelector('meta[property="og:title"]')?.content) || norm(doc.querySelector('h1')?.textContent) || norm(doc.title.split('|')[0].split('-')[0]) || null;
-  D.company_name = norm(jsonLd?.hiringOrganization?.name) || norm(doc.querySelector('[class*="company"],[class*="employer"],[data-company]')?.textContent) || pick(txt,[/(?:company|employer|organisation|organization)[:\s]+([^\n\r]{2,80})/i]) || parsedUrl.hostname.replace('www.','').split('.')[0] || null;
-  D.company_website = norm(jsonLd?.hiringOrganization?.sameAs) || parsedUrl.origin;
-  D.job_location = norm(jsonLd?.jobLocation?.address?.addressLocality) || norm(doc.querySelector('[class*="location"],[class*="city"],[data-location]')?.textContent) || pick(txt,[/location[:\s]+([^\n\r]{2,80})/i,/(?:based in|office in)[:\s]+([^\n\r]{2,60})/i]) || null;
-  D.employment_type = norm(jsonLd?.employmentType) || pick(txt,[/(full[\s-]?time)/i,/(part[\s-]?time)/i,/(internship)/i,/(contract(?:ual)?)/i,/(freelance)/i,/(remote)/i,/(hybrid)/i]) || null;
-  D.experience_required = pick(txt,[/(\d+\s*[-–]\s*\d+\s+years?(?:\s+of\s+experience)?)/i,/(\d+\+?\s+years?(?:\s+of)?\s+(?:relevant\s+)?experience)/i,/(fresher|entry[\s-]?level|no experience)/i]) || null;
-  D.salary_range = norm(jsonLd?.baseSalary?.value?.value ? String(jsonLd.baseSalary.value.value) : null) || pick(txt,[/(₹[\d,\s\-–]+(?:LPA|lpa|L|lakhs?))/i,/(?:salary|ctc|compensation)[:\s]+([\d,\s\-–₹$€£]+(?:LPA|lpa|per\s+(?:month|year|annum))?)/i,/(\$[\d,]+\s*[-–]\s*\$[\d,]+)/]) || null;
-  D.work_schedule = pick(txt,[/(day\s+shift)/i,/(night\s+shift)/i,/(flexible\s+hours?)/i,/(rotational\s+shift)/i,/(monday\s+to\s+friday)/i,/(9\s*(?:am|AM)\s*[-–]\s*(?:5|6)\s*(?:pm|PM))/]) || null;
-  D.application_deadline = norm(jsonLd?.applicationCloseDate) || pick(txt,[/(?:apply\s+before|last\s+date|deadline)[:\s]+([^\n\r]{5,50})/i,/(?:closing\s+date)[:\s]+([^\n\r]{5,50})/i]) || null;
-  D.posted_date = norm(jsonLd?.datePosted) || norm(doc.querySelector('time[datetime]')?.getAttribute('datetime')) || pick(txt,[/posted\s+(\d+\s+days?\s+ago)/i,/(?:date\s+posted|posted\s+on)[:\s]+([^\n\r]{5,40})/i]) || null;
+    firebase.initializeApp(firebaseConfig);
 
-  const descEl = doc.querySelector('#content,#job-description,.job-description,[class*="job-description"],[class*="jobDescription"],[class*="description--"],.posting-description,.job-details');
-  D.job_description = norm(jsonLd?.description?.slice(0,800)) || norm(descEl?.innerText?.slice(0,800)) || pickBlock(txt,['job description','about the role','about this role','the role','role overview']) || txt.slice(0,800) || null;
-  D.key_responsibilities = pickBlock(txt,['key responsibilities','responsibilities','what you.ll do','what you will do','your responsibilities','role & responsibilities','duties'],500) || null;
-  D.required_skills = norm(jsonLd?.skills) || pickBlock(txt,['required skills','skills required','technical skills','key skills','tools & technologies','tech stack'],400) || pick(txt,[/skills[:\s]+([^\n]{10,300})/i]) || null;
-  D.qualifications = pickBlock(txt,['qualifications','minimum qualifications','basic qualifications','education','educational qualification','preferred qualifications'],400) || pick(txt,[/(?:b\.?tech|b\.?e|m\.?tech|mba|bachelor|master|degree)[^\n]{0,120}/i]) || null;
-  D.benefits_perks = pickBlock(txt,['benefits','perks','what we offer','we offer','employee benefits','compensation & benefits'],400) || null;
-  D.company_information = norm(jsonLd?.hiringOrganization?.description?.slice(0,500)) || pickBlock(txt,['about us','about the company','who we are','company overview'],500) || null;
-  D.travel_relocation = pick(txt,[/(relocation\s+(?:required|provided|assistance))/i,/(travel\s+(?:required|up\s+to\s+\d+%))/i,/(willingness\s+to\s+travel)/i]) || null;
-  D.recruiter_details = pick(txt,[/(?:recruiter|talent\s+acquisition|hiring\s+manager)[:\s]+([^\n\r]{3,80})/i,/contact[:\s]+([^\n\r@]{3,60}@[^\n\r]{3,40})/i]) || null;
-  D.apply_link = url;
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  return D;
-}
+    let currentUser = null;
 
-function buildForm(data){
-  const grid = document.getElementById('fieldGrid');
-  grid.innerHTML = FIELDS.map(f=>{
-    const val = (data[f.key]||'').toString().replace(/</g,'&lt;').replace(/"/g,'&quot;');
-    const cls = f.full ? 'field full' : 'field';
-    const input = f.area
-      ? `<textarea data-key="${f.key}">${(data[f.key]||'')}</textarea>`
-      : `<input type="text" data-key="${f.key}" value="${val}" />`;
-    return `<div class="${cls}"><label>${f.label}</label>${input}</div>`;
-  }).join('');
-  document.getElementById('resultsCard').style.display = 'block';
-}
+    // Rule 3 - Authentication state observer + automatic fallback anonymous auth setup
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await auth.signInWithCustomToken(__initial_auth_token);
+        } else {
+          // If no user is logged in, sign in anonymously so the form state/writing is secure
+          if (!auth.currentUser) {
+            await auth.signInAnonymously();
+          }
+        }
+      } catch (error) {
+        console.error("Authentication init failed:", error);
+        showToast("Error authenticating your session. Check console.", "error");
+      }
+    };
+    initAuth();
 
-function getFormData(){
-  const out = {};
-  document.querySelectorAll('[data-key]').forEach(el=>{ out[el.dataset.key] = el.value.trim()||null; });
-  return out;
-}
-
-window.runExtract = async function(){
-  const url = document.getElementById('urlInput').value.trim();
-  if(!url || !url.startsWith('http')){ setStatus('Please enter a valid URL starting with https://','error'); return; }
-  setLoading(true);
-  document.getElementById('resultsCard').style.display = 'none';
-  try{
-    setStatus('Fetching page via proxy…');
-    const html = await fetchHtml(url);
-    if(!html){ setStatus('Could not fetch the page. The site may block proxies. Try a Greenhouse or Lever URL.','error'); setLoading(false); return; }
-    setStatus('Parsing job details…');
-    const data = extractData(html, url);
-    buildForm(data);
-    setStatus('Done — review the fields below and save when ready.','success');
-  }catch(e){ setStatus('Error: '+(e.message||'Something went wrong.'),'error'); console.error(e); }
-  setLoading(false);
-};
-
-window.saveToFirebase = async function(){
-  const data = getFormData();
-  if(!data.job_title){ setStatus('Nothing to save — extract a job first.','error'); return; }
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Saving…';
-  try{
-    await db.collection('jobs').add({
-      ...data,
-      publishDate: new Date().toISOString().slice(0,10),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+      } else {
+        showToast("Please sign in or continue anonymously to post job details.", "info");
+      }
     });
-    setStatus('Saved to Firestore collection "jobs" successfully.','success');
-  }catch(e){ setStatus('Firebase error: '+(e.message||'Save failed.'),'error'); console.error(e); }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-database"></i> Save to Firebase';
-};
-</script>
+
+    // EXPONENTIAL BACKOFF CALLER FOR GEMINI
+    async function fetchWithRetry(url, options, maxRetries = 5) {
+      let delay = 1000;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const response = await fetch(url, options);
+          if (response.ok) return await response.json();
+        } catch (err) {
+          // Silent catch to handle backoff
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // exponential backup 1s, 2s, 4s, 8s, 16s
+      }
+      throw new Error("API call failed after maximum retry attempts.");
+    }
+
+    // AI AUTO-FILL LOGIC (Proxy Scraping/Extraction with Gemini + Google Search Grounding)
+    document.getElementById("autoFillBtn").addEventListener("click", async () => {
+      const urlInput = document.getElementById("scrapedJobUrl");
+      const jobUrl = urlInput.value.trim();
+
+      if (!jobUrl) {
+        showToast("Please enter a valid job page URL to extract details.", "error");
+        return;
+      }
+
+      // Toggle UI loading states
+      const autoFillBtn = document.getElementById("autoFillBtn");
+      const aiBtnIcon = document.getElementById("aiBtnIcon");
+      const aiBtnText = document.getElementById("aiBtnText");
+      const aiStatusMessage = document.getElementById("aiStatusMessage");
+
+      autoFillBtn.disabled = true;
+      autoFillBtn.classList.add("opacity-50", "cursor-not-allowed");
+      aiBtnIcon.className = "fas fa-circle-notch spinner text-sm";
+      aiBtnText.textContent = "Analyzing...";
+      aiStatusMessage.classList.remove("hidden");
+
+      try {
+        // Gemini API Text Generation payload configured with structured schema and search grounding
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        const payload = {
+          contents: [{
+            parts: [{
+              text: `Read the job details webpage from the following link and extract metadata. Populate the required values into the specified JSON format structure. Use empty strings if any values are unavailable. Job Page Link: ${jobUrl}`
+            }]
+          }],
+          tools: [{ "google_search": {} }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                company: { type: "STRING" },
+                companyWebsite: { type: "STRING" },
+                logoUrl: { type: "STRING" },
+                location: { type: "STRING" },
+                salary: { type: "STRING" },
+                about: { type: "STRING" }
+              },
+              required: ["title", "company", "location", "about"]
+            }
+          }
+        };
+
+        const result = await fetchWithRetry(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!textResponse) {
+          throw new Error("Unable to parse a response structured correctly from Gemini model.");
+        }
+
+        const jobDetails = JSON.parse(textResponse);
+
+        // Populate fields
+        document.getElementById("jobTitle").value = jobDetails.title || "";
+        document.getElementById("companyName").value = jobDetails.company || "";
+        document.getElementById("companyWebsite").value = jobDetails.companyWebsite || "";
+        document.getElementById("companyLogo").value = jobDetails.logoUrl || "";
+        document.getElementById("jobPlace").value = jobDetails.location || "";
+        document.getElementById("salary").value = jobDetails.salary || "";
+        document.getElementById("jobLink").value = jobUrl; // Fill details page link input
+        document.getElementById("jobDescription").value = jobDetails.about || "";
+
+        showToast("✨ Form successfully auto-filled with AI!", "success");
+
+      } catch (err) {
+        console.error(err);
+        showToast("Failed to parse page metadata. Please fill out details manually.", "error");
+      } finally {
+        // Restore UI states
+        autoFillBtn.disabled = false;
+        autoFillBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        aiBtnIcon.className = "fas fa-robot text-sm";
+        aiBtnText.textContent = "Auto-Fill Form";
+        aiStatusMessage.classList.add("hidden");
+      }
+    });
+
+    // SUBMIT JOB FORM
+    document.getElementById("jobForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!currentUser) {
+        showToast("You must be logged in to publish a job post.", "error");
+        return;
+      }
+
+      try {
+        const createdJob = {
+          userId: currentUser.uid,
+          title: document.getElementById("jobTitle").value.trim(),
+          company: document.getElementById("companyName").value.trim(),
+          companyWebsite: document.getElementById("companyWebsite").value.trim() || null,
+          logoUrl: document.getElementById("companyLogo").value.trim() || null,
+          location: document.getElementById("jobPlace").value.trim(),
+          salary: document.getElementById("salary").value.trim() || null,
+          applyLink: document.getElementById("jobLink").value.trim(),
+          about: document.getElementById("jobDescription").value.trim(),
+          postedBy: currentUser.email || "Anonymous Recruiter",
+          status: "pending",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          likes: 0,
+          dislikes: 0
+        };
+
+        // Strict Paths Rule 1: Using publicJobsPath
+        const createdJobRef = await db.collection(publicJobsPath).add(createdJob);
+        const createdJobId = createdJobRef.id;
+
+        // Try notifying other users if applicable
+        try {
+          const usersSnap = await db.collection(publicUsersPath).limit(20).get();
+          const senderLabel = currentUser.displayName || currentUser.email || "A registered company";
+          const notificationText = `New job listed: ${createdJob.title} at ${createdJob.company} by ${senderLabel}.`;
+
+          const notifyTasks = usersSnap.docs
+            .filter((u) => u.id !== currentUser.uid)
+            .map((u) => db.collection(publicNotificationsPath).add({
+              toUid: u.id,
+              fromUid: currentUser.uid,
+              type: "job_posted",
+              message: notificationText,
+              link: `job-detail.html?id=${encodeURIComponent(createdJobId)}`,
+              read: false,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }));
+
+          await Promise.all(notifyTasks);
+        } catch (notifErr) {
+          // Fail silently on notifications if user document list configuration differs
+          console.warn("Could not dispatch notifications:", notifErr);
+        }
+
+        document.getElementById("successMessage").classList.remove("hidden");
+        document.getElementById("jobForm").reset();
+        document.getElementById("scrapedJobUrl").value = "";
+        showToast("🎉 Job successfully published for admin approval!", "success");
+
+        // Scroll to success block smoothly
+        document.getElementById("successMessage").scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error(err);
+        showToast("❌ Failed to publish job listing. Please check console.", "error");
+      }
+    });
+  </script>
+
+  <script type="module" src="public/js/analytics.js"></script>
+  <script type="module" src="public/js/browser-notifications.js"></script>
 </body>
 </html>
