@@ -37,7 +37,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2563eb">
 
-  <!-- Tailwind CSS CDN to guarantee full modern utility rendering -->
+  <!-- Shared stylesheets configured for standard GitHub repo relative paths -->
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+  <!-- Tailwind CSS Utility Overlay for Layout & Extractor component spacing -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Font Awesome Icons -->
@@ -47,6 +52,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+  <!-- Original Environment Script configuration -->
+  <script src="public/js/env-config.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -63,7 +71,6 @@
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
-    /* Loading spinner animation */
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -73,36 +80,36 @@
   </style>
 </head>
 
-<body class="bg-slate-50 min-h-screen pb-12 text-slate-800">
+<body class="bg-slate-50 min-h-screen pb-12 text-slate-800 page-post-job">
 
   <!-- HEADER / NAVIGATION -->
   <header class="custom-gradient text-white shadow-lg">
     <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between">
       <div class="flex items-center space-x-3 mb-4 md:mb-0">
-        <div class="bg-white text-blue-600 font-extrabold text-xl px-4 py-2 rounded-xl shadow-md tracking-wider">
+        <div class="bg-white text-blue-600 font-extrabold text-xl px-4 py-2 rounded-xl shadow-md tracking-wider logo-box">
           KARDAN
         </div>
         <span class="text-sm font-medium text-blue-100 hidden sm:inline-block">/ Recruiting Redefined</span>
       </div>
       
       <nav class="flex flex-wrap justify-center gap-2">
-        <a href="index.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+        <a href="index.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
           <i class="fas fa-home text-xs"></i> <span>Home</span>
         </a>
-        <a href="jobs.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+        <a href="jobs.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
           <i class="fas fa-briefcase text-xs"></i> <span>Jobs</span>
         </a>
-        <a href="companies.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+        <a href="companies.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
           <i class="fas fa-building text-xs"></i> <span>Companies</span>
         </a>
-        <a href="profile.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+        <a href="profile.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
           <i class="fas fa-user text-xs"></i> <span>Profile</span>
         </a>
       </nav>
     </div>
   </header>
 
-  <!-- NOTIFICATION BANNER CONTAINER -->
+  <!-- NOTIFICATION TOAST CONTAINER -->
   <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
   <!-- MAIN CONTAINER -->
@@ -112,7 +119,7 @@
       <p class="text-slate-500 mt-2">Publish job listings to reach qualified candidates on BooterSpace instantly.</p>
     </div>
 
-    <!-- AI SMART EXTRACTOR SECTION -->
+    <!-- AI SMART PROXIED EXTRACTOR SECTION (Zero Keys, CORS Protected) -->
     <div class="bg-gradient-to-r from-violet-600 to-indigo-700 rounded-2xl p-6 shadow-xl text-white mb-8 border border-violet-500/30">
       <div class="flex items-start space-x-4">
         <div class="bg-white/15 p-3 rounded-xl">
@@ -120,18 +127,18 @@
         </div>
         <div class="flex-1">
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            AI Smart Post Filler 
-            <span class="text-[10px] bg-yellow-400 text-slate-900 font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">New</span>
+            AI Proxy Post Filler 
+            <span class="text-[10px] bg-yellow-400 text-slate-900 font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">Zero Setup</span>
           </h2>
           <p class="text-sm text-indigo-100 mt-1">
-            Have an existing job post on LinkedIn, Indeed, or your company career site? Paste the URL below and let our AI automatically fill the entire form for you.
+            Input any job post URL from Indeed, LinkedIn, Greenhouse, or any web portal. Our proxy engine will instantly grab the details, parse the structural schemas, and auto-fill your fields!
           </p>
           
           <div class="mt-4 flex flex-col sm:flex-row gap-2">
             <input 
               id="scrapedJobUrl" 
               type="url" 
-              placeholder="Paste job link (e.g. https://careers.google.com/jobs/spec...)" 
+              placeholder="Paste job page URL (e.g., https://boards.greenhouse.io/...)" 
               class="flex-1 px-4 py-2.5 rounded-xl text-slate-900 placeholder-slate-400 border border-transparent focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm shadow-inner"
             >
             <button 
@@ -140,11 +147,11 @@
               class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95"
             >
               <i id="aiBtnIcon" class="fas fa-robot text-sm"></i>
-              <span id="aiBtnText">Auto-Fill Form</span>
+              <span id="aiBtnText">Extract Details</span>
             </button>
           </div>
           <p id="aiStatusMessage" class="hidden text-xs text-yellow-200 mt-2 flex items-center gap-1.5 font-medium">
-            <i class="fas fa-circle-notch spinner text-xs"></i> <span>Parsing job listing with Gemini AI... please wait up to 10 seconds.</span>
+            <i class="fas fa-circle-notch spinner text-xs"></i> <span>Bypassing CORS restrictions & parsing job listing data... please wait.</span>
           </p>
         </div>
       </div>
@@ -303,7 +310,7 @@
     </div>
   </main>
 
-  <!-- POPUP TOAST SYSTEM -->
+  <!-- TOAST ALERTS (No native block alerts) -->
   <script>
     function showToast(message, type = "success") {
       const container = document.getElementById("toastContainer");
@@ -324,14 +331,12 @@
 
       container.appendChild(toast);
       
-      // Trigger animations
       setTimeout(() => {
         toast.classList.remove("translate-y-2", "opacity-0");
       }, 50);
 
-      // Dismiss after 4 seconds
       setTimeout(() => {
-        toast.classList.add("opacity-0", "translate-y--2");
+        toast.classList.add("opacity-0", "translate-y-[-8px]");
         setTimeout(() => {
           toast.remove();
         }, 300);
@@ -341,17 +346,16 @@
 
   <!-- SCRIPTS & EXTRACTION ENGINE -->
   <script>
-    // Environment helper variables
+    // Detect environment scope dynamically to support Github deployment vs Sandbox preview
+    const isLocalSandbox = window.location.hostname.includes("sandboxes") || window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'kardan-app-id';
-    const apiKey = ""; // Set default for Gemini API execution context
 
-    // Secure Firestore Collections Paths Rule 1
-    // Public paths: /artifacts/{appId}/public/data/{collectionName}
-    const publicJobsPath = `artifacts/${appId}/public/data/jobs`;
-    const publicNotificationsPath = `artifacts/${appId}/public/data/notifications`;
-    const publicUsersPath = `artifacts/${appId}/public/data/users`; // Adjusted to safely fetch list of users
+    // Set paths strictly to support your live database hierarchy safely
+    const publicJobsPath = isLocalSandbox ? `artifacts/${appId}/public/data/jobs` : "jobs";
+    const publicNotificationsPath = isLocalSandbox ? `artifacts/${appId}/public/data/notifications` : "notifications";
+    const publicUsersPath = isLocalSandbox ? `artifacts/${appId}/public/data/users` : "users";
 
-    // Firebase Config Resolver
+    // Firebase Config Loader
     function getEnvVar(...keys) {
       const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
       const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
@@ -374,27 +378,28 @@
       measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // Prevent duplicate app initializations
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
 
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     let currentUser = null;
 
-    // Rule 3 - Authentication state observer + automatic fallback anonymous auth setup
+    // Secure authentication observer (Rule 3)
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await auth.signInWithCustomToken(__initial_auth_token);
         } else {
-          // If no user is logged in, sign in anonymously so the form state/writing is secure
           if (!auth.currentUser) {
             await auth.signInAnonymously();
           }
         }
       } catch (error) {
-        console.error("Authentication init failed:", error);
-        showToast("Error authenticating your session. Check console.", "error");
+        console.error("Auth initialization info:", error);
       }
     };
     initAuth();
@@ -403,37 +408,29 @@
       if (user) {
         currentUser = user;
       } else {
-        showToast("Please sign in or continue anonymously to post job details.", "info");
+        showToast("Please sign in or continue anonymously to post job posts.", "info");
       }
     });
 
-    // EXPONENTIAL BACKOFF CALLER FOR GEMINI
-    async function fetchWithRetry(url, options, maxRetries = 5) {
-      let delay = 1000;
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          const response = await fetch(url, options);
-          if (response.ok) return await response.json();
-        } catch (err) {
-          // Silent catch to handle backoff
-        }
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // exponential backup 1s, 2s, 4s, 8s, 16s
-      }
-      throw new Error("API call failed after maximum retry attempts.");
+    // CLEAN RAW HTML STRING UTILITIES
+    function cleanHtmlText(rawHtml) {
+      if (!rawHtml) return "";
+      const div = document.createElement("div");
+      div.innerHTML = rawHtml;
+      return div.textContent || div.innerText || "";
     }
 
-    // AI AUTO-FILL LOGIC (Proxy Scraping/Extraction with Gemini + Google Search Grounding)
+    // EXTRACTION WITH CORS PROXY (Guarantees zero-config GitHub Pages compatibility)
     document.getElementById("autoFillBtn").addEventListener("click", async () => {
       const urlInput = document.getElementById("scrapedJobUrl");
       const jobUrl = urlInput.value.trim();
 
       if (!jobUrl) {
-        showToast("Please enter a valid job page URL to extract details.", "error");
+        showToast("Please enter a valid job page URL first.", "error");
         return;
       }
 
-      // Toggle UI loading states
+      // Configure visual loaders
       const autoFillBtn = document.getElementById("autoFillBtn");
       const aiBtnIcon = document.getElementById("aiBtnIcon");
       const aiBtnText = document.getElementById("aiBtnText");
@@ -442,82 +439,158 @@
       autoFillBtn.disabled = true;
       autoFillBtn.classList.add("opacity-50", "cursor-not-allowed");
       aiBtnIcon.className = "fas fa-circle-notch spinner text-sm";
-      aiBtnText.textContent = "Analyzing...";
+      aiBtnText.textContent = "Extracting...";
       aiStatusMessage.classList.remove("hidden");
 
       try {
-        // Gemini API Text Generation payload configured with structured schema and search grounding
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        // Fetch external HTML via standard proxy bypass endpoint
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(jobUrl)}`;
+        const response = await fetch(proxyUrl);
         
-        const payload = {
-          contents: [{
-            parts: [{
-              text: `Read the job details webpage from the following link and extract metadata. Populate the required values into the specified JSON format structure. Use empty strings if any values are unavailable. Job Page Link: ${jobUrl}`
-            }]
-          }],
-          tools: [{ "google_search": {} }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                company: { type: "STRING" },
-                companyWebsite: { type: "STRING" },
-                logoUrl: { type: "STRING" },
-                location: { type: "STRING" },
-                salary: { type: "STRING" },
-                about: { type: "STRING" }
-              },
-              required: ["title", "company", "location", "about"]
-            }
-          }
+        if (!response.ok) throw new Error("Proxy connection failed.");
+        
+        const wrapperData = await response.json();
+        const htmlContent = wrapperData.contents;
+
+        if (!htmlContent) throw new Error("Target page returned empty payload.");
+
+        // Parse HTML content safely inside a sandbox Document structure
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, "text/html");
+
+        // Structured details default schema
+        let extracted = {
+          title: "",
+          company: "",
+          website: "",
+          logo: "",
+          location: "",
+          salary: "",
+          description: ""
         };
 
-        const result = await fetchWithRetry(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+        // Option A: Look for Schema.org 'JobPosting' structures (Greenhouse, Lever, standard portals utilize this)
+        const ldJsonScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        let parsedLdJson = false;
 
-        const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!textResponse) {
-          throw new Error("Unable to parse a response structured correctly from Gemini model.");
+        for (const script of ldJsonScripts) {
+          try {
+            const parsed = JSON.parse(script.textContent);
+            const items = Array.isArray(parsed) ? parsed : [parsed];
+            
+            // Look recursively for JobPosting schema
+            const jobPosting = items.find(item => 
+              item["@type"] === "JobPosting" || 
+              (Array.isArray(item["@type"]) && item["@type"].includes("JobPosting"))
+            );
+
+            if (jobPosting) {
+              extracted.title = jobPosting.title || "";
+              extracted.description = cleanHtmlText(jobPosting.description || "");
+              
+              if (jobPosting.hiringOrganization) {
+                extracted.company = jobPosting.hiringOrganization.name || "";
+                extracted.website = jobPosting.hiringOrganization.sameAs || "";
+                if (jobPosting.hiringOrganization.logo) {
+                  extracted.logo = typeof jobPosting.hiringOrganization.logo === 'string' 
+                    ? jobPosting.hiringOrganization.logo 
+                    : (jobPosting.hiringOrganization.logo.url || "");
+                }
+              }
+
+              if (jobPosting.jobLocation) {
+                const loc = jobPosting.jobLocation;
+                if (loc.address) {
+                  const parts = [
+                    loc.address.addressLocality,
+                    loc.address.addressRegion,
+                    loc.address.addressCountry
+                  ].filter(Boolean);
+                  extracted.location = parts.join(", ");
+                } else if (loc.name) {
+                  extracted.location = loc.name;
+                }
+              }
+
+              if (jobPosting.baseSalary && jobPosting.baseSalary.value) {
+                const salaryVal = jobPosting.baseSalary.value;
+                if (typeof salaryVal === 'object') {
+                  extracted.salary = salaryVal.value || `${salaryVal.minValue || ""} - ${salaryVal.maxValue || ""}`;
+                } else {
+                  extracted.salary = salaryVal;
+                }
+              }
+
+              parsedLdJson = true;
+              break;
+            }
+          } catch (e) {
+            // Safe silent catch for bad JSON scripts
+          }
         }
 
-        const jobDetails = JSON.parse(textResponse);
+        // Option B: Fallback to metadata OpenGraph tags and page attributes
+        if (!parsedLdJson) {
+          extracted.title = doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || 
+                            doc.querySelector('title')?.textContent || "";
+          
+          extracted.description = doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || 
+                                  doc.querySelector('meta[name="description"]')?.getAttribute('content') || "";
+          
+          extracted.logo = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || 
+                           doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href') || "";
+          
+          extracted.company = doc.querySelector('meta[property="og:site_name"]')?.getAttribute('content') || "";
+          
+          // Clean extracted job titles (often contain brand names like "Job | Acme Co")
+          if (extracted.title.includes("|")) {
+            const parts = extracted.title.split("|");
+            extracted.title = parts[0].trim();
+            if (!extracted.company && parts[1]) {
+              extracted.company = parts[1].trim();
+            }
+          } else if (extracted.title.includes("-")) {
+            const parts = extracted.title.split("-");
+            extracted.title = parts[0].trim();
+            if (!extracted.company && parts[1]) {
+              extracted.company = parts[1].trim();
+            }
+          }
+        }
 
-        // Populate fields
-        document.getElementById("jobTitle").value = jobDetails.title || "";
-        document.getElementById("companyName").value = jobDetails.company || "";
-        document.getElementById("companyWebsite").value = jobDetails.companyWebsite || "";
-        document.getElementById("companyLogo").value = jobDetails.logoUrl || "";
-        document.getElementById("jobPlace").value = jobDetails.location || "";
-        document.getElementById("salary").value = jobDetails.salary || "";
-        document.getElementById("jobLink").value = jobUrl; // Fill details page link input
-        document.getElementById("jobDescription").value = jobDetails.about || "";
+        // Auto-fill values inside standard inputs
+        if (extracted.title) document.getElementById("jobTitle").value = extracted.title;
+        if (extracted.company) document.getElementById("companyName").value = extracted.company;
+        if (extracted.website) document.getElementById("companyWebsite").value = extracted.website;
+        if (extracted.logo) document.getElementById("companyLogo").value = extracted.logo;
+        if (extracted.location) document.getElementById("jobPlace").value = extracted.location;
+        if (extracted.salary) document.getElementById("salary").value = extracted.salary;
+        if (extracted.description) document.getElementById("jobDescription").value = extracted.description;
+        
+        // Populate the exact URL into Job Details / Apply Link field
+        document.getElementById("jobLink").value = jobUrl;
 
-        showToast("✨ Form successfully auto-filled with AI!", "success");
+        showToast("✨ Job listing details successfully extracted & filled!", "success");
 
       } catch (err) {
-        console.error(err);
-        showToast("Failed to parse page metadata. Please fill out details manually.", "error");
+        console.error("Extractor error:", err);
+        showToast("Unable to fetch data from this link. You can still input metadata manually.", "error");
       } finally {
-        // Restore UI states
+        // Reset states
         autoFillBtn.disabled = false;
         autoFillBtn.classList.remove("opacity-50", "cursor-not-allowed");
         aiBtnIcon.className = "fas fa-robot text-sm";
-        aiBtnText.textContent = "Auto-Fill Form";
+        aiBtnText.textContent = "Extract Details";
         aiStatusMessage.classList.add("hidden");
       }
     });
 
-    // SUBMIT JOB FORM
+    // SUBMIT JOB TO FIRESTORE
     document.getElementById("jobForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       if (!currentUser) {
-        showToast("You must be logged in to publish a job post.", "error");
+        showToast("Please authenticate or continue as Guest to post.", "error");
         return;
       }
 
@@ -539,13 +612,12 @@
           dislikes: 0
         };
 
-        // Strict Paths Rule 1: Using publicJobsPath
         const createdJobRef = await db.collection(publicJobsPath).add(createdJob);
         const createdJobId = createdJobRef.id;
 
-        // Try notifying other users if applicable
+        // Dispatch notification alerts dynamically
         try {
-          const usersSnap = await db.collection(publicUsersPath).limit(20).get();
+          const usersSnap = await db.collection(publicUsersPath).limit(10).get();
           const senderLabel = currentUser.displayName || currentUser.email || "A registered company";
           const notificationText = `New job listed: ${createdJob.title} at ${createdJob.company} by ${senderLabel}.`;
 
@@ -563,25 +635,24 @@
 
           await Promise.all(notifyTasks);
         } catch (notifErr) {
-          // Fail silently on notifications if user document list configuration differs
-          console.warn("Could not dispatch notifications:", notifErr);
+          console.warn("Notification triggers bypassed:", notifErr);
         }
 
         document.getElementById("successMessage").classList.remove("hidden");
         document.getElementById("jobForm").reset();
         document.getElementById("scrapedJobUrl").value = "";
-        showToast("🎉 Job successfully published for admin approval!", "success");
+        showToast("🎉 Job successfully submitted for admin approval!", "success");
 
-        // Scroll to success block smoothly
         document.getElementById("successMessage").scrollIntoView({ behavior: 'smooth' });
 
       } catch (err) {
         console.error(err);
-        showToast("❌ Failed to publish job listing. Please check console.", "error");
+        showToast("❌ Connection error posting job. Check Console details.", "error");
       }
     });
   </script>
 
+  <!-- External structural assets -->
   <script type="module" src="public/js/analytics.js"></script>
   <script type="module" src="public/js/browser-notifications.js"></script>
 </body>
