@@ -143,10 +143,15 @@ if (!hasFirebaseConfig) {
 
       <button id="mainSearchBtn" class="min-h-12 bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-base">Search</button>
     </div>
+
+    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center" role="group" aria-label="Job list filters">
+      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52" aria-pressed="true">Latest Opportunities</button>
+      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-blue-500/30 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:min-w-52" aria-pressed="false">Remote Opportunites</button>
+    </div>
   </div>
 </div>
 
-<main class="max-w-5xl mx-auto px-4 py-8 sm:py-10 flex-grow w-full">
+<main class="max-w-5xl mx-auto px-4 py-6 sm:py-10 flex-grow w-full">
   <div class="mb-8 border-b pb-4">
     <div>
       <h2 id="jobCount" class="text-slate-900 font-bold text-xl">Latest Opportunities</h2>
@@ -194,7 +199,12 @@ const searchInput = document.getElementById("searchInput");
 const locationInput = document.getElementById("locationInput");
 const dateFilter = document.getElementById("dateFilter");
 const mainSearchBtn = document.getElementById("mainSearchBtn");
+const latestOpportunitiesBtn = document.getElementById("latestOpportunitiesBtn");
+const remoteOpportunitiesBtn = document.getElementById("remoteOpportunitiesBtn");
 const suggestionContainers = [];
+const suggestionControllers = [];
+let activeJobMode = "latest";
+let filterDebounceTimer;
 
 if (!db) {
   jobsList.innerHTML = "";
@@ -206,8 +216,8 @@ if (!db) {
 
 let lastDoc = null; 
 let jobsRealtimeUnsubscribe = null;
-const INITIAL_PAGE_SIZE = 10;
-const SUBSEQUENT_PAGE_SIZE = 20;
+const INITIAL_PAGE_SIZE = 50;
+const SUBSEQUENT_PAGE_SIZE = 50;
 let loadedJobs = []; // Maintain local list for filtering
 const uniqueLocations = new Set();
 const uniqueTitles = new Set();
@@ -243,24 +253,28 @@ function normalizeWebsiteUrl(rawUrl) {
   return `https://${trimmed}`;
 }
 
+function appendDatalistOption(listEl, value) {
+  const option = document.createElement("option");
+  option.value = value;
+  listEl.appendChild(option);
+}
+
 function updateSuggestions(job) {
   const location = typeof job.location === "string" ? job.location.trim() : "";
   const title = typeof job.title === "string" ? job.title.trim() : "";
+  const company = typeof job.company === "string" ? job.company.trim() : "";
 
-  // Update Location Suggestions
   if (location && !uniqueLocations.has(location)) {
     uniqueLocations.add(location);
-    const option = document.createElement("option");
-    option.value = location;
-    locationSuggestions.appendChild(option);
+    appendDatalistOption(locationSuggestions, location);
   }
-  // Update Title Suggestions
-  if (title && !uniqueTitles.has(title)) {
-    uniqueTitles.add(title);
-    const option = document.createElement("option");
-    option.value = title;
-    titleSuggestions.appendChild(option);
-  }
+
+  [title, company].filter(Boolean).forEach((value) => {
+    if (!uniqueTitles.has(value)) {
+      uniqueTitles.add(value);
+      appendDatalistOption(titleSuggestions, value);
+    }
+  });
 }
 
 function closeSuggestionDropdowns() {
@@ -283,9 +297,16 @@ function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
     }
 
     const matches = [...optionsSet]
-      .filter((value) => value.toLowerCase().includes(queryText))
-      .sort((a, b) => a.localeCompare(b))
-      .slice(0, 8);
+      .map((value) => ({ value, lower: value.toLowerCase() }))
+      .filter((item) => item.lower.includes(queryText))
+      .sort((a, b) => {
+        const aStarts = a.lower.startsWith(queryText);
+        const bStarts = b.lower.startsWith(queryText);
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+        return a.value.localeCompare(b.value);
+      })
+      .slice(0, 10)
+      .map((item) => item.value);
 
     if (!matches.length) {
       dropdown.classList.add("hidden");
@@ -301,6 +322,9 @@ function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
 
   inputEl.addEventListener("focus", renderSuggestions);
   inputEl.addEventListener("input", renderSuggestions);
+  inputEl.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") dropdown.classList.add("hidden");
+  });
 
   dropdown.addEventListener("mousedown", (event) => {
     event.preventDefault();
@@ -312,7 +336,33 @@ function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
     onSelect();
   });
 
-  return { renderSuggestions };
+  const controller = { renderSuggestions, close: () => dropdown.classList.add("hidden") };
+  suggestionControllers.push(controller);
+  return controller;
+}
+
+function isRemoteLocation(locationValue) {
+  const locationText = String(locationValue || "").toLowerCase();
+  return /\b(remote|work\s*from\s*home|wfh|home[-\s]*based|anywhere)\b/.test(locationText);
+}
+
+function updateFilterButtons() {
+  const isRemote = activeJobMode === "remote";
+  latestOpportunitiesBtn.setAttribute("aria-pressed", String(!isRemote));
+  remoteOpportunitiesBtn.setAttribute("aria-pressed", String(isRemote));
+  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 rounded-xl px-5 py-3 text-sm font-bold shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52 ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 rounded-xl px-5 py-3 text-sm font-bold shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52 ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+}
+
+function setJobMode(mode) {
+  activeJobMode = mode;
+  updateFilterButtons();
+  applyFilters();
+}
+
+function scheduleApplyFilters() {
+  clearTimeout(filterDebounceTimer);
+  filterDebounceTimer = setTimeout(applyFilters, 120);
 }
 
 const titleSuggestionDropdown = createSuggestionDropdown(searchInput, uniqueTitles, applyFilters);
@@ -403,8 +453,9 @@ function applyFilters() {
     const titleText = String(job.title || "").toLowerCase();
     const companyText = String(job.company || "").toLowerCase();
     const locationText = String(job.location || "remote").toLowerCase();
-    const matchKeyword = !keyword || titleText.includes(keyword) || companyText.includes(keyword);
+    const matchKeyword = !keyword || titleText.includes(keyword) || companyText.includes(keyword) || locationText.includes(keyword) || String(job.salary || "").toLowerCase().includes(keyword);
     const matchLocation = !location || locationText.includes(location);
+    const matchMode = activeJobMode !== "remote" || isRemoteLocation(job.location);
 
     let matchDate = true;
     if (dateVal !== "all") {
@@ -415,7 +466,7 @@ function applyFilters() {
       }
     }
 
-    return matchKeyword && matchLocation && matchDate;
+    return matchKeyword && matchLocation && matchDate && matchMode;
   });
 
   renderList(filtered);
@@ -423,8 +474,9 @@ function applyFilters() {
 
 function renderList(jobs) {
   jobsList.innerHTML = "";
-  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
-  jobCount.innerText = isSearching ? (jobs.length === 1 ? "1 Job" : `${jobs.length} Jobs`) : "Latest Opportunities";
+  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
+  const defaultTitle = activeJobMode === "remote" ? "Remote Opportunites" : "Latest Opportunities";
+  jobCount.innerText = isSearching ? (jobs.length === 1 ? `1 ${activeJobMode === "remote" ? "Remote Job" : "Job"}` : `${jobs.length} ${activeJobMode === "remote" ? "Remote Jobs" : "Jobs"}`) : defaultTitle;
   if (jobs.length === 0) {
     emptyState.classList.remove("hidden");
     loadMoreBtn.classList.add("hidden");
@@ -437,7 +489,9 @@ function renderList(jobs) {
     
     if (isSearching) {
        loadMoreBtn.classList.add("hidden");
-       filterSummary.innerText = jobs.length === 1 ? "Found 1 job for your search" : `Found ${jobs.length} jobs for your search`;
+       filterSummary.innerText = activeJobMode === "remote"
+        ? (jobs.length === 1 ? "Found 1 remote or work-from-home opportunity" : `Found ${jobs.length} remote or work-from-home opportunities`)
+        : (jobs.length === 1 ? "Found 1 job for your search" : `Found ${jobs.length} jobs for your search`);
     } else {
        filterSummary.innerText = "";
     }
@@ -465,7 +519,7 @@ function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
 
   applyFilters();
 
-  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all";
+  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
   if (snapshot.docs.length < currentLimit || isSearching) {
     loadMoreBtn.classList.add("hidden");
   } else {
@@ -528,8 +582,10 @@ async function fetchJobs(isLoadMore = false) {
 // Events
 loadMoreBtn.addEventListener("click", () => fetchJobs(true));
 mainSearchBtn.addEventListener("click", applyFilters);
-searchInput.addEventListener("input", applyFilters);
-locationInput.addEventListener("input", applyFilters);
+latestOpportunitiesBtn.addEventListener("click", () => setJobMode("latest"));
+remoteOpportunitiesBtn.addEventListener("click", () => setJobMode("remote"));
+searchInput.addEventListener("input", scheduleApplyFilters);
+locationInput.addEventListener("input", scheduleApplyFilters);
 dateFilter.addEventListener("change", applyFilters);
 document.addEventListener("click", (event) => {
   if (event.target.closest("#searchInput, #locationInput, [data-suggestion]")) return;
