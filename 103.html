@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Post a Job - KARDAN</title>
+  <meta name="description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/post-job.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BooterSpace">
+  <meta property="og:title" content="Post a Job - KARDAN">
+  <meta property="og:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/post-job.html">
+  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Post a Job - KARDAN">
+  <meta name="twitter:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
+  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Post a Job - KARDAN",
+    "description": "Publish job openings from your organization and reach qualified candidates on BooterSpace.",
+    "url": "https://aizzdemon.github.io/booterspace/post-job.html",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "BooterSpace",
+      "url": "https://aizzdemon.github.io/booterspace/"
+    }
+  }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Shared stylesheets configured for standard GitHub repo relative paths -->
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+  <!-- Tailwind CSS Utility Overlay for Layout & Extractor component spacing -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+  <!-- Original Environment Script configuration -->
+  <script src="public/js/env-config.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-gradient {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+    .form-input {
+      transition: all 0.2s ease-in-out;
+    }
+    .form-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen pb-12 text-slate-800 page-post-job">
+
+  <!-- HEADER / NAVIGATION -->
+  <header class="custom-gradient text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between">
+      <div class="flex items-center space-x-3 mb-4 md:mb-0">
+        <div class="bg-white text-blue-600 font-extrabold text-xl px-4 py-2 rounded-xl shadow-md tracking-wider logo-box">
+          KARDAN
+        </div>
+        <span class="text-sm font-medium text-blue-100 hidden sm:inline-block">/ Recruiting Redefined</span>
+      </div>
+      
+      <nav class="flex flex-wrap justify-center gap-2">
+        <a href="index.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
+          <i class="fas fa-home text-xs"></i> <span>Home</span>
+        </a>
+        <a href="jobs.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
+          <i class="fas fa-briefcase text-xs"></i> <span>Jobs</span>
+        </a>
+        <a href="companies.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
+          <i class="fas fa-building text-xs"></i> <span>Companies</span>
+        </a>
+        <a href="profile.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
+          <i class="fas fa-user text-xs"></i> <span>Profile</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- NOTIFICATION TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-3xl mx-auto px-4 mt-10">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create a Job Opening</h1>
+      <p class="text-slate-500 mt-2">Publish job listings to reach qualified candidates on BooterSpace instantly.</p>
+    </div>
+
+    <!-- AI SMART PROXIED EXTRACTOR SECTION (Zero Keys, CORS Protected) -->
+    <div class="bg-gradient-to-r from-violet-600 to-indigo-700 rounded-2xl p-6 shadow-xl text-white mb-8 border border-violet-500/30">
+      <div class="flex items-start space-x-4">
+        <div class="bg-white/15 p-3 rounded-xl">
+          <i class="fas fa-wand-magic-sparkles text-2xl text-yellow-300"></i>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            AI Proxy Post Filler 
+            <span class="text-[10px] bg-yellow-400 text-slate-900 font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">Zero Setup</span>
+          </h2>
+          <p class="text-sm text-indigo-100 mt-1">
+            Input any job post URL from Indeed, LinkedIn, Greenhouse, Lever, Workday, SmartRecruiters, or any company career page. Our multi-pass engine will instantly grab the details, parse the structural schemas, and auto-fill your fields!
+          </p>
+          
+          <div class="mt-4 flex flex-col sm:flex-row gap-2">
+            <input 
+              id="scrapedJobUrl" 
+              type="url" 
+              placeholder="Paste job page URL (e.g., https://boards.greenhouse.io/...)" 
+              class="flex-1 px-4 py-2.5 rounded-xl text-slate-900 placeholder-slate-400 border border-transparent focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm shadow-inner"
+            >
+            <button 
+              id="autoFillBtn"
+              type="button"
+              class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            >
+              <i id="aiBtnIcon" class="fas fa-robot text-sm"></i>
+              <span id="aiBtnText">Extract Details</span>
+            </button>
+          </div>
+          <p id="aiStatusMessage" class="hidden text-xs text-yellow-200 mt-2 flex items-center gap-1.5 font-medium">
+            <i class="fas fa-circle-notch spinner text-xs"></i> <span id="aiStatusText">Bypassing CORS restrictions & parsing job listing data... please wait.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+      <form id="jobForm" class="space-y-6">
+        
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobTitle">Job Title <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <i class="fas fa-heading text-sm"></i>
+            </span>
+            <input 
+              id="jobTitle" 
+              type="text" 
+              placeholder="e.g. Senior Frontend Engineer" 
+              class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+              required
+            >
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyName">Company Name <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-building text-sm"></i>
+              </span>
+              <input 
+                id="companyName" 
+                type="text" 
+                placeholder="e.g. Acme Corporation" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyWebsite">Company Website</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-globe text-sm"></i>
+              </span>
+              <input 
+                id="companyWebsite" 
+                type="url" 
+                placeholder="https://acme.org" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobPlace">Location <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-map-marker-alt text-sm"></i>
+              </span>
+              <input 
+                id="jobPlace" 
+                type="text" 
+                placeholder="e.g. San Francisco, CA (or Remote)" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="salary">Salary / Compensation</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-dollar-sign text-sm"></i>
+              </span>
+              <input 
+                id="salary" 
+                type="text" 
+                placeholder="e.g. $120,000 - $150,000" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyLogo">Company Logo URL</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-image text-sm"></i>
+              </span>
+              <input 
+                id="companyLogo" 
+                type="url" 
+                placeholder="https://example.com/logo.jpg" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobLink">Job Detail / Application Link <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <i class="fas fa-link text-sm"></i>
+              </span>
+              <input 
+                id="jobLink" 
+                type="url" 
+                placeholder="https://careers.acme.org/jobs/frontend-dev" 
+                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+                required
+              >
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobDescription">Job Description <span class="text-red-500">*</span></label>
+          <textarea 
+            id="jobDescription" 
+            rows="6" 
+            placeholder="Tell candidates about the role, key responsibilities, requirements, and company benefits..." 
+            class="form-input w-full p-4 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
+            required
+          ></textarea>
+        </div>
+
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-98"
+          >
+            <i class="fas fa-paper-plane text-sm"></i>
+            <span>Publish Job Listing</span>
+          </button>
+        </div>
+      </form>
+
+      <div id="successMessage" class="hidden mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-start gap-3">
+        <div class="bg-emerald-100 text-emerald-700 p-1 rounded-full shrink-0">
+          <i class="fas fa-check text-xs"></i>
+        </div>
+        <div>
+          <p class="font-bold text-sm">Success!</p>
+          <p class="text-xs text-emerald-700 mt-0.5">Job successfully posted and is currently pending admin approval. Users will receive notifications about this listing.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- TOAST ALERTS (No native block alerts) -->
+  <script>
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toastContainer");
+      
+      const toast = document.createElement("div");
+      toast.className = `flex items-center gap-3 p-4 rounded-xl shadow-xl border text-sm pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+      
+      if (type === "success") {
+        toast.className += " bg-emerald-50 border-emerald-200 text-emerald-800";
+        toast.innerHTML = `<i class="fas fa-check-circle text-lg text-emerald-500 shrink-0"></i><div class="flex-1">${message}</div>`;
+      } else if (type === "error") {
+        toast.className += " bg-rose-50 border-rose-200 text-rose-800";
+        toast.innerHTML = `<i class="fas fa-exclamation-circle text-lg text-rose-500 shrink-0"></i><div class="flex-1">${message}</div>`;
+      } else {
+        toast.className += " bg-blue-50 border-blue-200 text-blue-800";
+        toast.innerHTML = `<i class="fas fa-info-circle text-lg text-blue-500 shrink-0"></i><div class="flex-1">${message}</div>`;
+      }
+
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-[-8px]");
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 4000);
+    }
+  </script>
+
+  <!-- SCRIPTS & EXTRACTION ENGINE -->
+  <script>
+    // Detect environment scope dynamically to support Github deployment vs Sandbox preview
+    const isLocalSandbox = window.location.hostname.includes("sandboxes") || window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'kardan-app-id';
+
+    // Set paths strictly to support your live database hierarchy safely
+    const publicJobsPath = isLocalSandbox ? `artifacts/${appId}/public/data/jobs` : "jobs";
+    const publicNotificationsPath = isLocalSandbox ? `artifacts/${appId}/public/data/notifications` : "notifications";
+    const publicUsersPath = isLocalSandbox ? `artifacts/${appId}/public/data/users` : "users";
+
+    // Firebase Config Loader
+    function getEnvVar(...keys) {
+      const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+      const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+
+      for (const key of keys) {
+        if (runtimeEnv[key]) return runtimeEnv[key];
+        if (processEnv[key]) return processEnv[key];
+      }
+      return "";
+    }
+
+    const firebaseConfig = {
+      apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+      authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+      databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL", "NEXT_PUBLIC_FIREBASE_DATABASE_URL", "REACT_APP_FIREBASE_DATABASE_URL"),
+      projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
+      storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
+      messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+      appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID"),
+      measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
+    };
+
+    // Prevent duplicate app initializations
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+
+    // Secure authentication observer (Rule 3)
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await auth.signInWithCustomToken(__initial_auth_token);
+        } else {
+          if (!auth.currentUser) {
+            await auth.signInAnonymously();
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization info:", error);
+      }
+    };
+    initAuth();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+      } else {
+        showToast("Please sign in or continue anonymously to post job posts.", "info");
+      }
+    });
+
+    // ====================================================================
+    // TEXT / HTML UTILITIES
+    // ====================================================================
+
+    // Converts a raw HTML fragment into readable plain text, preserving
+    // paragraph/list breaks instead of collapsing everything onto one line.
+    function cleanHtmlText(rawHtml) {
+      if (!rawHtml) return "";
+      const prepped = rawHtml
+        .replace(/<\s*br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, "\n")
+        .replace(/<li[^>]*>/gi, "• ");
+      const div = document.createElement("div");
+      div.innerHTML = prepped;
+      const text = div.textContent || div.innerText || "";
+      return text
+        .split("\n")
+        .map(line => line.replace(/[ \t]+/g, " ").trim())
+        .filter(Boolean)
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function normalizeText(value) {
+      return (value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function resolveUrl(value, baseUrl) {
+      if (!value) return "";
+      try {
+        return new URL(value, baseUrl).href;
+      } catch (error) {
+        return value;
+      }
+    }
+
+    function isValidHttpUrl(value) {
+      try {
+        const parsedUrl = new URL(value);
+        return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function getHostname(jobUrl) {
+      try {
+        return new URL(jobUrl).hostname.replace(/^www\./, "").toLowerCase();
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function titleCase(value) {
+      if (!value) return "";
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    // ====================================================================
+    // CORS PROXY FETCH LAYER (multiple fallbacks for max reliability)
+    // ====================================================================
+    const PROXY_FETCHERS = [
+      {
+        name: "corsproxy.io",
+        url: (targetUrl) => `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "allorigins raw",
+        url: (targetUrl) => `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "allorigins json",
+        url: (targetUrl) => `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+        read: async (response) => {
+          const data = await response.json();
+          return data.contents || "";
+        }
+      },
+      {
+        name: "codetabs",
+        url: (targetUrl) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "isomorphic-git proxy",
+        url: (targetUrl) => `https://cors.isomorphic-git.org/${targetUrl}`,
+        read: (response) => response.text()
+      },
+      {
+        name: "thingproxy",
+        url: (targetUrl) => `https://thingproxy.freeboard.io/fetch/${targetUrl}`,
+        read: (response) => response.text()
+      }
+    ];
+
+    async function fetchHtmlThroughProxy(targetUrl) {
+      const errors = [];
+
+      for (const proxy of PROXY_FETCHERS) {
+        try {
+          const response = await fetch(proxy.url(targetUrl), {
+            signal: AbortSignal.timeout(18000),
+            headers: { "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8" }
+          });
+
+          if (!response.ok) {
+            errors.push(`${proxy.name}: HTTP ${response.status}`);
+            continue;
+          }
+
+          const html = await proxy.read(response);
+          if (html && html.trim().length > 200) return html;
+          errors.push(`${proxy.name}: empty response`);
+        } catch (error) {
+          errors.push(`${proxy.name}: ${error.message}`);
+        }
+      }
+
+      throw new Error(errors.join(" | ") || "All proxy services failed.");
+    }
+
+    // ====================================================================
+    // PASS 1 — SCHEMA.ORG JSON-LD (JobPosting) EXTRACTION
+    // The most reliable signal when present (Greenhouse, Lever, Workday,
+    // most modern ATS platforms, and many self-hosted career pages emit this).
+    // ====================================================================
+    function collectJsonLdItems(value, items = []) {
+      if (!value) return items;
+      if (Array.isArray(value)) {
+        value.forEach((entry) => collectJsonLdItems(entry, items));
+        return items;
+      }
+      if (typeof value !== "object") return items;
+
+      items.push(value);
+      collectJsonLdItems(value["@graph"], items);
+      return items;
+    }
+
+    function getJobLocation(jobLocation) {
+      const locations = Array.isArray(jobLocation) ? jobLocation : [jobLocation];
+      for (const loc of locations.filter(Boolean)) {
+        if (typeof loc === "string") return loc;
+        const address = loc.address || loc;
+        const parts = [
+          address.streetAddress,
+          address.addressLocality,
+          address.addressRegion,
+          address.postalCode,
+          address.addressCountry?.name || address.addressCountry
+        ].filter(Boolean);
+        if (parts.length) return parts.join(", ");
+        if (loc.name) return loc.name;
+      }
+      return "";
+    }
+
+    function getSalary(baseSalary) {
+      const salaries = Array.isArray(baseSalary) ? baseSalary : [baseSalary];
+      for (const salary of salaries.filter(Boolean)) {
+        const value = salary.value || salary;
+        const currency = salary.currency || "";
+        if (typeof value !== "object") return normalizeText(`${currency} ${value}`);
+        const min = value.minValue || value.value || "";
+        const max = value.maxValue || "";
+        const unit = value.unitText ? ` / ${value.unitText}` : "";
+        if (min || max) return normalizeText(`${currency} ${min}${max ? ` - ${max}` : ""}${unit}`);
+      }
+      return "";
+    }
+
+    function extractFromJsonLd(doc) {
+      const ldJsonScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+      const result = { title: "", company: "", website: "", logo: "", location: "", salary: "", description: "" };
+
+      for (const script of ldJsonScripts) {
+        try {
+          const parsed = JSON.parse(script.textContent);
+          const items = collectJsonLdItems(parsed);
+
+          const jobPosting = items.find(item =>
+            item["@type"] === "JobPosting" ||
+            (Array.isArray(item["@type"]) && item["@type"].includes("JobPosting"))
+          );
+
+          if (jobPosting) {
+            result.title = jobPosting.title || "";
+            result.description = cleanHtmlText(jobPosting.description || "");
+
+            if (jobPosting.hiringOrganization) {
+              result.company = jobPosting.hiringOrganization.name || "";
+              result.website = jobPosting.hiringOrganization.sameAs || jobPosting.hiringOrganization.url || "";
+              if (jobPosting.hiringOrganization.logo) {
+                result.logo = typeof jobPosting.hiringOrganization.logo === 'string'
+                  ? jobPosting.hiringOrganization.logo
+                  : (jobPosting.hiringOrganization.logo.url || "");
+              }
+            }
+
+            result.location = getJobLocation(jobPosting.jobLocation) || (jobPosting.jobLocationType === "TELECOMMUTE" ? "Remote" : "");
+            result.salary = getSalary(jobPosting.baseSalary);
+
+            return result;
+          }
+        } catch (e) {
+          // Silently skip malformed JSON-LD blocks and keep scanning others.
+        }
+      }
+
+      return null;
+    }
+
+    // ====================================================================
+    // PASS 2 — KNOWN ATS PLATFORM SELECTOR PROFILES
+    // Covers the major hosted career-page platforms whose markup is
+    // predictable enough to target directly when JSON-LD is missing/partial.
+    // ====================================================================
+    function firstMatchText(doc, selectors) {
+      if (!selectors) return "";
+      for (const sel of selectors) {
+        const el = doc.querySelector(sel);
+        if (!el) continue;
+        const raw = el.tagName === "META" ? el.getAttribute("content") : el.textContent;
+        const cleaned = normalizeText(raw);
+        if (cleaned) return cleaned;
+      }
+      return "";
+    }
+
+    function firstMatchHtml(doc, selectors, minLength = 80) {
+      if (!selectors) return "";
+      for (const sel of selectors) {
+        const el = doc.querySelector(sel);
+        if (el && el.innerHTML && el.innerHTML.trim().length > minLength) {
+          return cleanHtmlText(el.innerHTML);
+        }
+      }
+      return "";
+    }
+
+    const ATS_PROFILES = [
+      {
+        name: "Greenhouse",
+        match: h => h.includes("greenhouse.io"),
+        title: ["h1.app-title", "h1#header-job-title", ".job__title h1", "h1"],
+        location: [".location", "div.location"],
+        description: ["#content", "div#content"]
+      },
+      {
+        name: "Lever",
+        match: h => h.includes("lever.co"),
+        title: [".posting-headline h2", "h2"],
+        location: [".posting-categories .location", ".sort-by-time.posting-category"],
+        description: [".section-wrapper .section", "div[data-qa='job-description']"]
+      },
+      {
+        name: "Workday",
+        match: h => h.includes("myworkdayjobs.com") || h.includes("workday.com"),
+        title: ["[data-automation-id='jobPostingHeader']"],
+        location: ["[data-automation-id='locations']", "[data-automation-id='location']"],
+        description: ["[data-automation-id='jobPostingDescription']"]
+      },
+      {
+        name: "SmartRecruiters",
+        match: h => h.includes("smartrecruiters.com"),
+        title: ["h1.job-title", "h1[itemprop='title']", "h1"],
+        location: [".job-location", ".location"],
+        description: [".job-sections", "#job-description", "[itemprop='description']"]
+      },
+      {
+        name: "iCIMS",
+        match: h => h.includes("icims.com"),
+        title: [".iCIMS_Header", "h1"],
+        location: [".iCIMS_JobHeaderLocationText"],
+        description: [".iCIMS_JobContent", "#iCIMS_JobContent"]
+      },
+      {
+        name: "Workable",
+        match: h => h.includes("workable.com"),
+        title: ["h1[data-ui='job-title']", "h1"],
+        location: ["[data-ui='job-location']"],
+        description: ["div[data-ui='job-description']", "section[data-ui='job-description']"]
+      },
+      {
+        name: "Breezy HR",
+        match: h => h.includes("breezy.hr"),
+        title: [".header h1", "h1"],
+        location: [".header h2", ".location"],
+        description: [".description"]
+      },
+      {
+        name: "Recruitee",
+        match: h => h.includes("recruitee.com"),
+        title: ["h1.job-title", "h1"],
+        location: [".job-location"],
+        description: [".job-description", "#job-content"]
+      },
+      {
+        name: "Ashby",
+        match: h => h.includes("ashbyhq.com") || h.includes("jobs.ashbyhq.com"),
+        title: ["h1"],
+        location: ["[class*='location']"],
+        description: ["[class*='description']", "main"]
+      },
+      {
+        name: "BambooHR",
+        match: h => h.includes("bamboohr.com"),
+        title: ["h1.BambooHR-ATS-Job-Header", "h1"],
+        location: [".BambooHR-ATS-Department-Location", ".location"],
+        description: ["div.BambooHR-ATS-Description-Container", "#jobDescriptionText"]
+      },
+      {
+        name: "JazzHR",
+        match: h => h.includes("applytojob.com") || h.includes("jazzhr.com"),
+        title: ["h1.job-title", "h1"],
+        location: [".job-location", ".location"],
+        description: ["#job-description-section", ".job-description"]
+      },
+      {
+        name: "Personio",
+        match: h => h.includes("personio.com") || h.includes("jobs.personio.de"),
+        title: ["h1"],
+        location: ["[class*='location']"],
+        description: ["[class*='job-description']", "main"]
+      },
+      {
+        name: "Teamtailor",
+        match: h => h.includes("teamtailor.com"),
+        title: ["h1"],
+        location: ["[class*='location']"],
+        description: ["#careers-job-text", "[class*='job-description']"]
+      }
+    ];
+
+    function extractWithAtsProfile(doc, jobUrl) {
+      const hostname = getHostname(jobUrl);
+      const profile = ATS_PROFILES.find(p => p.match(hostname));
+      if (!profile) return null;
+
+      const result = { title: "", company: "", website: "", logo: "", location: "", salary: "", description: "" };
+
+      result.title = firstMatchText(doc, profile.title);
+      result.location = firstMatchText(doc, profile.location);
+      result.description = firstMatchHtml(doc, profile.description);
+
+      return (result.title || result.description) ? result : null;
+    }
+
+    // ====================================================================
+    // PASS 3 — GENERIC HEURISTIC FALLBACK
+    // Works for self-hosted career pages and any ATS we don't explicitly
+    // recognize: pulls from OpenGraph tags, the largest plausible content
+    // block on the page, and a regex sweep for salary figures.
+    // ====================================================================
+    const GENERIC_DESCRIPTION_SELECTORS = [
+      "[class*='job-description']", "[id*='job-description']",
+      "[class*='jobDescription']", "[id*='jobDescription']",
+      "[class*='job-details']", "[id*='job-details']",
+      "[class*='posting-description']", "[class*='vacancy-description']",
+      "article", "main", "[role='main']"
+    ];
+
+    function extractGenericHeuristic(doc, jobUrl) {
+      const result = { title: "", company: "", website: "", logo: "", location: "", salary: "", description: "" };
+
+      // Title: OG tag, then first H1, then <title>
+      result.title = normalizeText(
+        doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+        doc.querySelector('h1')?.textContent ||
+        doc.querySelector('title')?.textContent || ""
+      );
+
+      // Strip trailing brand suffixes like "Job Title | Acme Inc" or "Job Title - Acme"
+      let inferredCompanyFromTitle = "";
+      if (result.title.includes("|")) {
+        const parts = result.title.split("|");
+        result.title = parts[0].trim();
+        inferredCompanyFromTitle = (parts[1] || "").trim();
+      } else if (result.title.includes(" - ")) {
+        const parts = result.title.split(" - ");
+        result.title = parts[0].trim();
+        inferredCompanyFromTitle = (parts[1] || "").trim();
+      }
+
+      // Company: OG site name > title suffix > domain name
+      result.company = normalizeText(
+        doc.querySelector('meta[property="og:site_name"]')?.getAttribute('content') || ""
+      ) || inferredCompanyFromTitle;
+
+      if (!result.company) {
+        const domainRoot = getHostname(jobUrl).split(".")[0];
+        result.company = titleCase(domainRoot);
+      }
+
+      // Logo / favicon
+      let logo = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+                 doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href') ||
+                 doc.querySelector('link[rel="icon"]')?.getAttribute('href') || "";
+      result.logo = resolveUrl(logo, jobUrl);
+
+      // Description: largest plausible content block, falling back to OG description
+      let best = null;
+      let bestLen = 0;
+      for (const sel of GENERIC_DESCRIPTION_SELECTORS) {
+        doc.querySelectorAll(sel).forEach(el => {
+          const len = (el.textContent || "").trim().length;
+          if (len > bestLen && len > 200) {
+            bestLen = len;
+            best = el;
+          }
+        });
+      }
+      if (best) {
+        result.description = cleanHtmlText(best.innerHTML);
+      } else {
+        result.description = normalizeText(
+          doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
+          doc.querySelector('meta[name="description"]')?.getAttribute('content') || ""
+        );
+      }
+
+      // Location: any element whose class/id hints at "location"
+      const locationEl = doc.querySelector("[class*='location'], [id*='location']");
+      if (locationEl) {
+        const locText = normalizeText(locationEl.textContent);
+        if (locText && locText.length < 120) result.location = locText;
+      }
+
+      // Salary: regex sweep across visible body text
+      const bodyText = normalizeText(doc.body?.textContent || "");
+      const salaryMatch = bodyText.match(/\$\s?[\d,]+(?:\.\d+)?(?:\s?(?:-|–|to)\s?\$?\s?[\d,]+(?:\.\d+)?)?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr|month|mo))?/i);
+      if (salaryMatch) {
+        result.salary = salaryMatch[0].trim();
+      }
+
+      return result;
+    }
+
+    // ====================================================================
+    // MERGE STRATEGY — combine all three passes, first non-empty field wins
+    // in priority order: structured data > known ATS profile > heuristic.
+    // ====================================================================
+    function mergeExtracted(...passes) {
+      const result = { title: "", company: "", website: "", logo: "", location: "", salary: "", description: "" };
+      for (const pass of passes) {
+        if (!pass) continue;
+        for (const key of Object.keys(result)) {
+          if (!result[key] && pass[key]) result[key] = pass[key];
+        }
+      }
+      return result;
+    }
+
+    document.getElementById("autoFillBtn").addEventListener("click", async () => {
+      const urlInput = document.getElementById("scrapedJobUrl");
+      const jobUrl = urlInput.value.trim();
+
+      if (!jobUrl || !isValidHttpUrl(jobUrl)) {
+        showToast("Please enter a valid http(s) job page URL first.", "error");
+        return;
+      }
+
+      // Configure visual loaders
+      const autoFillBtn = document.getElementById("autoFillBtn");
+      const aiBtnIcon = document.getElementById("aiBtnIcon");
+      const aiBtnText = document.getElementById("aiBtnText");
+      const aiStatusMessage = document.getElementById("aiStatusMessage");
+      const aiStatusText = document.getElementById("aiStatusText");
+
+      autoFillBtn.disabled = true;
+      autoFillBtn.classList.add("opacity-50", "cursor-not-allowed");
+      aiBtnIcon.className = "fas fa-circle-notch spinner text-sm";
+      aiBtnText.textContent = "Extracting...";
+      aiStatusText.textContent = "Bypassing CORS restrictions & parsing job listing data... please wait.";
+      aiStatusMessage.classList.remove("hidden");
+
+      try {
+        // Fetch external HTML through multiple CORS proxy fallbacks. Free proxies can be
+        // intermittent, so the extractor retries through several before giving up.
+        const htmlContent = await fetchHtmlThroughProxy(jobUrl);
+
+        // Parse HTML content safely inside a sandboxed Document structure
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, "text/html");
+
+        // Run all three extraction passes and merge results, preferring the
+        // most structured/reliable source for each individual field.
+        const jsonLdResult = extractFromJsonLd(doc);
+        const atsResult = extractWithAtsProfile(doc, jobUrl);
+        const genericResult = extractGenericHeuristic(doc, jobUrl);
+        const extracted = mergeExtracted(jsonLdResult, atsResult, genericResult);
+
+        const matchedAts = ATS_PROFILES.find(p => p.match(getHostname(jobUrl)));
+        const sourceLabel = jsonLdResult ? "structured job data" : (matchedAts ? `${matchedAts.name} careers page` : "page content");
+
+        // Auto-fill values inside standard inputs
+        if (extracted.title) document.getElementById("jobTitle").value = extracted.title;
+        if (extracted.company) document.getElementById("companyName").value = extracted.company;
+        if (extracted.website) document.getElementById("companyWebsite").value = extracted.website;
+        if (extracted.logo) document.getElementById("companyLogo").value = extracted.logo;
+        if (extracted.location) document.getElementById("jobPlace").value = extracted.location;
+        if (extracted.salary) document.getElementById("salary").value = extracted.salary;
+        if (extracted.description) document.getElementById("jobDescription").value = extracted.description;
+
+        // Populate the exact URL into Job Details / Apply Link field
+        document.getElementById("jobLink").value = jobUrl;
+
+        const filledCount = ["title", "company", "location", "description"].filter(k => extracted[k]).length;
+        if (filledCount === 0) {
+          showToast("Page fetched, but no recognizable job fields were found. Please fill in manually.", "error");
+        } else {
+          showToast(`✨ Job details extracted from ${sourceLabel} & filled in!`, "success");
+        }
+
+      } catch (err) {
+        console.error("Extractor error:", err);
+        showToast("Unable to fetch data through the available proxies. Some job boards block proxy access; you can still input metadata manually.", "error");
+      } finally {
+        // Reset states
+        autoFillBtn.disabled = false;
+        autoFillBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        aiBtnIcon.className = "fas fa-robot text-sm";
+        aiBtnText.textContent = "Extract Details";
+        aiStatusMessage.classList.add("hidden");
+      }
+    });
+
+    // SUBMIT JOB TO FIRESTORE
+    document.getElementById("jobForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!currentUser) {
+        showToast("Please authenticate or continue as Guest to post.", "error");
+        return;
+      }
+
+      try {
+        const createdJob = {
+          userId: currentUser.uid,
+          title: document.getElementById("jobTitle").value.trim(),
+          company: document.getElementById("companyName").value.trim(),
+          companyWebsite: document.getElementById("companyWebsite").value.trim() || null,
+          logoUrl: document.getElementById("companyLogo").value.trim() || null,
+          location: document.getElementById("jobPlace").value.trim(),
+          salary: document.getElementById("salary").value.trim() || null,
+          applyLink: document.getElementById("jobLink").value.trim(),
+          about: document.getElementById("jobDescription").value.trim(),
+          postedBy: currentUser.email || "Anonymous Recruiter",
+          status: "pending",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          likes: 0,
+          dislikes: 0
+        };
+
+        const createdJobRef = await db.collection(publicJobsPath).add(createdJob);
+        const createdJobId = createdJobRef.id;
+
+        // Dispatch notification alerts dynamically
+        try {
+          const usersSnap = await db.collection(publicUsersPath).limit(10).get();
+          const senderLabel = currentUser.displayName || currentUser.email || "A registered company";
+          const notificationText = `New job listed: ${createdJob.title} at ${createdJob.company} by ${senderLabel}.`;
+
+          const notifyTasks = usersSnap.docs
+            .filter((u) => u.id !== currentUser.uid)
+            .map((u) => db.collection(publicNotificationsPath).add({
+              toUid: u.id,
+              fromUid: currentUser.uid,
+              type: "job_posted",
+              message: notificationText,
+              link: `job-detail.html?id=${encodeURIComponent(createdJobId)}`,
+              read: false,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }));
+
+          await Promise.all(notifyTasks);
+        } catch (notifErr) {
+          console.warn("Notification triggers bypassed:", notifErr);
+        }
+
+        document.getElementById("successMessage").classList.remove("hidden");
+        document.getElementById("jobForm").reset();
+        document.getElementById("scrapedJobUrl").value = "";
+        showToast("🎉 Job successfully submitted for admin approval!", "success");
+
+        document.getElementById("successMessage").scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error(err);
+        showToast("❌ Connection error posting job. Check Console details.", "error");
+      }
+    });
+  </script>
+
+  <!-- External structural assets -->
+  <script type="module" src="public/js/analytics.js"></script>
+  <script type="module" src="public/js/browser-notifications.js"></script>
+</body>
+</html>
