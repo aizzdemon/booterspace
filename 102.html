@@ -3,768 +3,424 @@
 <head>
   <meta charset="UTF-8" />
   <title>Post a Job - KARDAN</title>
-  <meta name="description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
-  <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://aizzdemon.github.io/booterspace/post-job.html">
-
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="BooterSpace">
-  <meta property="og:title" content="Post a Job - KARDAN">
-  <meta property="og:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
-  <meta property="og:url" content="https://aizzdemon.github.io/booterspace/post-job.html">
-  <meta property="og:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Post a Job - KARDAN">
-  <meta name="twitter:description" content="Publish job openings from your organization and reach qualified candidates on BooterSpace.">
-  <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "Post a Job - KARDAN",
-    "description": "Publish job openings from your organization and reach qualified candidates on BooterSpace.",
-    "url": "https://aizzdemon.github.io/booterspace/post-job.html",
-    "isPartOf": {
-      "@type": "WebSite",
-      "name": "BooterSpace",
-      "url": "https://aizzdemon.github.io/booterspace/"
-    }
-  }
-  </script>
+  <meta name="description" content="Publish job openings from your organization and reach qualified candidates.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb">
-
-  <!-- Shared stylesheets configured for standard GitHub repo relative paths -->
-  <link rel="stylesheet" href="assets/css/shared.css">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-  <!-- Tailwind CSS Utility Overlay for Layout & Extractor component spacing -->
+  
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
-
-  <!-- Firebase Compat SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
-  <!-- Original Environment Script configuration -->
-  <script src="public/js/env-config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
     }
-    .custom-gradient {
-      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    .nav-button {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      color: #4b5563;
+      font-weight: 500;
+      border-radius: 0.375rem;
+      transition: all 0.2s;
     }
-    .form-input {
-      transition: all 0.2s ease-in-out;
+    .nav-button:hover {
+      background-color: #e5e7eb;
+      color: #1f2937;
     }
-    .form-input:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .logo-box {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #2563eb;
+      text-align: center;
+      margin-top: 1.5rem;
     }
     .spinner {
-      animation: spin 1s linear infinite;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
     }
-    .pulse-glow {
-      animation: pulseGlow 2s infinite ease-in-out;
+    .spinner-dark {
+      border: 2px solid rgba(0,0,0,0.1);
+      border-top-color: #374151;
     }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 5px rgba(234, 179, 8, 0.2); }
-      50% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
+    @keyframes spin {
+      to { transform: rotate(360deg) }
     }
   </style>
 </head>
+<body class="min-h-screen pb-12">
 
-<body class="bg-slate-50 min-h-screen pb-12 text-slate-800 page-post-job">
-
-  <!-- HEADER / NAVIGATION -->
-  <header class="custom-gradient text-white shadow-lg">
-    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between">
-      <div class="flex items-center space-x-3 mb-4 md:mb-0">
-        <div class="bg-white text-blue-600 font-extrabold text-xl px-4 py-2 rounded-xl shadow-md tracking-wider logo-box">
-          KARDAN
-        </div>
-        <span class="text-sm font-medium text-blue-100 hidden sm:inline-block">/ Recruiting Redefined</span>
-      </div>
-      
-      <nav class="flex flex-wrap justify-center gap-2">
-        <a href="index.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
-          <i class="fas fa-home text-xs"></i> <span>Home</span>
-        </a>
-        <a href="jobs.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
-          <i class="fas fa-briefcase text-xs"></i> <span>Jobs</span>
-        </a>
-        <a href="companies.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
-          <i class="fas fa-building text-xs"></i> <span>Companies</span>
-        </a>
-        <a href="profile.html" class="flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium nav-button">
-          <i class="fas fa-user text-xs"></i> <span>Profile</span>
-        </a>
-      </nav>
-    </div>
+  <header>
+    <div class="logo-box">KARDAN</div>
+    <h1 class="text-2xl font-bold text-center mt-4 text-gray-800">Post a Job</h1>
+    <nav class="mt-4 text-center space-x-2">
+      <a href="#" class="nav-button"><i class="fas fa-home"></i> Home</a>
+      <a href="#" class="nav-button"><i class="fas fa-briefcase"></i> Jobs</a>
+      <a href="#" class="nav-button"><i class="fas fa-building"></i> Companies</a>
+      <a href="#" class="nav-button"><i class="fas fa-user"></i> Profile</a>
+    </nav>
   </header>
 
-  <!-- NOTIFICATION TOAST CONTAINER -->
-  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
-
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-3xl mx-auto px-4 mt-10">
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create a Job Opening</h1>
-      <p class="text-slate-500 mt-2">Publish job listings to reach qualified candidates on BooterSpace instantly.</p>
-    </div>
-
-    <!-- AI SMART PROXIED EXTRACTOR SECTION (Gemini AI Grounded & Sandbox Protected) -->
-    <div class="bg-gradient-to-br from-violet-700 via-indigo-800 to-blue-900 rounded-2xl p-6 shadow-xl text-white mb-8 border border-violet-500/30">
-      <div class="flex items-start space-x-4 mb-5">
-        <div class="bg-white/15 p-3 rounded-xl shadow-inner">
-          <i class="fas fa-wand-magic-sparkles text-2xl text-yellow-300"></i>
-        </div>
-        <div class="flex-1">
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            Gemini™ AI Auto Post Filler
-            <span class="text-[10px] bg-yellow-400 text-slate-900 font-extrabold uppercase px-2.5 py-1 rounded-full tracking-wider animate-pulse">Upgraded</span>
-          </h2>
-          <p class="text-sm text-indigo-100 mt-1">
-            Bypass scraper errors entirely. Let the AI browse the live job listing URL directly, or parse raw job descriptions into structured fields instantly!
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab Controls for Dual Extraction Mode -->
-      <div class="flex border-b border-white/10 mb-4 text-sm font-medium">
-        <button id="tabUrlBtn" class="py-2.5 px-4 border-b-2 border-yellow-400 text-yellow-300 flex items-center gap-2 focus:outline-none transition-colors">
-          <i class="fas fa-globe"></i> Extract from Live URL
-        </button>
-        <button id="tabTextBtn" class="py-2.5 px-4 border-b-2 border-transparent hover:text-white text-indigo-200 flex items-center gap-2 focus:outline-none transition-colors">
-          <i class="fas fa-paste"></i> Paste Raw Job Text
+  <main class="max-w-4xl mx-auto mt-8 px-4">
+    
+    <!-- Extractor Section -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-1"><i class="fas fa-magic text-blue-500 mr-2"></i>Auto-Fill Job Details</h2>
+      <p class="text-sm text-gray-500 mb-4">Paste a Greenhouse, Lever, or company career page URL to extract job details instantly.</p>
+      
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input type="text" id="urlInput" placeholder="https://boards.greenhouse.io/..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+        <button id="extractBtn" class="bg-gray-800 text-white font-medium py-2 px-6 rounded-lg hover:bg-gray-900 transition flex items-center justify-center gap-2 whitespace-nowrap">
+          <i class="fas fa-search"></i> Extract
         </button>
       </div>
-
-      <!-- Container: Extract from URL -->
-      <div id="panelUrl" class="space-y-4">
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input 
-            id="scrapedJobUrl" 
-            type="url" 
-            placeholder="Paste job page URL (e.g. Greenhouse, Lever, LinkedIn, Indeed, company careers page...)" 
-            class="flex-1 px-4 py-2.5 rounded-xl text-slate-900 placeholder-slate-400 border border-transparent focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm shadow-inner"
-          >
-          <button 
-            id="autoFillBtn"
-            type="button"
-            class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 pulse-glow"
-          >
-            <i id="aiBtnIcon" class="fas fa-robot text-sm"></i>
-            <span id="aiBtnText">Extract Details</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Container: Paste Raw Job Text -->
-      <div id="panelText" class="hidden space-y-4">
-        <p class="text-xs text-indigo-200">Copy everything from the job page (CMD+A then CMD+C) and paste it below. The AI will sort out title, company, salary, and requirements perfectly.</p>
-        <textarea 
-          id="rawJobText" 
-          rows="4" 
-          placeholder="Paste raw text, email description, or markdown of the job description here..."
-          class="w-full px-4 py-3 rounded-xl text-slate-900 placeholder-slate-400 border border-transparent focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm shadow-inner"
-        ></textarea>
-        <div class="flex justify-end">
-          <button 
-            id="textFillBtn"
-            type="button"
-            class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 active:scale-95"
-          >
-            <i id="textBtnIcon" class="fas fa-brain text-sm"></i>
-            <span id="textBtnText">Parse Description Text</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Loading and Feedbacks -->
-      <div id="aiStatusMessage" class="hidden mt-4 bg-black/20 rounded-xl p-3 border border-white/5 text-xs text-yellow-200 flex flex-col gap-2 font-medium">
-        <div class="flex items-center gap-2">
-          <i class="fas fa-circle-notch spinner text-sm text-yellow-400"></i> 
-          <span id="statusLabel">Contacting Gemini AI Engine...</span>
-        </div>
-        <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1">
-          <div id="aiProgressBar" class="bg-yellow-400 h-full transition-all duration-500 rounded-full" style="width: 15%"></div>
-        </div>
-      </div>
+      
+      <div id="statusBox" class="hidden mt-4 p-3 rounded-lg text-sm font-medium"></div>
     </div>
 
-    <!-- FORM CARD -->
-    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-      <form id="jobForm" class="space-y-6">
+    <!-- Form Section -->
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-200">
+      <div class="mb-6 border-b border-gray-100 pb-4">
+        <h2 class="text-lg font-semibold text-gray-800">Job Information</h2>
+        <p class="text-sm text-gray-500">Review and edit the details before publishing.</p>
+      </div>
+
+      <form id="jobForm" class="space-y-5">
         
-        <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobTitle">Job Title <span class="text-red-500">*</span></label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-              <i class="fas fa-heading text-sm"></i>
-            </span>
-            <input 
-              id="jobTitle" 
-              type="text" 
-              placeholder="e.g. Senior Frontend Engineer" 
-              class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
-              required
-            >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Basic Info -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Job Title *</label>
+            <input type="text" data-key="job_title" id="jobTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Company Name *</label>
+            <input type="text" data-key="company_name" id="companyName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Company Website</label>
+            <input type="url" data-key="company_website" id="companyWebsite" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Location *</label>
+            <input type="text" data-key="job_location" id="jobPlace" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Employment Type</label>
+            <input type="text" data-key="employment_type" id="employmentType" placeholder="e.g. Full-time, Remote" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Experience Required</label>
+            <input type="text" data-key="experience_required" id="experienceRequired" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Salary Range</label>
+            <input type="text" data-key="salary_range" id="salary" placeholder="e.g. $80k - $120k" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Application Link *</label>
+            <input type="url" data-key="apply_link" id="jobLink" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Detailed Textareas -->
+        <div class="space-y-5 pt-4 border-t border-gray-100">
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyName">Company Name <span class="text-red-500">*</span></label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-building text-sm"></i>
-              </span>
-              <input 
-                id="companyName" 
-                type="text" 
-                placeholder="e.g. Acme Corporation" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
-                required
-              >
-            </div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Job Description *</label>
+            <textarea data-key="job_description" id="jobDescription" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
-
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyWebsite">Company Website</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-globe text-sm"></i>
-              </span>
-              <input 
-                id="companyWebsite" 
-                type="url" 
-                placeholder="https://acme.org" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
-              >
-            </div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Key Responsibilities</label>
+            <textarea data-key="key_responsibilities" id="keyResponsibilities" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Required Skills & Qualifications</label>
+            <textarea data-key="required_skills" id="requiredSkills" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Benefits & Perks</label>
+            <textarea data-key="benefits_perks" id="benefitsPerks" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobPlace">Location <span class="text-red-500">*</span></label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-map-marker-alt text-sm"></i>
-              </span>
-              <input 
-                id="jobPlace" 
-                type="text" 
-                placeholder="e.g. San Francisco, CA (or Remote)" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
-                required
-              >
-            </div>
-          </div>
+        <!-- Hidden input for platform -->
+        <input type="hidden" data-key="platform" id="platform">
 
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="salary">Salary / Compensation</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-dollar-sign text-sm"></i>
-              </span>
-              <input 
-                id="salary" 
-                type="text" 
-                placeholder="e.g. $120,000 - $150,000" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
-              >
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="companyLogo">Company Logo URL</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-image text-sm"></i>
-              </span>
-              <input 
-                id="companyLogo" 
-                type="url" 
-                placeholder="https://example.com/logo.jpg" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none"
-              >
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobLink">Job Detail / Application Link <span class="text-red-500">*</span></label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i class="fas fa-link text-sm"></i>
-              </span>
-              <input 
-                id="jobLink" 
-                type="url" 
-                placeholder="https://careers.acme.org/jobs/frontend-dev" 
-                class="form-input w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
-                required
-              >
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="jobDescription">Job Description <span class="text-red-500">*</span></label>
-          <textarea 
-            id="jobDescription" 
-            rows="6" 
-            placeholder="Tell candidates about the role, key responsibilities, requirements, and company benefits..." 
-            class="form-input w-full p-4 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none" 
-            required
-          ></textarea>
-        </div>
-
-        <div class="pt-2">
-          <button 
-            type="submit" 
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-98"
-          >
-            <i class="fas fa-paper-plane text-sm"></i>
-            <span>Publish Job Listing</span>
-          </button>
-        </div>
+        <button type="submit" id="submitBtn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition flex justify-center items-center gap-2 mt-6">
+          <i class="fas fa-paper-plane"></i> Publish Job
+        </button>
       </form>
-
-      <div id="successMessage" class="hidden mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-start gap-3">
-        <div class="bg-emerald-100 text-emerald-700 p-1 rounded-full shrink-0">
-          <i class="fas fa-check text-xs"></i>
-        </div>
-        <div>
-          <p class="font-bold text-sm">Success!</p>
-          <p class="text-xs text-emerald-700 mt-0.5">Job successfully posted and is currently pending admin approval. Users will receive notifications about this listing.</p>
-        </div>
-      </div>
     </div>
   </main>
 
-  <!-- TOAST ALERTS (No native block alerts) -->
-  <script>
-    function showToast(message, type = "success") {
-      const container = document.getElementById("toastContainer");
-      
-      const toast = document.createElement("div");
-      toast.className = `flex items-center gap-3 p-4 rounded-xl shadow-xl border text-sm pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
-      
-      if (type === "success") {
-        toast.className += " bg-emerald-50 border-emerald-200 text-emerald-800";
-        toast.innerHTML = `<i class="fas fa-check-circle text-lg text-emerald-500 shrink-0"></i><div class="flex-1">${message}</div>`;
-      } else if (type === "error") {
-        toast.className += " bg-rose-50 border-rose-200 text-rose-800";
-        toast.innerHTML = `<i class="fas fa-exclamation-circle text-lg text-rose-500 shrink-0"></i><div class="flex-1">${message}</div>`;
-      } else {
-        toast.className += " bg-blue-50 border-blue-200 text-blue-800";
-        toast.innerHTML = `<i class="fas fa-info-circle text-lg text-blue-500 shrink-0"></i><div class="flex-1">${message}</div>`;
-      }
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-      container.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.classList.remove("translate-y-2", "opacity-0");
-      }, 50);
+    // System Environment Variables handling for immersive environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
-      setTimeout(() => {
-        toast.classList.add("opacity-0", "translate-y-[-8px]");
-        setTimeout(() => {
-          toast.remove();
-        }, 300);
-      }, 4000);
-    }
-  </script>
-
-  <!-- SCRIPTS & EXTRACTION ENGINE -->
-  <script>
-    // Detect environment scope dynamically to support Github deployment vs Sandbox preview
-    const isLocalSandbox = window.location.hostname.includes("sandboxes") || window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'kardan-app-id';
-
-    // Set paths strictly to support your live database hierarchy safely
-    const publicJobsPath = isLocalSandbox ? `artifacts/${appId}/public/data/jobs` : "jobs";
-    const publicNotificationsPath = isLocalSandbox ? `artifacts/${appId}/public/data/notifications` : "notifications";
-    const publicUsersPath = isLocalSandbox ? `artifacts/${appId}/public/data/users` : "users";
-
-    // Firebase Config Loader
-    function getEnvVar(...keys) {
-      const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
-      const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
-
-      for (const key of keys) {
-        if (runtimeEnv[key]) return runtimeEnv[key];
-        if (processEnv[key]) return processEnv[key];
-      }
-      return "";
-    }
-
-    const firebaseConfig = {
-      apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
-      authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
-      databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL", "NEXT_PUBLIC_FIREBASE_DATABASE_URL", "REACT_APP_FIREBASE_DATABASE_URL"),
-      projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
-      storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
-      messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
-      appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID"),
-      measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
-    };
-
-    // Prevent duplicate app initializations
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
     let currentUser = null;
 
-    // Secure authentication observer (Rule 3)
-    const initAuth = async () => {
+    // Authentication Setup
+    async function initAuth() {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await auth.signInWithCustomToken(__initial_auth_token);
+          await signInWithCustomToken(auth, __initial_auth_token);
         } else {
-          if (!auth.currentUser) {
-            await auth.signInAnonymously();
-          }
+          await signInAnonymously(auth);
         }
-      } catch (error) {
-        console.error("Auth initialization info:", error);
+      } catch (err) {
+        console.error("Auth Error:", err);
       }
-    };
+    }
+    
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+    });
+
     initAuth();
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
+    // Utility functions for Extractor UI
+    function showStatus(msg, type = 'info') {
+      const box = document.getElementById('statusBox');
+      box.textContent = msg;
+      box.classList.remove('hidden', 'bg-blue-100', 'text-blue-700', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+      
+      if (type === 'error') {
+        box.classList.add('bg-red-100', 'text-red-700');
+      } else if (type === 'success') {
+        box.classList.add('bg-green-100', 'text-green-700');
       } else {
-        showToast("Please sign in or continue anonymously to post job posts.", "info");
-      }
-    });
-
-    // TAB MECHANICS
-    const tabUrlBtn = document.getElementById("tabUrlBtn");
-    const tabTextBtn = document.getElementById("tabTextBtn");
-    const panelUrl = document.getElementById("panelUrl");
-    const panelText = document.getElementById("panelText");
-
-    tabUrlBtn.addEventListener("click", () => {
-      tabUrlBtn.className = "py-2.5 px-4 border-b-2 border-yellow-400 text-yellow-300 flex items-center gap-2 focus:outline-none transition-colors";
-      tabTextBtn.className = "py-2.5 px-4 border-b-2 border-transparent hover:text-white text-indigo-200 flex items-center gap-2 focus:outline-none transition-colors";
-      panelUrl.classList.remove("hidden");
-      panelText.classList.add("hidden");
-    });
-
-    tabTextBtn.addEventListener("click", () => {
-      tabTextBtn.className = "py-2.5 px-4 border-b-2 border-yellow-400 text-yellow-300 flex items-center gap-2 focus:outline-none transition-colors";
-      tabUrlBtn.className = "py-2.5 px-4 border-b-2 border-transparent hover:text-white text-indigo-200 flex items-center gap-2 focus:outline-none transition-colors";
-      panelText.classList.remove("hidden");
-      panelUrl.classList.add("hidden");
-    });
-
-    // GEMINI EXTRACTION HELPER WITH BACKOFF
-    async function makeGeminiRequest(payload) {
-      const apiKey = ""; // Sandbox runtime will inject the correct key if empty
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-      let retries = 3;
-      let delay = 1000;
-
-      while (retries > 0) {
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            if (response.status === 429) {
-              await new Promise(r => setTimeout(r, delay));
-              delay *= 2;
-              retries--;
-              continue;
-            }
-            throw new Error(`Gemini service error: ${response.statusText}`);
-          }
-
-          const result = await response.json();
-          const candidate = result.candidates?.[0];
-          const text = candidate?.content?.parts?.[0]?.text;
-          
-          if (!text) throw new Error("Received empty model response");
-          
-          // Clean JSON tags if they were returned as block strings
-          const jsonString = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-          return JSON.parse(jsonString);
-
-        } catch (e) {
-          retries--;
-          if (retries === 0) throw e;
-          await new Promise(r => setTimeout(r, delay));
-          delay *= 2;
-        }
+        box.classList.add('bg-blue-100', 'text-blue-700');
       }
     }
 
-    // PROCESS URL EXTRACTION (With Google Search Grounding to read and render pages client-side)
-    document.getElementById("autoFillBtn").addEventListener("click", async () => {
-      const urlInput = document.getElementById("scrapedJobUrl");
-      const jobUrl = urlInput.value.trim();
-
-      if (!jobUrl) {
-        showToast("Please enter a valid job page URL first.", "error");
-        return;
+    function setExtractLoading(isLoading) {
+      const btn = document.getElementById('extractBtn');
+      if (isLoading) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner spinner-dark"></span> Fetching...';
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-search"></i> Extract';
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
       }
+    }
 
-      const autoFillBtn = document.getElementById("autoFillBtn");
-      const aiBtnIcon = document.getElementById("aiBtnIcon");
-      const aiBtnText = document.getElementById("aiBtnText");
-      const aiStatusMessage = document.getElementById("aiStatusMessage");
-      const statusLabel = document.getElementById("statusLabel");
-      const progressBar = document.getElementById("aiProgressBar");
+    // Proxy endpoints for scraping
+    const PROXIES = [
+      u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+      u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)
+    ];
 
-      // Set Loading UI
-      autoFillBtn.disabled = true;
-      autoFillBtn.classList.add("opacity-50", "cursor-not-allowed");
-      aiBtnIcon.className = "fas fa-circle-notch spinner text-sm";
-      aiBtnText.textContent = "Processing...";
-      aiStatusMessage.classList.remove("hidden");
-      
-      statusLabel.textContent = "Initiating Web Agent Grounding...";
-      progressBar.style.width = "25%";
-
-      try {
-        statusLabel.textContent = "Google Crawler looking up and parsing the listing details...";
-        progressBar.style.width = "60%";
-
-        const systemPrompt = "You are an intelligent, precise recruiting parser. Your task is to extract all requested job information using google search or internal index lookup tools to read the provided URL content accurately. Return ONLY a single pure JSON structure with correct formatting. Do not output markdown, and do not put JSON tags.";
-        const userQuery = `Search for and parse details from this job link: "${jobUrl}". Read the title, employer company, estimated salary / pay rate, exact location (city or Remote state), official company web link, official logo image URL, and write an extensive markdown job description incorporating responsibilities/requirements. Ensure you output standard JSON matching keys: title, company, website, logo, location, salary, description.`;
-
-        const payload = {
-          contents: [{ parts: [{ text: userQuery }] }],
-          tools: [{ "google_search": {} }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                company: { type: "STRING" },
-                website: { type: "STRING" },
-                logo: { type: "STRING" },
-                location: { type: "STRING" },
-                salary: { type: "STRING" },
-                description: { type: "STRING" }
-              },
-              required: ["title", "company", "description"]
-            }
-          }
-        };
-
-        const extracted = await makeGeminiRequest(payload);
-        progressBar.style.width = "90%";
-
-        // Populate Form Fields
-        if (extracted.title) document.getElementById("jobTitle").value = extracted.title;
-        if (extracted.company) document.getElementById("companyName").value = extracted.company;
-        if (extracted.website) document.getElementById("companyWebsite").value = extracted.website;
-        if (extracted.logo) document.getElementById("companyLogo").value = extracted.logo;
-        if (extracted.location) document.getElementById("jobPlace").value = extracted.location;
-        if (extracted.salary) document.getElementById("salary").value = extracted.salary;
-        if (extracted.description) document.getElementById("jobDescription").value = extracted.description;
-        
-        // Auto set the Job Link as the target scraped URL
-        document.getElementById("jobLink").value = jobUrl;
-
-        progressBar.style.width = "100%";
-        setTimeout(() => aiStatusMessage.classList.add("hidden"), 1000);
-        showToast("✨ AI successfully researched, fetched & populated form fields!", "success");
-
-      } catch (err) {
-        console.error("Scraping link error:", err);
-        showToast("AI was unable to fetch page directly. Please use Tab 2 'Paste Raw Job Text' to bypass constraints.", "error");
-        aiStatusMessage.classList.add("hidden");
-      } finally {
-        autoFillBtn.disabled = false;
-        autoFillBtn.classList.remove("opacity-50", "cursor-not-allowed");
-        aiBtnIcon.className = "fas fa-robot text-sm";
-        aiBtnText.textContent = "Extract Details";
-      }
-    });
-
-    // PROCESS RAW TEXT EXTRACTION (Direct prompt structure lookup)
-    document.getElementById("textFillBtn").addEventListener("click", async () => {
-      const textInput = document.getElementById("rawJobText");
-      const rawText = textInput.value.trim();
-
-      if (!rawText) {
-        showToast("Please paste some job listing details first.", "error");
-        return;
-      }
-
-      const textFillBtn = document.getElementById("textFillBtn");
-      const textBtnIcon = document.getElementById("textBtnIcon");
-      const textBtnText = document.getElementById("textBtnText");
-      const aiStatusMessage = document.getElementById("aiStatusMessage");
-      const statusLabel = document.getElementById("statusLabel");
-      const progressBar = document.getElementById("aiProgressBar");
-
-      textFillBtn.disabled = true;
-      textFillBtn.classList.add("opacity-50", "cursor-not-allowed");
-      textBtnIcon.className = "fas fa-circle-notch spinner text-sm";
-      textBtnText.textContent = "Analyzing...";
-      aiStatusMessage.classList.remove("hidden");
-      
-      statusLabel.textContent = "Structuring raw text payload...";
-      progressBar.style.width = "30%";
-
-      try {
-        statusLabel.textContent = "Extracting titles, company, requirements & details...";
-        progressBar.style.width = "75%";
-
-        const systemPrompt = "You are a specialized parser. Extract structural parameters out of the raw text and structure it cleanly. Do not output anything but JSON. Follow the schema constraints strictly.";
-        const userQuery = `Extract details from this text and map it to: title, company, website, logo, location, salary, description. Raw Text Content:\n\n${rawText}`;
-
-        const payload = {
-          contents: [{ parts: [{ text: userQuery }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                company: { type: "STRING" },
-                website: { type: "STRING" },
-                logo: { type: "STRING" },
-                location: { type: "STRING" },
-                salary: { type: "STRING" },
-                description: { type: "STRING" }
-              },
-              required: ["title", "company", "description"]
-            }
-          }
-        };
-
-        const extracted = await makeGeminiRequest(payload);
-        progressBar.style.width = "95%";
-
-        // Populate Form Fields
-        if (extracted.title) document.getElementById("jobTitle").value = extracted.title;
-        if (extracted.company) document.getElementById("companyName").value = extracted.company;
-        if (extracted.website) document.getElementById("companyWebsite").value = extracted.website;
-        if (extracted.logo) document.getElementById("companyLogo").value = extracted.logo;
-        if (extracted.location) document.getElementById("jobPlace").value = extracted.location;
-        if (extracted.salary) document.getElementById("salary").value = extracted.salary;
-        if (extracted.description) document.getElementById("jobDescription").value = extracted.description;
-
-        progressBar.style.width = "100%";
-        setTimeout(() => aiStatusMessage.classList.add("hidden"), 1000);
-        showToast("✨ Job details structured and populated successfully!", "success");
-
-      } catch (err) {
-        console.error("Text parsing error:", err);
-        showToast("An error occurred while parsing text. Try copying the content cleaner.", "error");
-        aiStatusMessage.classList.add("hidden");
-      } finally {
-        textFillBtn.disabled = false;
-        textFillBtn.classList.remove("opacity-50", "cursor-not-allowed");
-        textBtnIcon.className = "fas fa-brain text-sm";
-        textBtnText.textContent = "Parse Description Text";
-      }
-    });
-
-    // SUBMIT JOB TO FIRESTORE
-    document.getElementById("jobForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      if (!currentUser) {
-        showToast("Please authenticate or continue as Guest to post.", "error");
-        return;
-      }
-
-      try {
-        const createdJob = {
-          userId: currentUser.uid,
-          title: document.getElementById("jobTitle").value.trim(),
-          company: document.getElementById("companyName").value.trim(),
-          companyWebsite: document.getElementById("companyWebsite").value.trim() || null,
-          logoUrl: document.getElementById("companyLogo").value.trim() || null,
-          location: document.getElementById("jobPlace").value.trim(),
-          salary: document.getElementById("salary").value.trim() || null,
-          applyLink: document.getElementById("jobLink").value.trim(),
-          about: document.getElementById("jobDescription").value.trim(),
-          postedBy: currentUser.email || "Anonymous Recruiter",
-          status: "pending",
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          likes: 0,
-          dislikes: 0
-        };
-
-        const createdJobRef = await db.collection(publicJobsPath).add(createdJob);
-        const createdJobId = createdJobRef.id;
-
-        // Dispatch notification alerts dynamically
+    async function fetchHtml(url) {
+      for (const proxy of PROXIES) {
         try {
-          const usersSnap = await db.collection(publicUsersPath).limit(10).get();
-          const senderLabel = currentUser.displayName || currentUser.email || "A registered company";
-          const notificationText = `New job listed: ${createdJob.title} at ${createdJob.company} by ${senderLabel}.`;
-
-          const notifyTasks = usersSnap.docs
-            .filter((u) => u.id !== currentUser.uid)
-            .map((u) => db.collection(publicNotificationsPath).add({
-              toUid: u.id,
-              fromUid: currentUser.uid,
-              type: "job_posted",
-              message: notificationText,
-              link: `job-detail.html?id=${encodeURIComponent(createdJobId)}`,
-              read: false,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }));
-
-          await Promise.all(notifyTasks);
-        } catch (notifErr) {
-          console.warn("Notification triggers bypassed:", notifErr);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
+          const r = await fetch(proxy(url), { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (r.ok) {
+            const t = await r.text();
+            if (t && t.length > 300) return t;
+          }
+        } catch (e) {
+          console.log("Proxy failed, trying next...");
         }
+      }
+      return null;
+    }
 
-        document.getElementById("successMessage").classList.remove("hidden");
-        document.getElementById("jobForm").reset();
-        document.getElementById("scrapedJobUrl").value = "";
-        document.getElementById("rawJobText").value = "";
-        showToast("🎉 Job successfully submitted for admin approval!", "success");
+    // Text parsing functions
+    function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
 
-        document.getElementById("successMessage").scrollIntoView({ behavior: 'smooth' });
+    function pick(txt, patterns) {
+      for (const p of patterns) {
+        const m = txt.match(p);
+        if (m) {
+          const val = norm(m[1] || m[2] || m[0]);
+          if (val.length > 1) return val;
+        }
+      }
+      return null;
+    }
+
+    function pickBlock(txt, headings, maxLen = 600) {
+      for (const h of headings) {
+        const re = new RegExp(h + '[:\\s]*([\\s\\S]{20,' + maxLen + '}?)(?=\\n[A-Z][a-zA-Z ]{2,30}[:\\n]|$)', 'i');
+        const m = txt.match(re);
+        if (m && m[1]) return norm(m[1]);
+      }
+      return null;
+    }
+
+    function getPlatform(url) {
+      if (url.includes('greenhouse.io')) return 'Greenhouse';
+      if (url.includes('lever.co')) return 'Lever';
+      if (url.includes('workday.com')) return 'Workday';
+      if (url.includes('linkedin.com')) return 'LinkedIn';
+      return 'Company Career Page';
+    }
+
+    function extractData(html, url) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('script:not([type="application/ld+json"]),style,noscript,nav,footer,header,aside,[class*="cookie"],[class*="banner"],[id*="cookie"]').forEach(e => e.remove());
+
+      let jsonLd = null;
+      doc.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+        try {
+          const obj = JSON.parse(el.textContent);
+          const jobs = [obj].flat().find(o => o['@type'] === 'JobPosting' || o['@type'] === 'jobPosting');
+          if (jobs) jsonLd = jobs;
+        } catch (e) {}
+      });
+
+      const txt = norm(doc.body?.innerText || '');
+      const parsedUrl = new URL(url);
+      const D = {};
+
+      D.job_title = norm(jsonLd?.title) || norm(doc.querySelector('h1')?.textContent) || norm(doc.title.split('|')[0].split('-')[0]);
+      D.company_name = norm(jsonLd?.hiringOrganization?.name) || pick(txt, [/(?:company|employer|organisation|organization)[:\s]+([^\n\r]{2,80})/i]) || parsedUrl.hostname.replace('www.', '').split('.')[0];
+      D.company_website = norm(jsonLd?.hiringOrganization?.sameAs) || parsedUrl.origin;
+      D.job_location = norm(jsonLd?.jobLocation?.address?.addressLocality) || pick(txt, [/location[:\s]+([^\n\r]{2,80})/i, /(?:based in|office in)[:\s]+([^\n\r]{2,60})/i]);
+      D.employment_type = norm(jsonLd?.employmentType) || pick(txt, [/(full[\s-]?time)/i, /(part[\s-]?time)/i, /(internship)/i, /(contract(?:ual)?)/i, /(remote)/i, /(hybrid)/i]);
+      D.experience_required = pick(txt, [/(\d+\s*[-–]\s*\d+\s+years?(?:\s+of\s+experience)?)/i, /(\d+\+?\s+years?(?:\s+of)?\s+(?:relevant\s+)?experience)/i, /(fresher|entry[\s-]?level|no experience)/i]);
+      D.salary_range = norm(jsonLd?.baseSalary?.value?.value ? String(jsonLd.baseSalary.value.value) : null) || pick(txt, [/(₹[\d,\s\-–]+(?:LPA|lpa|L|lakhs?))/i, /(?:salary|ctc|compensation)[:\s]+([\d,\s\-–₹$€£]+(?:LPA|lpa|per\s+(?:month|year|annum))?)/i, /(\$[\d,]+\s*[-–]\s*\$[\d,]+)/]);
+      
+      const descEl = doc.querySelector('#content,#job-description,.job-description,.posting-description,.job-details');
+      D.job_description = norm(jsonLd?.description?.slice(0, 800)) || norm(descEl?.innerText?.slice(0, 800)) || pickBlock(txt, ['job description', 'about the role', 'the role', 'role overview']) || txt.slice(0, 800) || null;
+      D.key_responsibilities = pickBlock(txt, ['key responsibilities', 'responsibilities', 'what you.ll do', 'what you will do', 'duties'], 500);
+      D.required_skills = norm(jsonLd?.skills) || pickBlock(txt, ['required skills', 'skills required', 'technical skills', 'key skills', 'qualifications', 'minimum qualifications'], 400);
+      D.benefits_perks = pickBlock(txt, ['benefits', 'perks', 'what we offer', 'employee benefits'], 400);
+      
+      D.apply_link = url;
+      D.platform = getPlatform(url);
+
+      return D;
+    }
+
+    // Fill the HTML Form with extracted data
+    function fillForm(data) {
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.getAttribute('data-key');
+        if (data[key]) {
+          // If the field is combined (e.g. skills and qualifications mapping to one field)
+          if(el.value && el.tagName === 'TEXTAREA' && el.value !== data[key]) {
+             el.value += '\n\n' + data[key]; // Append if already has content
+          } else {
+             el.value = data[key];
+          }
+        }
+      });
+      // Flash form elements to show they updated
+      document.getElementById('jobForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Extraction Event
+    document.getElementById('extractBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url || !url.startsWith('http')) {
+        showStatus('Please enter a valid URL starting with https://', 'error');
+        return;
+      }
+
+      setExtractLoading(true);
+      showStatus('Fetching page... Please wait.');
+      
+      try {
+        const html = await fetchHtml(url);
+        if (!html) {
+          showStatus('Could not fetch the page. The site may block proxies. Manual entry required.', 'error');
+        } else {
+          showStatus('Parsing job details...');
+          const data = extractData(html, url);
+          fillForm(data);
+          showStatus('Extraction complete! Review the details below.', 'success');
+        }
+      } catch (err) {
+        showStatus('Error: ' + (err.message || 'Something went wrong.'), 'error');
+        console.error(err);
+      }
+      setExtractLoading(false);
+    });
+
+    // Form Submission Event
+    document.getElementById('jobForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) {
+        showStatus("Authentication required. Connecting...", "error");
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      const ogHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Publishing...';
+      btn.classList.add('opacity-75');
+
+      try {
+        // Collect form data
+        const formData = {};
+        document.querySelectorAll('[data-key]').forEach(el => {
+            formData[el.getAttribute('data-key')] = el.value.trim() || null;
+        });
+
+        // Structure object for Firebase
+        const jobDocument = {
+          userId: currentUser.uid,
+          postedBy: currentUser.email || 'Anonymous Employer',
+          status: "pending", 
+          timestamp: serverTimestamp(),
+          likes: 0,
+          dislikes: 0,
+          ...formData
+        };
+
+        // Strict Platform Path Requirements
+        const jobsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'jobs');
+        const docRef = await addDoc(jobsCollectionRef, jobDocument);
+
+        // Also add a system notification based on strict path
+        const notificationText = `New job posted: ${jobDocument.job_title} at ${jobDocument.company_name}`;
+        const notificationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
+        await addDoc(notificationsRef, {
+            fromUid: currentUser.uid,
+            type: "job_posted",
+            message: notificationText,
+            link: `job-detail.html?id=${docRef.id}`,
+            read: false,
+            createdAt: serverTimestamp()
+        });
+
+        showStatus("✅ Job successfully published! (Pending Admin Approval)", "success");
+        document.getElementById('jobForm').reset();
+        document.getElementById('urlInput').value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
       } catch (err) {
         console.error(err);
-        showToast("❌ Connection error posting job. Check Console details.", "error");
+        showStatus("❌ Failed to post job. Database error.", "error");
       }
-    });
-  </script>
 
-  <!-- External structural assets -->
-  <script type="module" src="public/js/analytics.js"></script>
-  <script type="module" src="public/js/browser-notifications.js"></script>
+      btn.disabled = false;
+      btn.innerHTML = ogHtml;
+      btn.classList.remove('opacity-75');
+    });
+
+  </script>
 </body>
 </html>
