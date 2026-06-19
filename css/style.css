@@ -412,6 +412,83 @@ display:none; position:fixed; inset:0;
 }
 
 /* jobs.html */
+body.page-jobs {
+background:
+  radial-gradient(circle at top left, rgba(59, 130, 246, .18), transparent 30rem),
+  linear-gradient(180deg, #eff6ff 0%, #f8fafc 34rem);
+overflow-x:hidden;
+}
+body.page-jobs .jobs-hero {
+position:relative;
+isolation:isolate;
+overflow:hidden;
+background:
+  radial-gradient(circle at 15% 15%, rgba(255,255,255,.3), transparent 18rem),
+  radial-gradient(circle at 85% 10%, rgba(14,165,233,.34), transparent 22rem),
+  linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #38bdf8 100%);
+}
+body.page-jobs .jobs-hero::before {
+content:"";
+position:absolute;
+inset:0;
+z-index:-1;
+background-image:
+  linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+background-size:42px 42px;
+mask-image:linear-gradient(to bottom, rgba(0,0,0,.78), transparent);
+}
+body.page-jobs .jobs-search-panel {
+border:1px solid rgba(255,255,255,.7);
+box-shadow:0 24px 70px rgba(15,23,42,.2);
+}
+body.page-jobs .job-filter-tabs {
+width:min(100%, 34rem);
+margin-left:auto;
+margin-right:auto;
+padding:.35rem;
+border:1px solid rgba(255,255,255,.28);
+border-radius:1.25rem;
+background:rgba(15,23,42,.16);
+box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 18px 45px rgba(15,23,42,.16);
+backdrop-filter:blur(14px);
+}
+body.page-jobs .job-filter-tab {
+width:100%;
+min-width:0;
+white-space:normal;
+line-height:1.2;
+box-shadow:none;
+}
+@media (max-width: 639px) {
+body.page-jobs .jobs-hero {
+padding-left:1rem;
+padding-right:1rem;
+}
+body.page-jobs .jobs-search-panel {
+border-radius:1.5rem;
+padding:.75rem;
+}
+body.page-jobs .job-filter-tabs {
+display:grid;
+grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+gap:.35rem;
+}
+body.page-jobs .job-filter-tab {
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:3.25rem;
+padding:.75rem .55rem;
+font-size:.78rem;
+letter-spacing:-.01em;
+overflow-wrap:anywhere;
+}
+body.page-jobs main {
+padding-left:1rem;
+padding-right:1rem;
+}
+}
 body.page-jobs .latest-badge {
 animation: pulse 1s infinite;
 }

@@ -110,13 +110,13 @@ if (!hasFirebaseConfig) {
   Emoji copied
 </div>
 
-<div class="bg-blue-600 px-4 py-8 md:py-10">
+<div class="jobs-hero px-4 py-8 md:py-10">
   <div class="max-w-5xl mx-auto text-center">
     <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 md:mb-3">Discover Your Dream Job</h1>
     <p class="text-blue-100 text-base md:text-lg mb-5 md:mb-6">Browse thousands of high-quality job listings updated daily.</p>
     
     <!-- Multi-Column Search Bar -->
-    <div class="bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
+    <div class="jobs-search-panel bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
       <!-- Keyword/Title Search with Datalist -->
       <div class="relative flex-grow md:w-1/3">
         <input id="searchInput" type="search" inputmode="search" autocomplete="off" list="titleSuggestions" placeholder="Job title or company" aria-label="Search by job title or company" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base">
@@ -144,9 +144,9 @@ if (!hasFirebaseConfig) {
       <button id="mainSearchBtn" class="min-h-12 bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-base">Search</button>
     </div>
 
-    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center" role="group" aria-label="Job list filters">
+    <div class="job-filter-tabs mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center" role="group" aria-label="Job list filters">
       <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52" aria-pressed="true">Latest Opportunities</button>
-      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-blue-500/30 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:min-w-52" aria-pressed="false">Remote Opportunites</button>
+      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-blue-500/30 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:min-w-52" aria-pressed="false">Remote Opportunities</button>
     </div>
   </div>
 </div>
@@ -475,7 +475,7 @@ function applyFilters() {
 function renderList(jobs) {
   jobsList.innerHTML = "";
   const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
-  const defaultTitle = activeJobMode === "remote" ? "Remote Opportunites" : "Latest Opportunities";
+  const defaultTitle = activeJobMode === "remote" ? "Remote Opportunities" : "Latest Opportunities";
   jobCount.innerText = isSearching ? (jobs.length === 1 ? `1 ${activeJobMode === "remote" ? "Remote Job" : "Job"}` : `${jobs.length} ${activeJobMode === "remote" ? "Remote Jobs" : "Jobs"}`) : defaultTitle;
   if (jobs.length === 0) {
     emptyState.classList.remove("hidden");
