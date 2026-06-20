@@ -120,7 +120,7 @@
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-  import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
   function getEnvVar(...keys) {
     const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
@@ -153,16 +153,16 @@
   } else {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    
+    // Updated offline persistence initialization to remove deprecation warning
+    const db = initializeFirestore(app, {
+      localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+    });
 
     window.db = db;
     window.auth = auth;
 
     signInAnonymously(auth).catch(err => console.error("Auth error:", err));
-
-    enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
-    });
   }
   </script>
 </head>
