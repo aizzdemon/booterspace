@@ -145,8 +145,8 @@ if (!hasFirebaseConfig) {
     </div>
 
     <div class="job-filter-tabs mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center" role="group" aria-label="Job list filters">
-      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52" aria-pressed="true">Latest Opportunities</button>
-      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 rounded-xl bg-blue-500/30 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:min-w-52" aria-pressed="false">Remote Opportunities</button>
+      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl bg-white px-4 py-3 text-sm font-bold leading-tight text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5" aria-pressed="true">Latest Opportunities</button>
+      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl bg-blue-500/30 px-4 py-3 text-sm font-bold leading-tight text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5" aria-pressed="false">Remote Opportunities</button>
     </div>
   </div>
 </div>
@@ -350,8 +350,8 @@ function updateFilterButtons() {
   const isRemote = activeJobMode === "remote";
   latestOpportunitiesBtn.setAttribute("aria-pressed", String(!isRemote));
   remoteOpportunitiesBtn.setAttribute("aria-pressed", String(isRemote));
-  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 rounded-xl px-5 py-3 text-sm font-bold shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52 ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
-  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 rounded-xl px-5 py-3 text-sm font-bold shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:min-w-52 ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5 ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5 ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
 }
 
 function setJobMode(mode) {
@@ -390,7 +390,7 @@ function renderJobCard(job) {
   div.className = "group bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col sm:flex-row gap-4 sm:gap-5 items-stretch sm:items-center";
 
   div.innerHTML = `
-    <div class="flex min-w-0 items-start gap-3 sm:gap-5 w-full">
+    <div class="flex min-w-0 flex-1 items-start gap-3 sm:gap-5">
       <div class="relative shrink-0">
         <img src="${safeLogo}" alt="${escapeAttribute(companyName)} logo" loading="lazy" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
         ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3" aria-label="New job"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
@@ -414,8 +414,8 @@ function renderJobCard(job) {
         </div>
       </div>
     </div>
-    <div class="flex w-full shrink-0 sm:w-auto">
-      <button type="button" data-job-id="${safeJobId}" class="view-details min-h-11 w-full bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 sm:w-auto">View Details</button>
+    <div class="flex w-full shrink-0 sm:w-auto sm:self-center">
+      <button type="button" data-job-id="${safeJobId}" class="view-details min-h-11 w-full whitespace-nowrap bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 sm:w-auto">View Details</button>
     </div>
   `;
   return div;
