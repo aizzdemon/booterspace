@@ -122,7 +122,7 @@
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
   import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-  function getEnvVar(...keys) {
+  const getEnvVar = window.getEnvVar || ((...keys) => {
     const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
     const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
 
@@ -131,7 +131,7 @@
       if (processEnv[key]) return processEnv[key];
     }
     return "";
-  }
+  });
 
   const firebaseConfig = {
     apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
@@ -162,7 +162,10 @@
     window.db = db;
     window.auth = auth;
 
-    signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+    window.firebaseBooterAuthReady = signInAnonymously(auth).catch(err => {
+      console.error("Auth error:", err);
+      return null;
+    });
   }
   </script>
 </head>
@@ -658,6 +661,47 @@
     renderList(filtered);
   }
 
+  function normalizeJob(docSnapshot) {
+    const data = docSnapshot.data() || {};
+    return {
+      id: docSnapshot.id,
+      ...data,
+      title: data.title || data.jobTitle || data.position || "Untitled role",
+      company: data.company || data.companyName || data.organisationName || "Unknown Company",
+      location: data.location || data.jobPlace || data.place || "Remote",
+      applyLink: data.applyLink || data.jobLink || data.link || "",
+      salary: data.salary || data.pay || "",
+      timestamp: data.timestamp || data.createdAt || data.postedAt || null,
+      logoUrl: data.logoUrl || data.companyLogo || "",
+      companyWebsite: data.companyWebsite || data.website || ""
+    };
+  }
+
+  function sortJobsByTimestamp(jobs) {
+    return jobs.sort((a, b) => {
+      const aTime = typeof a.timestamp?.toMillis === "function" ? a.timestamp.toMillis() : 0;
+      const bTime = typeof b.timestamp?.toMillis === "function" ? b.timestamp.toMillis() : 0;
+      return bTime - aTime;
+    });
+  }
+
+  function handleSnapshotData(snapshot, append = false, requestedLimit = INITIAL_PAGE_SIZE) {
+    const jobs = snapshot.docs.map(normalizeJob);
+
+    if (snapshot.docs.length > 0) {
+      lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    }
+
+    loadedJobs = append ? sortJobsByTimestamp([...loadedJobs, ...jobs]) : jobs;
+    loadedJobs.forEach(updateSuggestions);
+    applyFilters();
+
+    const hasMoreJobs = snapshot.docs.length === requestedLimit && !searchInput.value && !locationInput.value && dateFilter.value === "all" && activeJobMode !== "remote";
+    loadMoreBtn.classList.toggle("hidden", !hasMoreJobs);
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.innerHTML = '<span>Load More Opportunities</span><svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+  }
+
   function renderList(jobs) {
     jobsList.innerHTML = "";
     const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
@@ -727,6 +771,7 @@
 
   async function fetchJobs(isLoadMore = false) {
     if (!db) return;
+    if (window.firebaseBooterAuthReady) await window.firebaseBooterAuthReady;
     try {
       const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
 
