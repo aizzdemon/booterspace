@@ -144,9 +144,9 @@ if (!hasFirebaseConfig) {
       <button id="mainSearchBtn" class="min-h-12 bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-base">Search</button>
     </div>
 
-    <div class="job-filter-tabs mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center" role="group" aria-label="Job list filters">
-      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl bg-white px-4 py-3 text-sm font-bold leading-tight text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5" aria-pressed="true">Latest Opportunities</button>
-      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl bg-blue-500/30 px-4 py-3 text-sm font-bold leading-tight text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5" aria-pressed="false">Remote Opportunities</button>
+    <div class="job-filter-tabs mt-4 grid w-full max-w-full grid-cols-2 gap-2 sm:gap-3" role="group" aria-label="Job list filters">
+      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl bg-white px-2 py-3 text-xs font-bold leading-tight text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm" aria-pressed="true">Latest Opportunities</button>
+      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl bg-blue-500/30 px-2 py-3 text-xs font-bold leading-tight text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:px-4 sm:text-sm" aria-pressed="false">Remote Opportunities</button>
     </div>
   </div>
 </div>
@@ -350,8 +350,8 @@ function updateFilterButtons() {
   const isRemote = activeJobMode === "remote";
   latestOpportunitiesBtn.setAttribute("aria-pressed", String(!isRemote));
   remoteOpportunitiesBtn.setAttribute("aria-pressed", String(isRemote));
-  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5 ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
-  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 w-full max-w-full whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:w-auto sm:min-w-52 sm:whitespace-nowrap sm:px-5 ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl px-2 py-3 text-xs font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
+  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl px-2 py-3 text-xs font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
 }
 
 function setJobMode(mode) {
