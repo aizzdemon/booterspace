@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jobs – BooterSpace</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jobs – BooterSpace</title>
   <meta name="description" content="Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.">
   <meta name="keywords" content="BooterSpace, jobs, careers, government jobs, community, networking">
   <meta name="robots" content="index, follow">
@@ -23,597 +23,813 @@
   <meta name="twitter:image" content="https://aizzdemon.github.io/booterspace/assets/images/booterspace.png">
 
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": "Jobs \u2013 BooterSpace",
-  "description": "Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.",
-  "url": "https://aizzdemon.github.io/booterspace/jobs.html",
-  "isPartOf": {
-    "@type": "WebSite",
-    "name": "BooterSpace",
-    "url": "https://aizzdemon.github.io/booterspace/"
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Jobs \u2013 BooterSpace",
+    "description": "Browse curated private-sector job listings on BooterSpace and find your next opportunity faster.",
+    "url": "https://aizzdemon.github.io/booterspace/jobs.html",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "BooterSpace",
+      "url": "https://aizzdemon.github.io/booterspace/"
+    }
   }
-}
   </script>
-  <meta name="theme-color" content="#2563eb">
+  
+  <meta name="theme-color" content="#0f172a">
   <meta name="color-scheme" content="light">
+  
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
-<link rel="stylesheet" href="assets/css/shared.css">
-<link rel="stylesheet" href="output.css">
-
-<!-- ================= FIREBASE INIT ================= -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-
-function getEnvVar(...keys) {
-  const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
-  const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
-
-  for (const key of keys) {
-    if (runtimeEnv[key]) return runtimeEnv[key];
-    if (processEnv[key]) return processEnv[key];
-  }
-
-  return "";
-}
-
-const firebaseConfig = {
-  apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
-  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
-  databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL", "NEXT_PUBLIC_FIREBASE_DATABASE_URL", "REACT_APP_FIREBASE_DATABASE_URL"),
-  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
-  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID"),
-  measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
-};
-
-const requiredFirebaseKeys = ["apiKey", "authDomain", "projectId", "appId"];
-const hasFirebaseConfig = requiredFirebaseKeys.every((key) => Boolean(firebaseConfig[key]));
-
-if (!hasFirebaseConfig) {
-  console.error("Firebase configuration is missing. Jobs cannot be loaded until environment variables are configured.");
-  window.firebaseBooterError = "missing-config";
-} else {
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  window.db = db;
-  window.auth = auth;
-
-  signInAnonymously(auth).catch(err => console.error("Auth error:", err));
-
-  enableIndexedDbPersistence(db).catch((err) => {
-      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
-  });
-}
-</script>
-
-
-    <link rel="stylesheet" href="css/style.css">
-<link rel="icon" href="favicon.ico" type="image/x-icon"><script src="public/js/env-config.js"></script>
-</head>
-
-<body class="bg-slate-50 min-h-screen flex flex-col font-sans page-jobs">
-
-<!-- Navbar -->
-<div id="navbar"></div>
-<script src="public/js/navbar-loader.js"></script>
-<script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
-
-<div id="emojiToast" class="fixed bottom-4 left-1/2 hidden -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-xl z-50 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0" role="status" aria-live="polite">
-  Emoji copied
-</div>
-
-<div class="jobs-hero px-4 py-8 md:py-10">
-  <div class="max-w-5xl mx-auto text-center">
-    <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 md:mb-3">Discover Your Dream Job</h1>
-    <p class="text-blue-100 text-base md:text-lg mb-5 md:mb-6">Browse thousands of high-quality job listings updated daily.</p>
-    
-    <!-- Multi-Column Search Bar -->
-    <div class="jobs-search-panel bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
-      <!-- Keyword/Title Search with Datalist -->
-      <div class="relative flex-grow md:w-1/3">
-        <input id="searchInput" type="search" inputmode="search" autocomplete="off" list="titleSuggestions" placeholder="Job title or company" aria-label="Search by job title or company" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base">
-        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        <datalist id="titleSuggestions"></datalist>
-      </div>
-
-      <!-- Location Search with Datalist -->
-      <div class="relative flex-grow md:w-1/4">
-        <input id="locationInput" type="search" inputmode="search" autocomplete="off" list="locationSuggestions" placeholder="City or remote" aria-label="Search by city or remote" class="w-full py-3 px-3 pl-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base">
-        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        <datalist id="locationSuggestions"></datalist>
-      </div>
-
-      <!-- Date Filter -->
-      <div class="relative w-full md:w-36">
-        <select id="dateFilter" aria-label="Filter jobs by posting date" class="w-full py-3 px-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer text-base">
-          <option value="all">Any time</option>
-          <option value="1">Last 24h</option>
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-        </select>
-      </div>
-
-      <button id="mainSearchBtn" class="min-h-12 bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition transform active:scale-95 text-base">Search</button>
-    </div>
-
-    <div class="job-filter-tabs mt-4 grid w-full max-w-full grid-cols-2 gap-2 sm:gap-3" role="group" aria-label="Job list filters">
-      <button id="latestOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl bg-white px-2 py-3 text-xs font-bold leading-tight text-blue-700 shadow-lg shadow-blue-900/10 ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm" aria-pressed="true">Latest Opportunities</button>
-      <button id="remoteOpportunitiesBtn" type="button" class="job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl bg-blue-500/30 px-2 py-3 text-xs font-bold leading-tight text-white ring-1 ring-white/40 transition hover:-translate-y-0.5 hover:bg-blue-500/50 focus:outline-none focus:ring-4 focus:ring-white/60 sm:px-4 sm:text-sm" aria-pressed="false">Remote Opportunities</button>
-    </div>
-  </div>
-</div>
-
-<main class="max-w-5xl mx-auto px-4 py-6 sm:py-10 flex-grow w-full">
-  <div class="mb-8 border-b pb-4">
-    <div>
-      <h2 id="jobCount" class="text-slate-900 font-bold text-xl">Latest Opportunities</h2>
-      <p id="filterSummary" class="text-slate-500 text-sm mt-1"></p>
-    </div>
-  </div>
-
-  <div id="jobsList" class="grid gap-4">
-    <!-- Skeletons -->
-    <div class="skeleton h-32 rounded-2xl"></div>
-    <div class="skeleton h-32 rounded-2xl"></div>
-    <div class="skeleton h-32 rounded-2xl"></div>
-  </div>
-
-  <div id="emptyState" class="hidden text-center py-20">
-    <div class="text-slate-300 mb-4"><svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-    <h3 class="text-xl font-bold text-slate-800">No matches found</h3>
-    <p class="text-slate-500">We couldn't find any jobs matching your criteria. Try widening your search.</p>
-  </div>
-
-  <div class="mt-12 flex justify-center">
-    <button id="loadMoreBtn" class="hidden bg-white border-2 border-slate-100 text-slate-700 px-10 py-3 rounded-full hover:border-blue-200 hover:text-blue-600 transition-all font-bold shadow-sm hover:shadow-md flex items-center gap-2">
-      <span>Show More Jobs</span>
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-    </button>
-  </div>
-</main>
-
-<script type="module">
-import {
-  collection, query, where, orderBy, limit,
-  getDocs, startAfter, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-
-const db = window.db;
-const jobsList = document.getElementById("jobsList");
-const loadMoreBtn = document.getElementById("loadMoreBtn");
-const jobCount = document.getElementById("jobCount");
-const emptyState = document.getElementById("emptyState");
-const locationSuggestions = document.getElementById("locationSuggestions");
-const titleSuggestions = document.getElementById("titleSuggestions");
-const filterSummary = document.getElementById("filterSummary");
-
-const searchInput = document.getElementById("searchInput");
-const locationInput = document.getElementById("locationInput");
-const dateFilter = document.getElementById("dateFilter");
-const mainSearchBtn = document.getElementById("mainSearchBtn");
-const latestOpportunitiesBtn = document.getElementById("latestOpportunitiesBtn");
-const remoteOpportunitiesBtn = document.getElementById("remoteOpportunitiesBtn");
-const suggestionContainers = [];
-const suggestionControllers = [];
-let activeJobMode = "latest";
-let filterDebounceTimer;
-
-if (!db) {
-  jobsList.innerHTML = "";
-  jobCount.innerText = "Jobs temporarily unavailable";
-  filterSummary.innerText = "Please try again later while we finish loading job listings.";
-  emptyState.classList.remove("hidden");
-  loadMoreBtn.classList.add("hidden");
-}
-
-let lastDoc = null; 
-let jobsRealtimeUnsubscribe = null;
-const INITIAL_PAGE_SIZE = 50;
-const SUBSEQUENT_PAGE_SIZE = 50;
-let loadedJobs = []; // Maintain local list for filtering
-const uniqueLocations = new Set();
-const uniqueTitles = new Set();
-
-const formatSalary = (val) => val ? String(val) : "Salary Undisclosed";
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, "&#096;");
-}
-
-function normalizeImageUrl(rawUrl) {
-  if (!rawUrl || typeof rawUrl !== "string") return "";
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return "";
-}
-
-function normalizeWebsiteUrl(rawUrl) {
-  if (!rawUrl || typeof rawUrl !== "string") return "";
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-}
-
-function appendDatalistOption(listEl, value) {
-  const option = document.createElement("option");
-  option.value = value;
-  listEl.appendChild(option);
-}
-
-function updateSuggestions(job) {
-  const location = typeof job.location === "string" ? job.location.trim() : "";
-  const title = typeof job.title === "string" ? job.title.trim() : "";
-  const company = typeof job.company === "string" ? job.company.trim() : "";
-
-  if (location && !uniqueLocations.has(location)) {
-    uniqueLocations.add(location);
-    appendDatalistOption(locationSuggestions, location);
-  }
-
-  [title, company].filter(Boolean).forEach((value) => {
-    if (!uniqueTitles.has(value)) {
-      uniqueTitles.add(value);
-      appendDatalistOption(titleSuggestions, value);
-    }
-  });
-}
-
-function closeSuggestionDropdowns() {
-  suggestionContainers.forEach((dropdown) => dropdown.classList.add("hidden"));
-}
-
-function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
-  const parent = inputEl.parentElement;
-  const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-60 overflow-auto";
-  parent.appendChild(dropdown);
-  suggestionContainers.push(dropdown);
-
-  function renderSuggestions() {
-    const queryText = inputEl.value.trim().toLowerCase();
-    if (!queryText) {
-      dropdown.classList.add("hidden");
-      dropdown.innerHTML = "";
-      return;
-    }
-
-    const matches = [...optionsSet]
-      .map((value) => ({ value, lower: value.toLowerCase() }))
-      .filter((item) => item.lower.includes(queryText))
-      .sort((a, b) => {
-        const aStarts = a.lower.startsWith(queryText);
-        const bStarts = b.lower.startsWith(queryText);
-        if (aStarts !== bStarts) return aStarts ? -1 : 1;
-        return a.value.localeCompare(b.value);
-      })
-      .slice(0, 10)
-      .map((item) => item.value);
-
-    if (!matches.length) {
-      dropdown.classList.add("hidden");
-      dropdown.innerHTML = "";
-      return;
-    }
-
-    dropdown.innerHTML = matches.map((match) => (
-      `<button type="button" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" data-suggestion="${escapeAttribute(match)}">${escapeHtml(match)}</button>`
-    )).join("");
-    dropdown.classList.remove("hidden");
-  }
-
-  inputEl.addEventListener("focus", renderSuggestions);
-  inputEl.addEventListener("input", renderSuggestions);
-  inputEl.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") dropdown.classList.add("hidden");
-  });
-
-  dropdown.addEventListener("mousedown", (event) => {
-    event.preventDefault();
-    const selected = event.target.closest("[data-suggestion]");
-    if (!selected) return;
-    const value = selected.dataset.suggestion || "";
-    inputEl.value = value;
-    dropdown.classList.add("hidden");
-    onSelect();
-  });
-
-  const controller = { renderSuggestions, close: () => dropdown.classList.add("hidden") };
-  suggestionControllers.push(controller);
-  return controller;
-}
-
-function isRemoteLocation(locationValue) {
-  const locationText = String(locationValue || "").toLowerCase();
-  return /\b(remote|work\s*from\s*home|wfh|home[-\s]*based|anywhere)\b/.test(locationText);
-}
-
-function updateFilterButtons() {
-  const isRemote = activeJobMode === "remote";
-  latestOpportunitiesBtn.setAttribute("aria-pressed", String(!isRemote));
-  remoteOpportunitiesBtn.setAttribute("aria-pressed", String(isRemote));
-  latestOpportunitiesBtn.className = `job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl px-2 py-3 text-xs font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm ${!isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
-  remoteOpportunitiesBtn.className = `job-filter-tab min-h-12 min-w-0 w-full max-w-full whitespace-normal break-words rounded-xl px-2 py-3 text-xs font-bold leading-tight shadow-lg shadow-blue-900/10 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-white/70 sm:px-4 sm:text-sm ${isRemote ? "bg-white text-blue-700 ring-2 ring-white/80 hover:bg-blue-50" : "bg-blue-500/30 text-white ring-1 ring-white/40 hover:bg-blue-500/50"}`;
-}
-
-function setJobMode(mode) {
-  activeJobMode = mode;
-  updateFilterButtons();
-  applyFilters();
-}
-
-function scheduleApplyFilters() {
-  clearTimeout(filterDebounceTimer);
-  filterDebounceTimer = setTimeout(applyFilters, 120);
-}
-
-const titleSuggestionDropdown = createSuggestionDropdown(searchInput, uniqueTitles, applyFilters);
-const locationSuggestionDropdown = createSuggestionDropdown(locationInput, uniqueLocations, applyFilters);
-
-function renderJobCard(job) {
-  const companyName = job.company || "Unknown Company";
-  const title = job.title || "Untitled role";
-  const location = job.location || "Remote";
-  const logo = normalizeImageUrl(job.logoUrl) || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
-  const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
-  const postedAt = typeof job.timestamp?.toMillis === "function" ? job.timestamp.toMillis() : 0;
-  const isNew = postedAt > 0 && (Date.now() - postedAt < 3 * 24 * 60 * 60 * 1000);
-  const safeCompanyName = escapeHtml(companyName);
-  const safeTitle = escapeHtml(title);
-  const safeLocation = escapeHtml(location);
-  const safeWebsiteUrl = escapeAttribute(websiteUrl);
-  const safeLogo = escapeAttribute(logo);
-  const safeJobId = encodeURIComponent(job.id || "");
-  const companyMarkup = websiteUrl
-    ? `<a href="${safeWebsiteUrl}" target="_blank" rel="noopener noreferrer" class="min-w-0 font-semibold truncate text-slate-600 hover:text-blue-600 transition-colors" title="Visit ${escapeAttribute(companyName)} website">${safeCompanyName}</a>`
-    : `<span class="min-w-0 font-semibold truncate text-slate-600">${safeCompanyName}</span>`;
+  <link rel="stylesheet" href="assets/css/shared.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   
-  const div = document.createElement("article");
-  div.className = "group bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col md:flex-row gap-4 sm:gap-5 items-stretch md:items-center";
-
-  div.innerHTML = `
-    <div class="flex min-w-0 flex-1 items-start gap-3 sm:gap-5">
-      <div class="relative shrink-0">
-        <img src="${safeLogo}" alt="${escapeAttribute(companyName)} logo" loading="lazy" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover bg-slate-50 border border-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=Company'">
-        ${isNew ? '<span class="absolute -top-2 -right-2 flex h-3 w-3" aria-label="New job"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>' : ''}
-      </div>
-      <div class="min-w-0 flex-grow">
-        <div class="flex flex-wrap items-center gap-2 mb-1">
-          <h3 class="min-w-0 font-bold text-base sm:text-lg text-slate-900 group-hover:text-blue-600 transition-colors break-words">${safeTitle}</h3>
-        </div>
-        <div class="flex flex-col gap-2 text-[15px] text-slate-500 font-medium sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 sm:text-sm">
-          <span class="flex min-w-0 items-center">
-            ${companyMarkup}
-          </span>
-          <span class="flex min-w-0 items-center gap-1.5 text-blue-600/80">
-            <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-base sm:h-auto sm:w-auto sm:bg-transparent" data-copy-emoji="📍" title="Copy location emoji" aria-label="Copy location emoji">📍</button>
-            <span class="truncate">${safeLocation}</span>
-          </span>
-        </div>
-        <div class="mt-3 font-bold text-slate-900 text-sm flex items-center gap-1.5">
-          <button type="button" class="copy-emoji inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-base sm:h-auto sm:w-auto sm:bg-transparent" data-copy-emoji="💵" title="Copy salary emoji" aria-label="Copy salary emoji">💵</button>
-          <span>${escapeHtml(formatSalary(job.salary))}</span>
-        </div>
-      </div>
-    </div>
-    <div class="flex w-full shrink-0 md:w-auto md:self-center">
-      <button type="button" data-job-id="${safeJobId}" class="view-details min-h-11 w-full whitespace-nowrap bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 md:w-auto">View Details</button>
-    </div>
-  `;
-  return div;
-}
-
-const emojiToast = document.getElementById("emojiToast");
-let emojiToastTimeout;
-
-function showEmojiToast(message) {
-  emojiToast.textContent = message;
-  emojiToast.classList.remove("hidden");
-  clearTimeout(emojiToastTimeout);
-  emojiToastTimeout = setTimeout(() => {
-    emojiToast.classList.add("hidden");
-  }, 1400);
-}
-
-async function copyEmoji(emoji) {
-  try {
-    await navigator.clipboard.writeText(emoji);
-    showEmojiToast(`Copied ${emoji}`);
-  } catch (err) {
-    console.error("Emoji copy failed:", err);
-    showEmojiToast("Unable to copy emoji");
-  }
-}
-
-// Client-side Filter Logic
-function applyFilters() {
-  const keyword = searchInput.value.toLowerCase().trim();
-  const location = locationInput.value.toLowerCase().trim();
-  const dateVal = dateFilter.value;
-
-  const filtered = loadedJobs.filter(job => {
-    const titleText = String(job.title || "").toLowerCase();
-    const companyText = String(job.company || "").toLowerCase();
-    const locationText = String(job.location || "remote").toLowerCase();
-    const matchKeyword = !keyword || titleText.includes(keyword) || companyText.includes(keyword) || locationText.includes(keyword) || String(job.salary || "").toLowerCase().includes(keyword);
-    const matchLocation = !location || locationText.includes(location);
-    const matchMode = activeJobMode !== "remote" || isRemoteLocation(job.location);
-
-    let matchDate = true;
-    if (dateVal !== "all") {
-      const hours = parseInt(dateVal) * 24;
-      if (job.timestamp?.toMillis) {
-        const diff = (Date.now() - job.timestamp.toMillis()) / (1000 * 60 * 60);
-        matchDate = diff <= hours;
+  <!-- Tailwind CSS CDN for the new design -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+              950: '#172554',
+            }
+          },
+          animation: {
+            'blob': 'blob 7s infinite',
+            'fade-in': 'fadeIn 0.5s ease-out forwards',
+          },
+          keyframes: {
+            blob: {
+              '0%': { transform: 'translate(0px, 0px) scale(1)' },
+              '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+              '100%': { transform: 'translate(0px, 0px) scale(1)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
       }
     }
+  </script>
 
-    return matchKeyword && matchLocation && matchDate && matchMode;
-  });
-
-  renderList(filtered);
-}
-
-function renderList(jobs) {
-  jobsList.innerHTML = "";
-  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
-  const defaultTitle = activeJobMode === "remote" ? "Remote Opportunities" : "Latest Opportunities";
-  jobCount.innerText = isSearching ? (jobs.length === 1 ? `1 ${activeJobMode === "remote" ? "Remote Job" : "Job"}` : `${jobs.length} ${activeJobMode === "remote" ? "Remote Jobs" : "Jobs"}`) : defaultTitle;
-  if (jobs.length === 0) {
-    emptyState.classList.remove("hidden");
-    loadMoreBtn.classList.add("hidden");
-    filterSummary.innerText = isSearching ? "No results match your current filters" : "";
-  } else {
-    emptyState.classList.add("hidden");
-    const fragment = document.createDocumentFragment();
-    jobs.forEach(job => fragment.appendChild(renderJobCard(job)));
-    jobsList.appendChild(fragment);
+  <style>
+    /* Custom Scrollbar for datalists/dropdowns */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
     
-    if (isSearching) {
-       loadMoreBtn.classList.add("hidden");
-       filterSummary.innerText = activeJobMode === "remote"
-        ? (jobs.length === 1 ? "Found 1 remote or work-from-home opportunity" : `Found ${jobs.length} remote or work-from-home opportunities`)
-        : (jobs.length === 1 ? "Found 1 job for your search" : `Found ${jobs.length} jobs for your search`);
-    } else {
-       filterSummary.innerText = "";
+    /* Hide default search cancel button */
+    input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
     }
+    
+    .shimmer {
+      background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+
+  <script src="public/js/env-config.js"></script>
+
+  <!-- ================= FIREBASE INIT ================= -->
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+  import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+  function getEnvVar(...keys) {
+    const runtimeEnv = (typeof window !== "undefined" && window.__ENV__) || (typeof self !== "undefined" && self.__ENV__) || {};
+    const processEnv = typeof process !== "undefined" && process.env ? process.env : {};
+
+    for (const key of keys) {
+      if (runtimeEnv[key]) return runtimeEnv[key];
+      if (processEnv[key]) return processEnv[key];
+    }
+    return "";
   }
-}
 
-function handleSnapshotData(snapshot, isLoadMore, currentLimit) {
-  if (snapshot.empty && !isLoadMore) {
-    emptyState.classList.remove("hidden");
-    jobsList.innerHTML = "";
-    loadMoreBtn.classList.add("hidden");
-    return;
-  }
+  const firebaseConfig = {
+    apiKey: getEnvVar("VITE_FIREBASE_API_KEY", "NEXT_PUBLIC_FIREBASE_API_KEY", "REACT_APP_FIREBASE_API_KEY"),
+    authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN", "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "REACT_APP_FIREBASE_AUTH_DOMAIN"),
+    databaseURL: getEnvVar("VITE_FIREBASE_DATABASE_URL", "NEXT_PUBLIC_FIREBASE_DATABASE_URL", "REACT_APP_FIREBASE_DATABASE_URL"),
+    projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID", "REACT_APP_FIREBASE_PROJECT_ID"),
+    storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET", "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "REACT_APP_FIREBASE_STORAGE_BUCKET"),
+    messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID", "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "REACT_APP_FIREBASE_MESSAGING_SENDER_ID"),
+    appId: getEnvVar("VITE_FIREBASE_APP_ID", "NEXT_PUBLIC_FIREBASE_APP_ID", "REACT_APP_FIREBASE_APP_ID"),
+    measurementId: getEnvVar("VITE_FIREBASE_MEASUREMENT_ID", "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", "REACT_APP_FIREBASE_MEASUREMENT_ID")
+  };
 
-  const newJobs = snapshot.docs.map(d => {
-    const data = { id: d.id, ...d.data() };
-    updateSuggestions(data);
-    return data;
-  });
+  const requiredFirebaseKeys = ["apiKey", "authDomain", "projectId", "appId"];
+  const hasFirebaseConfig = requiredFirebaseKeys.every((key) => Boolean(firebaseConfig[key]));
 
-  loadedJobs = isLoadMore ? [...loadedJobs, ...newJobs] : newJobs;
-  lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
-  titleSuggestionDropdown.renderSuggestions();
-  locationSuggestionDropdown.renderSuggestions();
-
-  applyFilters();
-
-  const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
-  if (snapshot.docs.length < currentLimit || isSearching) {
-    loadMoreBtn.classList.add("hidden");
+  if (!hasFirebaseConfig) {
+    console.error("Firebase configuration is missing. Jobs cannot be loaded until environment variables are configured.");
+    window.firebaseBooterError = "missing-config";
   } else {
-    loadMoreBtn.classList.remove("hidden");
-    loadMoreBtn.innerHTML = '<span>Show More Jobs</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
-    loadMoreBtn.disabled = false;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.db = db;
+    window.auth = auth;
+
+    signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+
+    enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
   }
-}
+  </script>
+</head>
 
-async function fetchJobs(isLoadMore = false) {
-  if (!db) return;
-  try {
-    const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
+<body class="bg-slate-50 min-h-screen flex flex-col font-sans text-slate-800 selection:bg-brand-500 selection:text-white">
 
-    if (!isLoadMore) {
-      jobsList.innerHTML = '<div class="skeleton h-32 rounded-2xl"></div>'.repeat(3);
-      lastDoc = null;
-      loadedJobs = [];
-      emptyState.classList.add("hidden");
-    } else {
-      loadMoreBtn.innerHTML = '<span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span> Loading...';
-      loadMoreBtn.disabled = true;
+  <!-- Navbar Placeholder -->
+  <div id="navbar" class="relative z-50"></div>
+  <script src="public/js/navbar-loader.js"></script>
+  <script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
+
+  <!-- Emoji Toast -->
+  <div id="emojiToast" class="fixed bottom-6 left-1/2 hidden -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white text-sm font-medium px-5 py-3 rounded-full shadow-2xl z-[100] transition-all transform flex items-center gap-2 border border-slate-700" role="status" aria-live="polite">
+    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    <span>Emoji copied</span>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="relative bg-slate-950 overflow-hidden pt-16 pb-32 md:pt-24 md:pb-40">
+    <!-- Abstract Background Effects -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+      <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-600/30 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-blob"></div>
+      <div class="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-indigo-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-blob animation-delay-2000"></div>
+      <div class="absolute bottom-[-20%] left-[20%] w-80 h-80 bg-blue-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-blob animation-delay-4000"></div>
+      <!-- Subtle Grid -->
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"></div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 relative z-10 text-center">
+      <span class="inline-block py-1 px-3 rounded-full bg-brand-500/20 text-brand-300 text-sm font-semibold tracking-wide mb-4 border border-brand-500/30">BooterSpace Careers</span>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight leading-tight">
+        Discover Your Next <br class="hidden md:block"/> <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Great Opportunity</span>
+      </h1>
+      <p class="text-slate-300 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
+        Browse thousands of highly-curated, premium job listings updated daily. Your dream role is just a search away.
+      </p>
+    </div>
+  </div>
+
+  <!-- Search & Filter Section (Floating) -->
+  <div class="max-w-5xl mx-auto w-full px-4 relative z-20 -mt-20 mb-8">
+    <div class="glass-panel p-3 md:p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col gap-4">
+      
+      <!-- Search Inputs Row -->
+      <div class="flex flex-col md:flex-row gap-3">
+        <!-- Keyword Search -->
+        <div class="relative flex-grow group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <input id="searchInput" type="search" inputmode="search" autocomplete="off" placeholder="Job title, company, or keyword" aria-label="Search by job title or company" class="w-full py-3.5 pl-11 pr-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none text-base text-slate-800 transition-all placeholder:text-slate-400">
+          <datalist id="titleSuggestions"></datalist>
+        </div>
+
+        <!-- Location Search -->
+        <div class="relative flex-grow md:max-w-xs group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </div>
+          <input id="locationInput" type="search" inputmode="search" autocomplete="off" placeholder="City, state, or remote" aria-label="Search by city or remote" class="w-full py-3.5 pl-11 pr-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none text-base text-slate-800 transition-all placeholder:text-slate-400">
+          <datalist id="locationSuggestions"></datalist>
+        </div>
+
+        <!-- Date & Search Button -->
+        <div class="flex gap-3">
+          <div class="relative flex-grow md:flex-grow-0 md:w-40 group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <select id="dateFilter" aria-label="Filter jobs by posting date" class="w-full py-3.5 pl-11 pr-10 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none appearance-none cursor-pointer text-base text-slate-800 transition-all font-medium">
+              <option value="all">Any time</option>
+              <option value="1">Past 24h</option>
+              <option value="7">Past week</option>
+              <option value="30">Past month</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+          <button id="mainSearchBtn" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3.5 rounded-2xl transition-all shadow-md shadow-brand-500/30 active:scale-95 flex items-center justify-center min-w-[3.5rem]">
+            <span class="hidden md:inline">Search</span>
+            <svg class="w-5 h-5 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Toggles -->
+      <div class="flex items-center gap-2 border-t border-slate-100 pt-3">
+        <div class="bg-slate-100/80 p-1 rounded-xl flex w-full md:w-auto overflow-hidden">
+          <button id="latestOpportunitiesBtn" type="button" class="flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-brand-700 ring-1 ring-slate-200/50" aria-pressed="true">All Jobs</button>
+          <button id="remoteOpportunitiesBtn" type="button" class="flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50" aria-pressed="false">Remote Only</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 py-4 sm:py-8 flex-grow w-full">
+    
+    <!-- Header/Count -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4 border-b border-slate-200 pb-4">
+      <div>
+        <h2 id="jobCount" class="text-2xl font-extrabold text-slate-900 tracking-tight">Latest Opportunities</h2>
+        <p id="filterSummary" class="text-slate-500 text-sm mt-1.5 font-medium"></p>
+      </div>
+    </div>
+
+    <!-- Jobs List Container -->
+    <div id="jobsList" class="flex flex-col gap-5">
+      <!-- Skeletons (Matched to new design) -->
+      <div class="shimmer h-36 w-full rounded-3xl border border-slate-100"></div>
+      <div class="shimmer h-36 w-full rounded-3xl border border-slate-100"></div>
+      <div class="shimmer h-36 w-full rounded-3xl border border-slate-100"></div>
+      <div class="shimmer h-36 w-full rounded-3xl border border-slate-100"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-100 shadow-sm mt-6">
+      <div class="bg-slate-50 p-6 rounded-full mb-5">
+        <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      <h3 class="text-2xl font-bold text-slate-900 mb-2">No jobs found</h3>
+      <p class="text-slate-500 max-w-md mx-auto text-base">We couldn't find any opportunities matching your current filters. Try adjusting your search criteria.</p>
+      <button onclick="document.getElementById('searchInput').value=''; document.getElementById('locationInput').value=''; document.getElementById('dateFilter').value='all'; document.getElementById('mainSearchBtn').click();" class="mt-6 text-brand-600 font-semibold hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-6 py-2.5 rounded-xl transition-colors">
+        Clear all filters
+      </button>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-14 mb-10 flex justify-center">
+      <button id="loadMoreBtn" class="hidden bg-white border border-slate-200 text-slate-700 px-8 py-3.5 rounded-2xl hover:border-brand-300 hover:text-brand-700 hover:shadow-md transition-all font-semibold shadow-sm flex items-center gap-2 group">
+        <span>Load More Opportunities</span>
+        <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+    </div>
+  </main>
+
+  <script type="module">
+  import {
+    collection, query, where, orderBy, limit,
+    getDocs, startAfter, onSnapshot,
+    doc, updateDoc, increment
+  } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+  const db = window.db;
+  const jobsList = document.getElementById("jobsList");
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  const jobCount = document.getElementById("jobCount");
+  const emptyState = document.getElementById("emptyState");
+  const locationSuggestions = document.getElementById("locationSuggestions");
+  const titleSuggestions = document.getElementById("titleSuggestions");
+  const filterSummary = document.getElementById("filterSummary");
+
+  const searchInput = document.getElementById("searchInput");
+  const locationInput = document.getElementById("locationInput");
+  const dateFilter = document.getElementById("dateFilter");
+  const mainSearchBtn = document.getElementById("mainSearchBtn");
+  const latestOpportunitiesBtn = document.getElementById("latestOpportunitiesBtn");
+  const remoteOpportunitiesBtn = document.getElementById("remoteOpportunitiesBtn");
+  const suggestionContainers = [];
+  const suggestionControllers = [];
+  let activeJobMode = "latest";
+  let filterDebounceTimer;
+
+  if (!db) {
+    jobsList.innerHTML = "";
+    jobCount.innerText = "System Offline";
+    filterSummary.innerText = "Firebase configuration missing. Please check your environment variables.";
+    emptyState.classList.remove("hidden");
+    loadMoreBtn.classList.add("hidden");
+  }
+
+  let lastDoc = null; 
+  let jobsRealtimeUnsubscribe = null;
+  const INITIAL_PAGE_SIZE = 50;
+  const SUBSEQUENT_PAGE_SIZE = 50;
+  let loadedJobs = []; 
+  const uniqueLocations = new Set();
+  const uniqueTitles = new Set();
+
+  const formatSalary = (val) => val ? String(val) : "Salary Undisclosed";
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function escapeAttribute(value) {
+    return escapeHtml(value).replace(/`/g, "&#096;");
+  }
+
+  function normalizeImageUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") return "";
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return "";
+  }
+
+  function normalizeWebsiteUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") return "";
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
+  function appendDatalistOption(listEl, value) {
+    const option = document.createElement("option");
+    option.value = value;
+    listEl.appendChild(option);
+  }
+
+  function updateSuggestions(job) {
+    const location = typeof job.location === "string" ? job.location.trim() : "";
+    const title = typeof job.title === "string" ? job.title.trim() : "";
+    const company = typeof job.company === "string" ? job.company.trim() : "";
+
+    if (location && !uniqueLocations.has(location)) {
+      uniqueLocations.add(location);
+      appendDatalistOption(locationSuggestions, location);
     }
 
-    let q = query(
-      collection(db, "jobs"),
-      where("status", "==", "approved"),
-      orderBy("timestamp", "desc"),
-      limit(currentLimit)
-    );
+    [title, company].filter(Boolean).forEach((value) => {
+      if (!uniqueTitles.has(value)) {
+        uniqueTitles.add(value);
+        appendDatalistOption(titleSuggestions, value);
+      }
+    });
+  }
 
-    if (isLoadMore && lastDoc) {
-      q = query(q, startAfter(lastDoc));
-      const snap = await getDocs(q);
-      handleSnapshotData(snap, true, currentLimit);
+  function closeSuggestionDropdowns() {
+    suggestionContainers.forEach((dropdown) => dropdown.classList.add("hidden"));
+  }
+
+  function createSuggestionDropdown(inputEl, optionsSet, onSelect) {
+    const parent = inputEl.parentElement;
+    const dropdown = document.createElement("div");
+    dropdown.className = "hidden absolute top-full left-0 mt-2 z-50 w-full rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-64 overflow-y-auto custom-scrollbar overflow-x-hidden p-1.5";
+    parent.appendChild(dropdown);
+    suggestionContainers.push(dropdown);
+
+    function renderSuggestions() {
+      const queryText = inputEl.value.trim().toLowerCase();
+      if (!queryText) {
+        dropdown.classList.add("hidden");
+        dropdown.innerHTML = "";
+        return;
+      }
+
+      const matches = [...optionsSet]
+        .map((value) => ({ value, lower: value.toLowerCase() }))
+        .filter((item) => item.lower.includes(queryText))
+        .sort((a, b) => {
+          const aStarts = a.lower.startsWith(queryText);
+          const bStarts = b.lower.startsWith(queryText);
+          if (aStarts !== bStarts) return aStarts ? -1 : 1;
+          return a.value.localeCompare(b.value);
+        })
+        .slice(0, 8)
+        .map((item) => item.value);
+
+      if (!matches.length) {
+        dropdown.classList.add("hidden");
+        dropdown.innerHTML = "";
+        return;
+      }
+
+      dropdown.innerHTML = matches.map((match) => (
+        `<button type="button" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors flex items-center gap-2" data-suggestion="${escapeAttribute(match)}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          ${escapeHtml(match)}
+        </button>`
+      )).join("");
+      dropdown.classList.remove("hidden");
+    }
+
+    inputEl.addEventListener("focus", renderSuggestions);
+    inputEl.addEventListener("input", renderSuggestions);
+    inputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") dropdown.classList.add("hidden");
+    });
+
+    dropdown.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      const selected = event.target.closest("[data-suggestion]");
+      if (!selected) return;
+      const value = selected.dataset.suggestion || "";
+      inputEl.value = value;
+      dropdown.classList.add("hidden");
+      onSelect();
+    });
+
+    const controller = { renderSuggestions, close: () => dropdown.classList.add("hidden") };
+    suggestionControllers.push(controller);
+    return controller;
+  }
+
+  function isRemoteLocation(locationValue) {
+    const locationText = String(locationValue || "").toLowerCase();
+    return /\b(remote|work\s*from\s*home|wfh|home[-\s]*based|anywhere)\b/.test(locationText);
+  }
+
+  function updateFilterButtons() {
+    const isRemote = activeJobMode === "remote";
+    
+    // Toggle active classes
+    const activeClass = "flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-brand-700 ring-1 ring-slate-200/50";
+    const inactiveClass = "flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+
+    latestOpportunitiesBtn.setAttribute("aria-pressed", String(!isRemote));
+    remoteOpportunitiesBtn.setAttribute("aria-pressed", String(isRemote));
+    
+    latestOpportunitiesBtn.className = !isRemote ? activeClass : inactiveClass;
+    remoteOpportunitiesBtn.className = isRemote ? activeClass : inactiveClass;
+  }
+
+  function setJobMode(mode) {
+    activeJobMode = mode;
+    updateFilterButtons();
+    applyFilters();
+  }
+
+  function scheduleApplyFilters() {
+    clearTimeout(filterDebounceTimer);
+    filterDebounceTimer = setTimeout(applyFilters, 120);
+  }
+
+  const titleSuggestionDropdown = createSuggestionDropdown(searchInput, uniqueTitles, applyFilters);
+  const locationSuggestionDropdown = createSuggestionDropdown(locationInput, uniqueLocations, applyFilters);
+
+  function timeAgo(ms) {
+    const seconds = Math.floor((Date.now() - ms) / 1000);
+    let interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + "d ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    return "Just now";
+  }
+
+  function renderJobCard(job) {
+    const companyName = job.company || "Unknown Company";
+    const title = job.title || "Untitled role";
+    const location = job.location || "Remote";
+    const logo = normalizeImageUrl(job.logoUrl) || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random&color=fff&rounded=true&bold=true`;
+    const websiteUrl = normalizeWebsiteUrl(job.companyWebsite || job.website || "");
+    const postedAt = typeof job.timestamp?.toMillis === "function" ? job.timestamp.toMillis() : 0;
+    const isNew = postedAt > 0 && (Date.now() - postedAt < 3 * 24 * 60 * 60 * 1000);
+    const timeDisplay = postedAt > 0 ? timeAgo(postedAt) : "";
+    
+    const safeCompanyName = escapeHtml(companyName);
+    const safeTitle = escapeHtml(title);
+    const safeLocation = escapeHtml(location);
+    const safeWebsiteUrl = escapeAttribute(websiteUrl);
+    const safeLogo = escapeAttribute(logo);
+    const safeJobId = encodeURIComponent(job.id || "");
+    const safeSalary = escapeHtml(formatSalary(job.salary));
+    const likes = job.likes || 0;
+    const dislikes = job.dislikes || 0;
+    
+    const companyMarkup = websiteUrl
+      ? `<a href="${safeWebsiteUrl}" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-700 hover:text-brand-600 transition-colors inline-flex items-center gap-1" title="Visit ${escapeAttribute(companyName)} website">
+          ${safeCompanyName}
+          <svg class="w-3.5 h-3.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+         </a>`
+      : `<span class="font-semibold text-slate-700">${safeCompanyName}</span>`;
+    
+    const div = document.createElement("article");
+    div.className = "group bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 hover:border-brand-300 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row gap-5 sm:gap-6 sm:items-center relative animate-fade-in";
+
+    if (isNew) {
+      div.innerHTML += `<div class="absolute -top-3 -right-3 bg-gradient-to-r from-brand-500 to-indigo-500 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white uppercase tracking-wide z-10">New</div>`;
+    }
+
+    div.innerHTML += `
+      <div class="flex-shrink-0 flex sm:block items-center gap-4">
+        <div class="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-300">
+          <img src="${safeLogo}" alt="${escapeAttribute(companyName)} logo" loading="lazy" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Company&background=f1f5f9&color=64748b'">
+        </div>
+        <div class="sm:hidden flex-grow min-w-0">
+           <h3 class="font-bold text-lg text-slate-900 truncate pr-4">${safeTitle}</h3>
+           <div class="text-sm text-slate-500 truncate">${companyMarkup}</div>
+        </div>
+      </div>
+      
+      <div class="flex-grow min-w-0 flex flex-col justify-center">
+        <div class="hidden sm:flex flex-wrap items-center gap-2 mb-1.5">
+          <h3 class="min-w-0 font-extrabold text-xl text-slate-900 group-hover:text-brand-600 transition-colors break-words">${safeTitle}</h3>
+        </div>
+        
+        <div class="hidden sm:flex items-center text-base text-slate-500 mb-4">
+          ${companyMarkup}
+          ${timeDisplay ? `<span class="mx-2 w-1 h-1 rounded-full bg-slate-300"></span><span class="text-sm">${timeDisplay}</span>` : ''}
+        </div>
+        
+        <!-- Badges Container -->
+        <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+          <div class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-sm font-medium border border-slate-200/60">
+            <button type="button" class="hover:scale-110 transition-transform flex-shrink-0" data-copy-emoji="📍" title="Copy emoji">📍</button>
+            <span class="truncate max-w-[150px] sm:max-w-none">${safeLocation}</span>
+          </div>
+          <div class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl text-sm font-medium border border-emerald-100">
+             <button type="button" class="hover:scale-110 transition-transform flex-shrink-0" data-copy-emoji="💵" title="Copy emoji">💵</button>
+             <span>${safeSalary}</span>
+          </div>
+          
+          <!-- Vote Buttons -->
+          <div class="inline-flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-1.5 rounded-xl text-sm font-medium border border-slate-200/60 ml-auto sm:ml-0">
+            <button type="button" data-action="like" data-job-id="${safeJobId}" class="flex items-center gap-1 hover:text-brand-600 px-1 transition-colors" aria-label="Like this job">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514"></path></svg>
+                <span class="text-xs font-bold like-count">${likes}</span>
+            </button>
+            <div class="w-px h-3.5 bg-slate-300"></div>
+            <button type="button" data-action="dislike" data-job-id="${safeJobId}" class="flex items-center gap-1 hover:text-red-500 px-1 transition-colors" aria-label="Dislike this job">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.514"></path></svg>
+                <span class="text-xs font-bold dislike-count">${dislikes}</span>
+            </button>
+          </div>
+
+          ${timeDisplay ? `<div class="sm:hidden text-xs text-slate-400 font-medium ml-auto pl-2">${timeDisplay}</div>` : ''}
+        </div>
+      </div>
+      
+      <div class="flex-shrink-0 mt-4 sm:mt-0 sm:pl-4 sm:border-l border-slate-100">
+        <button type="button" data-job-id="${safeJobId}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-brand-600 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition-all shadow-md hover:shadow-brand-500/30">
+          <span>Apply Now</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </button>
+      </div>
+    `;
+    return div;
+  }
+
+  const emojiToast = document.getElementById("emojiToast");
+  let emojiToastTimeout;
+
+  function showEmojiToast(message) {
+    emojiToast.querySelector('span').textContent = message;
+    emojiToast.classList.remove("hidden");
+    emojiToast.classList.add("translate-y-0", "opacity-100");
+    emojiToast.classList.remove("translate-y-4", "opacity-0");
+    
+    clearTimeout(emojiToastTimeout);
+    emojiToastTimeout = setTimeout(() => {
+      emojiToast.classList.add("translate-y-4", "opacity-0");
+      setTimeout(() => emojiToast.classList.add("hidden"), 300); // Wait for transition
+    }, 2000);
+  }
+
+  async function copyEmoji(emoji) {
+    try {
+      await navigator.clipboard.writeText(emoji);
+      showEmojiToast(`Copied ${emoji}`);
+    } catch (err) {
+      console.error("Emoji copy failed:", err);
+      // Fallback
+      showEmojiToast("Unable to copy emoji");
+    }
+  }
+
+  // Client-side Filter Logic
+  function applyFilters() {
+    const keyword = searchInput.value.toLowerCase().trim();
+    const location = locationInput.value.toLowerCase().trim();
+    const dateVal = dateFilter.value;
+
+    const filtered = loadedJobs.filter(job => {
+      const titleText = String(job.title || "").toLowerCase();
+      const companyText = String(job.company || "").toLowerCase();
+      const locationText = String(job.location || "remote").toLowerCase();
+      const matchKeyword = !keyword || titleText.includes(keyword) || companyText.includes(keyword) || locationText.includes(keyword) || String(job.salary || "").toLowerCase().includes(keyword);
+      const matchLocation = !location || locationText.includes(location);
+      const matchMode = activeJobMode !== "remote" || isRemoteLocation(job.location);
+
+      let matchDate = true;
+      if (dateVal !== "all") {
+        const hours = parseInt(dateVal) * 24;
+        if (job.timestamp?.toMillis) {
+          const diff = (Date.now() - job.timestamp.toMillis()) / (1000 * 60 * 60);
+          matchDate = diff <= hours;
+        }
+      }
+
+      return matchKeyword && matchLocation && matchDate && matchMode;
+    });
+
+    renderList(filtered);
+  }
+
+  function renderList(jobs) {
+    jobsList.innerHTML = "";
+    const isSearching = searchInput.value || locationInput.value || dateFilter.value !== "all" || activeJobMode === "remote";
+    const defaultTitle = activeJobMode === "remote" ? "Remote Opportunities" : "Latest Opportunities";
+    
+    jobCount.innerText = isSearching ? (jobs.length === 1 ? `1 ${activeJobMode === "remote" ? "Remote Role" : "Role"}` : `${jobs.length} ${activeJobMode === "remote" ? "Remote Roles" : "Roles"}`) : defaultTitle;
+    
+    if (jobs.length === 0) {
+      emptyState.classList.remove("hidden");
+      emptyState.classList.add("flex");
+      loadMoreBtn.classList.add("hidden");
+      filterSummary.innerText = isSearching ? "No results match your current filters" : "";
+    } else {
+      emptyState.classList.add("hidden");
+      emptyState.classList.remove("flex");
+      
+      const fragment = document.createDocumentFragment();
+      jobs.forEach(job => fragment.appendChild(renderJobCard(job)));
+      jobsList.appendChild(fragment);
+      
+      if (isSearching) {
+         loadMoreBtn.classList.add("hidden");
+         filterSummary.innerText = activeJobMode === "remote"
+          ? (jobs.length === 1 ? "Found 1 matching remote opportunity" : `Found ${jobs.length} matching remote opportunities`)
+          : (jobs.length === 1 ? "Found 1 matching job" : `Found ${jobs.length} matching jobs`);
+      } else {
+         filterSummary.innerText = "Explore our most recent postings below.";
+      }
+    }
+  }
+
+  const votedJobs = new Set();
+  
+  async function handleVote(jobId, type, buttonEl) {
+    if (!db) return showEmojiToast("Database offline");
+    
+    const voteKey = `${jobId}_${type}`;
+    if (votedJobs.has(voteKey)) {
+      showEmojiToast("You already voted!");
+      return;
+    }
+    
+    try {
+      // Optimistic UI update to reflect the click instantly
+      const countSpan = buttonEl.querySelector(type === 'likes' ? '.like-count' : '.dislike-count');
+      if (countSpan) countSpan.textContent = parseInt(countSpan.textContent) + 1;
+      
+      votedJobs.add(voteKey);
+      buttonEl.classList.add(type === 'likes' ? 'text-brand-600' : 'text-red-500');
+      
+      // Update Firestore securely using increment
+      const jobRef = doc(db, "jobs", decodeURIComponent(jobId));
+      await updateDoc(jobRef, {
+        [type]: increment(1)
+      });
+    } catch (err) {
+      console.error("Error updating vote:", err);
+      showEmojiToast("Failed to save vote");
+      
+      // Revert optimistic update if database fails
+      votedJobs.delete(voteKey);
+      const countSpan = buttonEl.querySelector(type === 'likes' ? '.like-count' : '.dislike-count');
+      if (countSpan) countSpan.textContent = parseInt(countSpan.textContent) - 1;
+      buttonEl.classList.remove(type === 'likes' ? 'text-brand-600' : 'text-red-500');
+    }
+  }
+
+  async function fetchJobs(isLoadMore = false) {
+    if (!db) return;
+    try {
+      const currentLimit = isLoadMore ? SUBSEQUENT_PAGE_SIZE : INITIAL_PAGE_SIZE;
+
+      if (!isLoadMore) {
+        jobsList.innerHTML = '<div class="shimmer h-36 w-full rounded-3xl border border-slate-100"></div>'.repeat(4);
+        lastDoc = null;
+        loadedJobs = [];
+        emptyState.classList.add("hidden");
+        emptyState.classList.remove("flex");
+      } else {
+        loadMoreBtn.innerHTML = '<span class="animate-spin rounded-full h-5 w-5 border-2 border-brand-600 border-t-transparent mr-2"></span> Loading...';
+        loadMoreBtn.disabled = true;
+      }
+
+      let q = query(
+        collection(db, "jobs"),
+        where("status", "==", "approved"),
+        orderBy("timestamp", "desc"),
+        limit(currentLimit)
+      );
+
+      if (isLoadMore && lastDoc) {
+        q = query(q, startAfter(lastDoc));
+        const snap = await getDocs(q);
+        handleSnapshotData(snap, true, currentLimit);
+        return;
+      }
+
+      if (jobsRealtimeUnsubscribe) {
+        jobsRealtimeUnsubscribe();
+      }
+
+      jobsRealtimeUnsubscribe = onSnapshot(q, (snapshot) => {
+        handleSnapshotData(snapshot, false, currentLimit);
+      }, (err) => {
+        console.error("Realtime Firestore Error:", err);
+        jobCount.innerText = "Connection Error";
+        filterSummary.innerText = "We could not load jobs right now. Please refresh the page.";
+        emptyState.classList.remove("hidden");
+        emptyState.classList.add("flex");
+      });
+
+    } catch (err) {
+      console.error("Firestore Error:", err);
+      jobCount.innerText = "Connection Error";
+      filterSummary.innerText = "We could not load jobs right now. Please refresh the page.";
+      emptyState.classList.remove("hidden");
+      emptyState.classList.add("flex");
+    }
+  }
+
+  // Events
+  loadMoreBtn.addEventListener("click", () => fetchJobs(true));
+  mainSearchBtn.addEventListener("click", applyFilters);
+  latestOpportunitiesBtn.addEventListener("click", () => setJobMode("latest"));
+  remoteOpportunitiesBtn.addEventListener("click", () => setJobMode("remote"));
+  searchInput.addEventListener("input", scheduleApplyFilters);
+  locationInput.addEventListener("input", scheduleApplyFilters);
+  dateFilter.addEventListener("change", applyFilters);
+  
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("#searchInput, #locationInput, [data-suggestion]")) return;
+    closeSuggestionDropdowns();
+  });
+  
+  jobsList.addEventListener("click", (event) => {
+    // Handle Vote clicks
+    const likeBtn = event.target.closest('[data-action="like"]');
+    if (likeBtn) {
+      handleVote(likeBtn.dataset.jobId, "likes", likeBtn);
       return;
     }
 
-    if (jobsRealtimeUnsubscribe) {
-      jobsRealtimeUnsubscribe();
+    const dislikeBtn = event.target.closest('[data-action="dislike"]');
+    if (dislikeBtn) {
+      handleVote(dislikeBtn.dataset.jobId, "dislikes", dislikeBtn);
+      return;
+    }
+    
+    const copyButton = event.target.closest("[data-copy-emoji]");
+    if (copyButton) {
+      copyEmoji(copyButton.dataset.copyEmoji);
+      return;
     }
 
-    jobsRealtimeUnsubscribe = onSnapshot(q, (snapshot) => {
-      handleSnapshotData(snapshot, false, currentLimit);
-    }, (err) => {
-      console.error("Realtime Firestore Error:", err);
-      jobCount.innerText = "Error loading jobs";
-      filterSummary.innerText = "We could not load jobs right now. Please refresh or try again later.";
-      emptyState.classList.remove("hidden");
-    });
+    const detailsButton = event.target.closest("[data-job-id]");
+    if (detailsButton) {
+      window.location.href = `job-detail.html?id=${detailsButton.dataset.jobId}`;
+    }
+  });
 
-  } catch (err) {
-    console.error("Firestore Error:", err);
-    jobCount.innerText = "Error loading jobs";
-    filterSummary.innerText = "We could not load jobs right now. Please refresh or try again later.";
-    emptyState.classList.remove("hidden");
-  }
-}
+  // Initial Load
+  window.onload = () => {
+    fetchJobs();
+  };
 
-// Events
-loadMoreBtn.addEventListener("click", () => fetchJobs(true));
-mainSearchBtn.addEventListener("click", applyFilters);
-latestOpportunitiesBtn.addEventListener("click", () => setJobMode("latest"));
-remoteOpportunitiesBtn.addEventListener("click", () => setJobMode("remote"));
-searchInput.addEventListener("input", scheduleApplyFilters);
-locationInput.addEventListener("input", scheduleApplyFilters);
-dateFilter.addEventListener("change", applyFilters);
-document.addEventListener("click", (event) => {
-  if (event.target.closest("#searchInput, #locationInput, [data-suggestion]")) return;
-  closeSuggestionDropdowns();
-});
-jobsList.addEventListener("click", (event) => {
-  const copyButton = event.target.closest("[data-copy-emoji]");
-  if (copyButton) {
-    copyEmoji(copyButton.dataset.copyEmoji);
-    return;
-  }
+  window.addEventListener("beforeunload", () => {
+    if (jobsRealtimeUnsubscribe) jobsRealtimeUnsubscribe();
+  });
 
-  const detailsButton = event.target.closest("[data-job-id]");
-  if (detailsButton) {
-    window.location.href = `job-detail.html?id=${detailsButton.dataset.jobId}`;
-  }
-});
-
-// Initial Load
-window.onload = () => {
-  fetchJobs();
-};
-
-window.addEventListener("beforeunload", () => {
-  if (jobsRealtimeUnsubscribe) jobsRealtimeUnsubscribe();
-});
-
-</script>
+  </script>
+  
+  <!-- Preserved Analytics & Scripts -->
   <script type="module" src="public/js/analytics.js"></script>
   <script type="module" src="public/js/browser-notifications.js"></script>
 </body>
