@@ -188,3 +188,141 @@ section {
     scroll-behavior: auto !important;
   }
 }
+
+/* 2026 UI refresh: shared polish applied across BooterSpace pages. */
+:root {
+  --bs-brand: #2563eb;
+  --bs-brand-2: #4f46e5;
+  --bs-accent: #10b981;
+  --bs-bg: #f6f8ff;
+  --bs-text: #0f172a;
+  --bs-muted: #64748b;
+  --bs-card: rgba(255, 255, 255, 0.92);
+  --bs-border: rgba(148, 163, 184, 0.24);
+  --bs-ring: rgba(37, 99, 235, 0.22);
+  --bs-shadow-soft: 0 18px 50px -30px rgba(15, 23, 42, 0.55);
+  --bs-shadow-card: 0 18px 40px -28px rgba(37, 99, 235, 0.42);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32rem),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.10), transparent 30rem),
+    linear-gradient(180deg, #f8fbff 0%, var(--bs-bg) 48%, #ffffff 100%);
+  color: var(--bs-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#navbar nav {
+  backdrop-filter: blur(18px) saturate(1.2);
+  background: rgba(239, 246, 255, 0.88) !important;
+  border-color: rgba(147, 197, 253, 0.55) !important;
+  box-shadow: 0 12px 34px -26px rgba(30, 64, 175, 0.55) !important;
+}
+
+#navbar a,
+#navbar button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+#navbar a:hover,
+#navbar button:hover {
+  transform: translateY(-1px);
+}
+
+main,
+.wrap,
+.container,
+.max-w-7xl,
+.max-w-6xl,
+.max-w-5xl,
+.max-w-4xl {
+  position: relative;
+}
+
+.card,
+.panel,
+.content-box,
+.job-card,
+.book-card,
+.company-card,
+.review-card,
+.place-card,
+.post-card,
+.auth-card,
+.profile-card,
+.notification-card,
+.bg-white {
+  border-color: var(--bs-border) !important;
+  box-shadow: var(--bs-shadow-card) !important;
+}
+
+.card,
+.panel,
+.content-box,
+.job-card,
+.book-card,
+.company-card,
+.review-card,
+.place-card,
+.post-card,
+.auth-card,
+.profile-card,
+.notification-card {
+  background: var(--bs-card) !important;
+  backdrop-filter: blur(14px);
+}
+
+button,
+.btn,
+[role="button"],
+a.nav-button,
+.join-button,
+input[type="submit"] {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+button:hover,
+.btn:hover,
+[role="button"]:hover,
+a.nav-button:hover,
+.join-button:hover,
+input[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bs-shadow-soft);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-color: var(--bs-border);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--bs-brand) !important;
+  box-shadow: 0 0 0 4px var(--bs-ring) !important;
+  outline: none;
+}
+
+.bs-version-footer {
+  margin: 2rem auto 1.25rem;
+  max-width: 1100px;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: var(--bs-muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
