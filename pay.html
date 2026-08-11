@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payslip - Rameej Alam - SM Digital Technologies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                padding: 0 !important;
+            }
+            .payslip-container {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+            [contenteditable="true"] {
+                outline: none !important;
+                background: transparent !important;
+                border-bottom: none !important;
+            }
+        }
+
+        /* Editable visual feedback */
+        [contenteditable="true"] {
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            padding: 1px 4px;
+            margin: -1px -4px;
+        }
+        [contenteditable="true"]:hover {
+            background-color: rgba(59, 130, 246, 0.08);
+            outline: 1px dashed #93c5fd;
+        }
+        [contenteditable="true"]:focus {
+            background-color: #ffffff;
+            outline: 2px solid #2563eb;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+    <!-- Controls Bar -->
+    <div class="max-w-4xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4 no-print">
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-slate-700">Preset Period:</label>
+            <select id="monthSelect" onchange="loadPresetPeriod()" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 font-medium">
+                <option value="May 2025">May 2025 (Full Month)</option>
+                <option value="June 2025">June 2025 (Full Month)</option>
+                <option value="July 2025">July 2025 (Full Month)</option>
+                <option value="August 2025">August 2025 (Full Month)</option>
+                <option value="September 2025">September 2025 (Full Month)</option>
+                <option value="October 2025">October 2025 (Full Month)</option>
+                <option value="April 2025">April 2025 (Prorated - 17 Days)</option>
+                <option value="Custom">Custom / Free Edit</option>
+            </select>
+        </div>
+        <div class="flex items-center gap-2 bg-blue-50 px-3.5 py-2 rounded-lg border border-blue-200">
+            <span class="text-xs font-semibold text-blue-700">Click any text on payslip to edit directly</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="resetDefaults()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium text-sm px-4 py-2.5 rounded-lg transition-colors">
+                Reset
+            </button>
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print / Save PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Payslip Document -->
+    <div class="payslip-container max-w-4xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-6 sm:p-8 border-b-4 border-blue-600">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 contenteditable="true" class="text-2xl font-bold tracking-wide text-white">SM DIGITAL TECHNOLOGIES</h1>
+                    <p contenteditable="true" class="text-xs text-slate-300 mt-1">SMDIGITALOFFICE, Niwaru Road, Jaipur, Rajasthan - 332012</p>
+                    <p contenteditable="true" class="text-xs text-slate-400 mt-0.5">Location: Remote</p>
+                </div>
+                <div class="text-left sm:text-right">
+                    <span contenteditable="true" class="inline-block bg-blue-500/20 text-blue-300 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-1">Official Payslip</span>
+                    <p contenteditable="true" class="text-sm font-medium text-slate-300" id="displayPayPeriod">Pay Slip for May 2025</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Summary Card -->
+        <div class="p-6 sm:p-8 bg-slate-50 border-b border-slate-200">
+            <h2 contenteditable="true" class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Employee Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm">
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Employee Name:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800">Rameej Alam</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Designation:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800">ERP Implementation & Onboarding Associate</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Date of Joining:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800">14 April 2025</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Employee ID:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800">SMDT-2025-048</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Total Salary / Month:</span>
+                    <span contenteditable="true" class="font-bold text-blue-800 cursor-pointer hover:bg-blue-100/50 px-1 rounded transition-colors" id="monthlyOfferSalary" oninput="onTotalSalaryChange()" onblur="formatTotalSalaryOnBlur()" title="Edit total monthly salary to auto-calculate all components">₹41,000.00</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Working Days:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800" id="workingDays" oninput="onDaysChange()">31</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Paid Days:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800" id="paidDays" oninput="onDaysChange()">31</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Working Days:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800" id="workingDays" oninput="calculateTotals()">31</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Paid Days:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800" id="paidDays" oninput="calculateTotals()">31</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Mode of Payment:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800">Bank Transfer</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500">Pay Date:</span>
+                    <span contenteditable="true" class="font-semibold text-slate-800" id="payDate">07 June 2025</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Earnings & Deductions Breakup Table -->
+        <div class="p-6 sm:p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Earnings Section -->
+                <div>
+                    <div class="grid grid-cols-3 border-b-2 border-slate-800 pb-2 mb-3 text-xs font-bold text-slate-900">
+                        <span contenteditable="true" class="uppercase tracking-wider">Earnings</span>
+                        <span contenteditable="true" class="text-right text-slate-500">Total Salary / Month</span>
+                        <span contenteditable="true" class="text-right text-slate-800">Earned Amount</span>
+                    </div>
+                    <div class="space-y-2.5 text-sm" id="earningsContainer">
+                        <div class="grid grid-cols-3 items-center">
+                            <span contenteditable="true" class="text-slate-600">Basic Salary</span>
+                            <span contenteditable="true" class="text-right text-slate-500 text-xs sm:text-sm val-std-earning" oninput="calculateTotals()">₹20,500.00</span>
+                            <span contenteditable="true" class="text-right font-medium text-slate-800 val-earned-amt" oninput="calculateTotals()">₹20,500.00</span>
+                        </div>
+                        <div class="grid grid-cols-3 items-center">
+                            <span contenteditable="true" class="text-slate-600">HRA</span>
+                            <span contenteditable="true" class="text-right text-slate-500 text-xs sm:text-sm val-std-earning" oninput="calculateTotals()">₹8,200.00</span>
+                            <span contenteditable="true" class="text-right font-medium text-slate-800 val-earned-amt" oninput="calculateTotals()">₹8,200.00</span>
+                        </div>
+                        <div class="grid grid-cols-3 items-center">
+                            <span contenteditable="true" class="text-slate-600">Conveyance</span>
+                            <span contenteditable="true" class="text-right text-slate-500 text-xs sm:text-sm val-std-earning" oninput="calculateTotals()">₹1,600.00</span>
+                            <span contenteditable="true" class="text-right font-medium text-slate-800 val-earned-amt" oninput="calculateTotals()">₹1,600.00</span>
+                        </div>
+                        <div class="grid grid-cols-3 items-center">
+                            <span contenteditable="true" class="text-slate-600">Special Allowance</span>
+                            <span contenteditable="true" class="text-right text-slate-500 text-xs sm:text-sm val-std-earning" oninput="calculateTotals()">₹10,700.00</span>
+                            <span contenteditable="true" class="text-right font-medium text-slate-800 val-earned-amt" oninput="calculateTotals()">₹10,700.00</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-3 font-bold text-slate-900 text-sm bg-slate-50 p-2 rounded">
+                        <span contenteditable="true">Gross Earnings (A)</span>
+                        <span contenteditable="true" class="text-right text-slate-600" id="grossStdAmt">₹41,000.00</span>
+                        <span contenteditable="true" class="text-right" id="grossAmt">₹41,000.00</span>
+                    </div>
+                </div>
+
+                <!-- Deductions Section -->
+                <div>
+                    <div class="flex justify-between items-center border-b-2 border-slate-800 pb-2 mb-3">
+                        <h3 contenteditable="true" class="font-bold text-slate-900 uppercase text-xs tracking-wider">Deductions</h3>
+                        <span contenteditable="true" class="text-xs font-bold text-slate-500">Amount (INR)</span>
+                    </div>
+                    <div class="space-y-2.5 text-sm" id="deductionsContainer">
+                        <div class="flex justify-between items-center">
+                            <span contenteditable="true" class="text-slate-600">Provident Fund (EPF)</span>
+                            <span contenteditable="true" class="font-medium text-slate-800 val-ded-amt" oninput="calculateTotals()">₹1,800.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span contenteditable="true" class="text-slate-600">Professional Tax (PT)</span>
+                            <span contenteditable="true" class="font-medium text-slate-800 val-ded-amt" oninput="calculateTotals()">₹200.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span contenteditable="true" class="text-slate-600">Income Tax (TDS)</span>
+                            <span contenteditable="true" class="font-medium text-slate-800 val-ded-amt" oninput="calculateTotals()">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="mt-14 pt-3 border-t border-slate-200 flex justify-between font-bold text-slate-900 text-sm bg-slate-50 p-2 rounded">
+                        <span contenteditable="true">Total Deductions (B)</span>
+                        <span contenteditable="true" id="deductionsAmt">₹2,000.00</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Net Pay Box -->
+            <div class="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <p contenteditable="true" class="text-xs uppercase tracking-wider font-semibold text-blue-700">Net Payable Amount (A - B)</p>
+                    <p contenteditable="true" class="text-xs text-blue-600 mt-1 font-medium" id="netInWords">Rupees Thirty-Nine Thousand Only</p>
+                </div>
+                <div class="text-right">
+                    <span contenteditable="true" class="text-2xl sm:text-3xl font-extrabold text-blue-900" id="netPayAmt">₹39,000.00</span>
+                </div>
+            </div>
+
+            <!-- Note / Footer -->
+            <div class="mt-10 pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-end text-xs text-slate-500 gap-6">
+                <div>
+                    <p contenteditable="true" class="font-medium text-slate-700">Terms & Notes:</p>
+                    <p contenteditable="true" class="mt-1">1. Salary is disbursed on or before the 7th of every calendar month.</p>
+                    <p contenteditable="true">2. This document is system generated and does not require a physical signature.</p>
+                </div>
+                <div class="text-center sm:text-right">
+                    <div class="h-10 border-b border-slate-300 w-40 mb-1 mx-auto sm:ml-auto"></div>
+                    <p contenteditable="true" class="font-semibold text-slate-700">Authorized Signatory</p>
+                    <p contenteditable="true" class="text-slate-400">SM Digital Technologies</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const payData = {
+            "May 2025": { workingDays: 31, paidDays: 31, payDate: "07 June 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "June 2025": { workingDays: 30, paidDays: 30, payDate: "07 July 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "July 2025": { workingDays: 31, paidDays: 31, payDate: "07 August 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "August 2025": { workingDays: 31, paidDays: 31, payDate: "07 September 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "September 2025": { workingDays: 30, paidDays: 30, payDate: "07 October 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "October 2025": { workingDays: 31, paidDays: 31, payDate: "07 November 2025", basic: 20500, hra: 8200, conveyance: 1600, special: 10700, pf: 1800, pt: 200 },
+            "April 2025": { workingDays: 30, paidDays: 17, payDate: "07 May 2025", basic: 11617, hra: 4647, conveyance: 907, special: 6063, pf: 1020, pt: 200 }
+        };
+
+        function parseCurrency(str) {
+            if (!str) return 0;
+            const cleanStr = str.toString().replace(/[^0-9.-]+/g, "");
+            return parseFloat(cleanStr) || 0;
+        }
+
+        function formatCurrency(num) {
+            return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function numberToWordsIN(num) {
+            const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+            const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            if ((num = num.toString()).length > 9) return 'Amount Too Large';
+            const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+            if (!n) return ''; 
+            let str = '';
+            str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+            str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+            str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+            str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+            str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+            return str ? 'Rupees ' + str.trim() + ' Only' : 'Rupees Zero Only';
+        }
+
+        function onTotalSalaryChange() {
+            const totalSal = parseCurrency(document.getElementById('monthlyOfferSalary').innerText);
+            autoBreakdownSalary(totalSal);
+        }
+
+        function formatTotalSalaryOnBlur() {
+            const el = document.getElementById('monthlyOfferSalary');
+            const totalSal = parseCurrency(el.innerText);
+            if (totalSal > 0) {
+                el.innerText = formatCurrency(totalSal);
+            }
+        }
+
+        function autoBreakdownSalary(totalSalary) {
+            if (totalSalary <= 0) return;
+
+            // Standard Indian Payroll Allocation Rules:
+            // Basic Salary = 50% of Total Salary
+            // HRA = 40% of Basic Salary (20% of Total Salary)
+            // Conveyance = ₹1,600 (fixed standard allowance)
+            // Special Allowance = Remaining Balance
+            const basic = Math.round(totalSalary * 0.50);
+            const hra = Math.round(basic * 0.40);
+            let conveyance = 1600;
+            if (totalSalary < 5000) conveyance = 0;
+            else if (totalSalary < 10000) conveyance = 800;
+
+            let special = totalSalary - (basic + hra + conveyance);
+            if (special < 0) special = 0;
+
+            const stdEarns = [basic, hra, conveyance, special];
+
+            const wDays = parseCurrency(document.getElementById('workingDays').innerText) || 31;
+            const pDays = parseCurrency(document.getElementById('paidDays').innerText) || wDays;
+            const ratio = (wDays > 0) ? (pDays / wDays) : 1;
+
+            const stdNodes = document.querySelectorAll('.val-std-earning');
+            const earnedNodes = document.querySelectorAll('.val-earned-amt');
+
+            stdNodes.forEach((node, idx) => {
+                if (stdEarns[idx] !== undefined) {
+                    node.innerText = formatCurrency(stdEarns[idx]);
+                }
+            });
+
+            earnedNodes.forEach((node, idx) => {
+                if (stdEarns[idx] !== undefined) {
+                    const prorated = Math.round(stdEarns[idx] * ratio);
+                    node.innerText = formatCurrency(prorated);
+                }
+            });
+
+            // Auto-calculate statutory deductions (EPF & PT)
+            const dedNodes = document.querySelectorAll('.val-ded-amt');
+            if (dedNodes.length >= 2) {
+                const stdPf = Math.min(1800, Math.round(basic * 0.12));
+                const earnedPf = Math.round(stdPf * ratio);
+                dedNodes[0].innerText = formatCurrency(earnedPf);
+                
+                // Professional Tax (standard ₹200 if monthly salary >= ₹15,000)
+                dedNodes[1].innerText = formatCurrency(totalSalary >= 15000 ? 200 : 0);
+            }
+
+            calculateTotals();
+        }
+
+        function onDaysChange() {
+            const stdNodes = document.querySelectorAll('.val-std-earning');
+            const earnedNodes = document.querySelectorAll('.val-earned-amt');
+
+            const wDays = parseCurrency(document.getElementById('workingDays').innerText) || 31;
+            const pDays = parseCurrency(document.getElementById('paidDays').innerText) || wDays;
+            const ratio = (wDays > 0) ? (pDays / wDays) : 1;
+
+            stdNodes.forEach((node, idx) => {
+                const stdVal = parseCurrency(node.innerText);
+                if (earnedNodes[idx]) {
+                    earnedNodes[idx].innerText = formatCurrency(Math.round(stdVal * ratio));
+                }
+            });
+
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            // Calculate Std Earnings
+            const stdElements = document.querySelectorAll('.val-std-earning');
+            let totalStdGross = 0;
+            stdElements.forEach(el => {
+                totalStdGross += parseCurrency(el.innerText);
+            });
+            const grossStdEl = document.getElementById('grossStdAmt');
+            if (grossStdEl) grossStdEl.innerText = formatCurrency(totalStdGross);
+
+            // Calculate Earned Amount
+            const earnedElements = document.querySelectorAll('.val-earned-amt');
+            let totalEarnedGross = 0;
+            earnedElements.forEach(el => {
+                totalEarnedGross += parseCurrency(el.innerText);
+            });
+            const grossAmtEl = document.getElementById('grossAmt');
+            if (grossAmtEl) grossAmtEl.innerText = formatCurrency(totalEarnedGross);
+
+            // Calculate Deductions
+            const dedElements = document.querySelectorAll('.val-ded-amt');
+            let totalDeductions = 0;
+            dedElements.forEach(el => {
+                totalDeductions += parseCurrency(el.innerText);
+            });
+            const dedAmtEl = document.getElementById('deductionsAmt');
+            if (dedAmtEl) dedAmtEl.innerText = formatCurrency(totalDeductions);
+
+            // Calculate Net Pay
+            const netPay = Math.max(0, totalEarnedGross - totalDeductions);
+            const netPayEl = document.getElementById('netPayAmt');
+            if (netPayEl) netPayEl.innerText = formatCurrency(netPay);
+            
+            const netWordsEl = document.getElementById('netInWords');
+            if (netWordsEl) netWordsEl.innerText = numberToWordsIN(Math.round(netPay));
+        }
+
+        function loadPresetPeriod() {
+            const selectedMonth = document.getElementById('monthSelect').value;
+            if (selectedMonth === "Custom") return;
+
+            const data = payData[selectedMonth];
+            document.getElementById('displayPayPeriod').innerText = 'Pay Slip for ' + selectedMonth;
+            document.getElementById('workingDays').innerText = data.workingDays;
+            document.getElementById('paidDays').innerText = data.paidDays;
+            document.getElementById('payDate').innerText = data.payDate;
+            document.getElementById('monthlyOfferSalary').innerText = formatCurrency(41000);
+
+            const stdEarns = [20500, 8200, 1600, 10700];
+            const earnedAmts = (selectedMonth === "April 2025") 
+                ? [data.basic, data.hra, data.conveyance, data.special]
+                : stdEarns;
+
+            const stdNodes = document.querySelectorAll('.val-std-earning');
+            const earnedNodes = document.querySelectorAll('.val-earned-amt');
+
+            stdNodes.forEach((node, idx) => {
+                node.innerText = formatCurrency(stdEarns[idx]);
+            });
+
+            earnedNodes.forEach((node, idx) => {
+                node.innerText = formatCurrency(earnedAmts[idx]);
+            });
+
+            const dedNodes = document.querySelectorAll('.val-ded-amt');
+            if (dedNodes.length >= 2) {
+                dedNodes[0].innerText = formatCurrency(data.pf);
+                dedNodes[1].innerText = formatCurrency(data.pt);
+            }
+
+            calculateTotals();
+        }
+
+        function resetDefaults() {
+            document.getElementById('monthSelect').value = "May 2025";
+            loadPresetPeriod();
+        }
+
+        // Initialize calculations on load
+        window.onload = function() {
+            calculateTotals();
+        };
+    </script>
+</body>
+</html>
