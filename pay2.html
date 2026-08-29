@@ -154,10 +154,6 @@
                     <span class="text-slate-500">Mode of Payment:</span>
                     <span contenteditable="true" class="font-semibold text-slate-800">Bank Transfer</span>
                 </div>
-                <div class="flex justify-between border-b border-slate-200/60 pb-1.5">
-                    <span class="text-slate-500">Pay Date:</span>
-                    <span contenteditable="true" class="font-semibold text-slate-800" id="payDate">07 June 2025</span>
-                </div>
             </div>
         </div>
 
@@ -446,7 +442,6 @@
             document.getElementById('toDate').value = data.toDate;
             document.getElementById('workingDays').innerText = data.workingDays;
             document.getElementById('paidDays').innerText = data.paidDays;
-            document.getElementById('payDate').innerText = data.payDate;
             document.getElementById('monthlyOfferSalary').innerText = formatCurrency(41000);
 
             const stdEarns = [20500, 8200, 1600, 10700];
