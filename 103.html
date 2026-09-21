@@ -151,7 +151,7 @@
             </button>
           </div>
           <p id="aiStatusMessage" class="hidden text-xs text-yellow-200 mt-2 flex items-center gap-1.5 font-medium">
-            <i class="fas fa-circle-notch spinner text-xs"></i> <span id="aiStatusText">Bypassing CORS restrictions & parsing job listing data... please wait.</span>
+            <i class="fas fa-circle-notch spinner text-xs"></i> <span id="aiStatusText">Fetching and parsing job listing data... please wait.</span>
           </p>
         </div>
       </div>
@@ -472,8 +472,18 @@
     }
 
     // ====================================================================
-    // CORS PROXY FETCH LAYER (multiple fallbacks for max reliability)
+    // FETCH LAYERS
+    // The reader endpoint renders JavaScript-heavy and bot-protected pages on
+    // its server, then returns readable Markdown with CORS enabled. The older
+    // HTML/proxy path remains in place as a fallback for every existing board.
     // ====================================================================
+    const READER_FETCHERS = [
+      {
+        name: "Jina Reader",
+        url: (targetUrl) => `https://r.jina.ai/http://${targetUrl.replace(/^https?:\/\//i, "")}`
+      }
+    ];
+
     const PROXY_FETCHERS = [
       {
         name: "corsproxy.io",
@@ -517,6 +527,22 @@
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.text();
+    }
+
+    async function fetchReaderContent(targetUrl) {
+      const errors = [];
+      for (const reader of READER_FETCHERS) {
+        try {
+          const content = await fetchText(reader.url(targetUrl), 20000);
+          // Reader error pages are short and should not prevent the established
+          // HTML extractor from trying its direct/proxy fallbacks.
+          if (content && content.trim().length > 200) return content;
+          errors.push(`${reader.name}: empty response`);
+        } catch (error) {
+          errors.push(`${reader.name}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(" | ") || "No reader service was available.");
     }
 
     async function fetchHtmlThroughProxy(targetUrl) {
@@ -622,6 +648,65 @@
       }
 
       return null;
+    }
+
+    // ====================================================================
+    // PASS 0 — SERVER-RENDERED READER CONTENT
+    // This covers sites that require JavaScript, reject browser CORS requests,
+    // or block anonymous proxy traffic (for example BioSpace and AlgoSec).
+    // It is intentionally additive: JSON-LD, ATS profiles, and the legacy
+    // generic HTML pass still run whenever HTML is available.
+    // ====================================================================
+    function markdownToText(value) {
+      return normalizeText((value || "")
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replace(/[`*_>#]/g, "")
+        .replace(/\s+/g, " "));
+    }
+
+    function readerField(markdown, labels) {
+      for (const label of labels) {
+        const pattern = new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?(?:\\*{0,2})?${label}(?:\\*{0,2})?\\s*[:|-]\\s*([^\\n]+)`, "im");
+        const match = markdown.match(pattern);
+        if (match) return markdownToText(match[1]).replace(/^(?:is|are)\s+/i, "");
+      }
+      return "";
+    }
+
+    function readerTitle(markdown) {
+      const labelled = readerField(markdown, ["job\\s*title", "position", "role"]);
+      if (labelled) return labelled;
+      const heading = markdown.match(/^\s{0,3}#\s+([^\n]+)/m);
+      if (heading) return markdownToText(heading[1]);
+      const documentTitle = readerField(markdown, ["title"]);
+      return documentTitle.replace(/\s+(?:\||–|—|-)?\s*(?:jobs?|careers?|job search).*$/i, "").trim();
+    }
+
+    function companyFromHostname(jobUrl) {
+      const hostnameParts = getHostname(jobUrl).split(".");
+      const knownBrands = { algosec: "AlgoSec", biospace: "BioSpace" };
+      const knownBrand = hostnameParts.find(part => knownBrands[part]);
+      return knownBrand ? knownBrands[knownBrand] : titleCase(hostnameParts[0]);
+    }
+
+    function extractFromReaderMarkdown(markdown, jobUrl) {
+      const result = { title: "", company: "", website: new URL(jobUrl).origin, logo: "", location: "", salary: "", description: "" };
+      const content = (markdown || "").replace(/\r/g, "");
+      result.title = readerTitle(content);
+      result.company = readerField(content, ["company", "hiring\\s*organization", "organization"]) || companyFromHostname(jobUrl);
+      result.location = readerField(content, ["location", "job\\s*location", "workplace"]);
+      result.salary = readerField(content, ["salary", "compensation", "pay\\s*range"]);
+
+      // Preserve headings and lists as readable plain text in the textarea.
+      // Reader content has already removed page chrome, making it a safer
+      // description source than a browser-side scrape of an app shell.
+      const descriptionStart = content.search(/(?:^|\n)\s{0,3}#{1,4}\s*(?:job\s*)?(?:description|about\s+(?:the\s+)?(?:role|job)|what\s+(?:you(?:'|’)ll|will)\s+do|responsibilities|the\s+role)\b/im);
+      const descriptionSource = descriptionStart >= 0 ? content.slice(descriptionStart) : content;
+      const description = markdownToText(descriptionSource);
+      if (description.length >= 120) result.description = description;
+
+      return (result.title || result.description || result.location) ? result : null;
     }
 
     // ====================================================================
@@ -976,7 +1061,7 @@
       autoFillBtn.classList.add("opacity-50", "cursor-not-allowed");
       aiBtnIcon.className = "fas fa-circle-notch spinner text-sm";
       aiBtnText.textContent = "Extracting...";
-      aiStatusText.textContent = "Bypassing CORS restrictions & parsing job listing data... please wait.";
+      aiStatusText.textContent = "Fetching and parsing job listing data... please wait.";
       aiStatusMessage.classList.remove("hidden");
 
       try {
@@ -989,23 +1074,43 @@
           console.info("Public ATS API unavailable; trying page extraction.", apiError);
         }
 
+        let readerResult = null;
         let jsonLdResult = null;
         let atsResult = null;
         let genericResult = null;
         if (!apiResult) {
-          // Fetch external HTML directly when allowed, then through proxy
-          // fallbacks for career pages that do not expose a public API.
-          const htmlContent = await fetchHtmlThroughProxy(jobUrl);
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(htmlContent, "text/html");
-          jsonLdResult = extractFromJsonLd(doc);
-          atsResult = extractWithAtsProfile(doc, jobUrl);
-          genericResult = extractGenericHeuristic(doc, jobUrl);
+          // Start the reader and the established HTML/proxy path together.
+          // This means an unavailable reader cannot delay or replace extraction
+          // for existing sources, while either result can fill missing fields.
+          const readerPromise = fetchReaderContent(jobUrl)
+            .then(content => extractFromReaderMarkdown(content, jobUrl));
+          let htmlError = null;
+          try {
+            const htmlContent = await fetchHtmlThroughProxy(jobUrl);
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, "text/html");
+            jsonLdResult = extractFromJsonLd(doc);
+            atsResult = extractWithAtsProfile(doc, jobUrl);
+            genericResult = extractGenericHeuristic(doc, jobUrl);
+          } catch (error) {
+            htmlError = error;
+            console.info("Legacy page extraction unavailable; waiting for reader content.", error);
+          }
+
+          try {
+            readerResult = await readerPromise;
+          } catch (readerError) {
+            console.info("Reader service unavailable; retaining legacy extraction results.", readerError);
+          }
+
+          // A reader result is still useful when sites reject all browser
+          // proxy requests. Only surface an error when both paths failed.
+          if (htmlError && !readerResult) throw htmlError;
         }
-        const extracted = mergeExtracted(apiResult, jsonLdResult, atsResult, genericResult);
+        const extracted = mergeExtracted(apiResult, jsonLdResult, atsResult, readerResult, genericResult);
 
         const matchedAts = ATS_PROFILES.find(p => p.match(getHostname(jobUrl)));
-        const sourceLabel = apiResult ? "the public ATS API" : (jsonLdResult ? "structured job data" : (matchedAts ? `${matchedAts.name} careers page` : "page content"));
+        const sourceLabel = apiResult ? "the public ATS API" : (jsonLdResult ? "structured job data" : (readerResult ? "server-rendered page content" : (matchedAts ? `${matchedAts.name} careers page` : "page content")));
 
         // Auto-fill values inside standard inputs
         if (extracted.title) document.getElementById("jobTitle").value = extracted.title;
