@@ -40,26 +40,6 @@
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
-    <div id="admin-login-overlay" class="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
-            <div class="text-center mb-6">
-                <div class="mx-auto w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg"><i class="fa-solid fa-shield-halved"></i></div>
-                <h2 class="text-xl font-extrabold text-slate-900 mt-4">Admin Question Feeder</h2>
-                <p class="text-xs text-slate-500 mt-1">Sign in with your Firebase Admin account to save questions.</p>
-            </div>
-            <div class="space-y-3">
-                <input id="admin-login-email" type="email" autocomplete="username" placeholder="Admin email"
-                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <input id="admin-login-password" type="password" autocomplete="current-password" placeholder="Password"
-                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <button id="admin-login-btn" type="button" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition">
-                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Sign In
-                </button>
-                <p id="admin-login-error" class="text-xs text-rose-600 text-center min-h-4"></p>
-            </div>
-        </div>
-    </div>
-
 
     <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -81,11 +61,62 @@
                 <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Super Admin</div>
               </div>
             </div>
+            <button id="admin-logout-btn" type="button"
+                class="hidden px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition">
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+            </button>
           </div>
         </div>
       </header>
 
-    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Firebase Admin Login Gate -->
+    <section id="auth-gate" class="flex-grow max-w-md mx-auto w-full p-6 flex items-center justify-center">
+        <div class="w-full bg-white rounded-2xl shadow-md border border-slate-200 p-6">
+            <div class="text-center mb-5">
+                <div class="mx-auto w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-slate-900">Admin Login</h2>
+                <p class="text-xs text-slate-500 mt-1">Firebase Admin access is required to add or delete questions.</p>
+            </div>
+
+            <form id="admin-login-form" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Admin Email</label>
+                    <input id="admin-email" type="email" autocomplete="username" required
+                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        placeholder="Enter admin email">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+                    <input id="admin-password" type="password" autocomplete="current-password" required
+                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        placeholder="Enter admin password">
+                </div>
+                <button type="submit" id="admin-login-btn"
+                    class="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow transition">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Sign in as Admin
+                </button>
+            </form>
+
+            <div class="flex items-center gap-3 my-4">
+                <div class="h-px bg-slate-200 flex-1"></div>
+                <span class="text-[10px] font-bold text-slate-400">OR</span>
+                <div class="h-px bg-slate-200 flex-1"></div>
+            </div>
+
+            <button type="button" id="google-login-btn"
+                class="w-full px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm rounded-xl border border-slate-300 transition">
+                <i class="fa-brands fa-google mr-1"></i> Continue with Google
+            </button>
+
+            <p id="auth-status" class="text-xs text-center text-slate-500 mt-4">
+                Checking Firebase authentication...
+            </p>
+        </div>
+    </section>
+
+    <main id="admin-main" class="hidden flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Left Column: Add Question Form & Bulk Importer -->
         <div class="lg:col-span-7 space-y-6">
@@ -95,12 +126,9 @@
                         <h2 class="text-lg font-bold">Question Bank Entry</h2>
                         <p class="text-xs text-indigo-200">Single or Bulk Import (100 Questions in 1 Click)</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                    <button id="admin-logout-btn" type="button" class="hidden bg-white/10 hover:bg-white/20 text-white text-[11px] px-2.5 py-1 rounded-full border border-white/20">Logout</button>
                     <span id="db-status-badge" class="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1">
                         <i class="fa-solid fa-database"></i> Live Sync
                     </span>
-                </div>
                 </div>
 
                 <!-- Test Metadata -->
@@ -289,11 +317,22 @@
     <script type="module">
         import { getFirebaseServices } from "./public/js/firebase-singleton.js";
         import { collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import {
+            signInWithEmailAndPassword,
+            signInWithPopup,
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         // Firebase Setup — same app/path used by the CBT frontend.
         const appId = "bihar-let-2026-app";
         const QUESTION_COLLECTION = "bihar_let_questions";
+
+        // IMPORTANT: This must match the UID allowed by the current Firestore admin rule.
+        const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+        let firebaseAuth = null;
+        let unsubscribeQuestions = null;
 
         // Sample Preloaded Questions
         const defaultSampleQuestions = [
@@ -485,13 +524,13 @@ Answer: B. पीपल`;
             btnSave.innerText = `Saving ${parsed.length} Questions...`;
 
             try {
-                if (window.db && window.auth?.currentUser?.uid === "nkXAUBb7ffZQ5CtyShWl6YcQ39t2") {
-                    const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
-                    for (const q of parsed) {
-                        await addDoc(qCol, q);
-                    }
-                } else {
-                    throw new Error("Admin login required. Please sign in first.");
+                if (!window.db || !firebaseAuth?.currentUser || firebaseAuth.currentUser.uid !== ADMIN_UID) {
+                    throw new Error("Admin authentication required.");
+                }
+
+                const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+                for (const q of parsed) {
+                    await addDoc(qCol, q);
                 }
 
                 showModal("Bulk Upload Complete!", `Successfully imported <b>${parsed.length} questions</b> into ${section}!`, [
@@ -502,9 +541,11 @@ Answer: B. पीपल`;
                 document.getElementById('parsed-count').innerText = '0';
             } catch (err) {
                 console.error("Bulk upload error:", err);
-                showModal("Firebase Save Failed", `Could not save questions to Firebase.<br><br><span class="text-rose-600">${err?.message || "Unknown Firestore error"}</span>`, [
-                    { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
-                ]);
+                showModal(
+                    "Firebase Save Failed",
+                    `Questions were <b>not saved</b>.<br><br>${escapeHtml(err?.message || "Permission denied or Firebase error.")}`,
+                    [{ label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }]
+                );
             } finally {
                 btnSave.disabled = false;
                 btnSave.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Save All Questions to DB`;
@@ -601,21 +642,27 @@ Answer: B. पीपल`;
             };
 
             try {
-                if (window.db && window.auth?.currentUser?.uid === "nkXAUBb7ffZQ5CtyShWl6YcQ39t2") {
-                    const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
-                    await addDoc(qCol, newQ);
-                    showModal("Success!", "Question saved successfully into Firebase database.", [
-                        { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
-                    ]);
-                } else {
-                    throw new Error("Admin login required. Please sign in first.");
+                if (!window.db || !firebaseAuth?.currentUser || firebaseAuth.currentUser.uid !== ADMIN_UID) {
+                    throw new Error("Admin authentication required.");
                 }
+
+                const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+                await addDoc(qCol, newQ);
+
+                showModal("Success!", "Question saved successfully into Firebase database.", [
+                    { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
 
                 statusEl.innerText = "Question added successfully!";
                 document.getElementById('add-question-form').reset();
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "Firebase save failed: " + (err?.message || "Unknown error");
+                statusEl.innerText = "Firebase save failed.";
+                showModal(
+                    "Firebase Save Failed",
+                    `Question was <b>not saved</b>.<br><br>${escapeHtml(err?.message || "Permission denied or Firebase error.")}`,
+                    [{ label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }]
+                );
             } finally {
                 saveBtn.disabled = false;
             }
@@ -636,16 +683,29 @@ Answer: B. पीपल`;
         async function executeDelete(id) {
             closeModal();
             try {
-                if (window.db && !id.startsWith('sample_') && !id.startsWith('loc_')) {
-                    const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION, id);
-                    await deleteDoc(docRef);
-                } else {
+                if (!window.db || !firebaseAuth?.currentUser || firebaseAuth.currentUser.uid !== ADMIN_UID) {
+                    throw new Error("Admin authentication required.");
+                }
+
+                if (id.startsWith('sample_') || id.startsWith('loc_')) {
                     window.dbQuestions = window.dbQuestions.filter(q => q.id !== id);
                     renderQuestionsList();
+                    return;
                 }
+
+                const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION, id);
+                await deleteDoc(docRef);
+
+                showModal("Deleted", "Question deleted successfully from Firebase.", [
+                    { label: "OK", class: "bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
             } catch (e) {
-                window.dbQuestions = window.dbQuestions.filter(q => q.id !== id);
-                renderQuestionsList();
+                console.error("Delete error:", e);
+                showModal(
+                    "Delete Failed",
+                    `Question was <b>not deleted</b>.<br><br>${escapeHtml(e?.message || "Permission denied or Firebase error.")}`,
+                    [{ label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }]
+                );
             }
         }
 
@@ -676,72 +736,171 @@ Answer: B. पीपल`;
             document.getElementById('modal-container').classList.add('hidden');
         }
 
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function setAuthUI(user) {
+            const gate = document.getElementById('auth-gate');
+            const main = document.getElementById('admin-main');
+            const logoutBtn = document.getElementById('admin-logout-btn');
+            const status = document.getElementById('auth-status');
+            const loginForm = document.getElementById('admin-login-form');
+
+            const isAdmin = !!user && user.uid === ADMIN_UID;
+
+            if (isAdmin) {
+                gate?.classList.add('hidden');
+                main?.classList.remove('hidden');
+                logoutBtn?.classList.remove('hidden');
+                if (status) status.innerHTML = `Authenticated as <b>${escapeHtml(user.email || user.uid)}</b>`;
+                if (loginForm) loginForm.reset();
+            } else {
+                gate?.classList.remove('hidden');
+                main?.classList.add('hidden');
+                logoutBtn?.classList.add('hidden');
+
+                if (user && user.uid !== ADMIN_UID) {
+                    if (status) status.innerHTML = `<span class="text-rose-600 font-bold">Access denied.</span> This account is not the authorized admin.`;
+                    signOut(firebaseAuth).catch(() => {});
+                } else if (status) {
+                    status.textContent = "Please sign in with the authorized admin account.";
+                }
+            }
+        }
+
+        async function signInAdminWithEmail(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('admin-email')?.value.trim();
+            const password = document.getElementById('admin-password')?.value;
+            const button = document.getElementById('admin-login-btn');
+            const status = document.getElementById('auth-status');
+
+            if (!email || !password) return;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Signing in...';
+
+            try {
+                const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+
+                if (result.user.uid !== ADMIN_UID) {
+                    await signOut(firebaseAuth);
+                    throw new Error("This account is not authorized as the Firebase admin.");
+                }
+            } catch (error) {
+                console.error("Admin email login error:", error);
+                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(error?.message || "Login failed.")}</span>`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-1"></i> Sign in as Admin';
+            }
+        }
+
+        async function signInAdminWithGoogle() {
+            const button = document.getElementById('google-login-btn');
+            const status = document.getElementById('auth-status');
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Signing in...';
+
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(firebaseAuth, provider);
+
+                if (result.user.uid !== ADMIN_UID) {
+                    await signOut(firebaseAuth);
+                    throw new Error("This Google account is not authorized as the Firebase admin.");
+                }
+            } catch (error) {
+                console.error("Admin Google login error:", error);
+                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(error?.message || "Google login failed.")}</span>`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-brands fa-google mr-1"></i> Continue with Google';
+            }
+        }
+
         async function initAdmin() {
             try {
-                const { db, auth } = await getFirebaseServices();
+                const services = await getFirebaseServices();
+                const { db, auth } = services;
+
+                if (!db || !auth) {
+                    throw new Error("Firebase database/auth service is unavailable.");
+                }
+
                 window.db = db;
-                window.auth = auth;
+                firebaseAuth = auth;
 
-                const loginOverlay = document.getElementById('admin-login-overlay');
-                const loginBtn = document.getElementById('admin-login-btn');
-                const logoutBtn = document.getElementById('admin-logout-btn');
-                const emailEl = document.getElementById('admin-login-email');
-                const passwordEl = document.getElementById('admin-login-password');
-                const errorEl = document.getElementById('admin-login-error');
-                const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+                document.getElementById('admin-login-form')?.addEventListener('submit', signInAdminWithEmail);
+                document.getElementById('google-login-btn')?.addEventListener('click', signInAdminWithGoogle);
 
-                loginBtn.onclick = async () => {
-                    errorEl.textContent = "";
-                    loginBtn.disabled = true;
-                    loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Signing in...';
+                document.getElementById('admin-logout-btn')?.addEventListener('click', async () => {
                     try {
-                        const credential = await signInWithEmailAndPassword(auth, emailEl.value.trim(), passwordEl.value);
-                        if (credential.user.uid !== ADMIN_UID) {
-                            await signOut(auth);
-                            throw new Error("This Firebase account is not authorized as admin.");
-                        }
-                    } catch (err) {
-                        console.error("Admin login error:", err);
-                        errorEl.textContent = err?.message || "Login failed.";
-                    } finally {
-                        loginBtn.disabled = false;
-                        loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i> Sign In';
-                    }
-                };
-
-                logoutBtn.onclick = () => signOut(auth);
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user && user.uid === ADMIN_UID) {
-                        loginOverlay.classList.add('hidden');
-                        logoutBtn.classList.remove('hidden');
-                        const badge = document.getElementById('db-status-badge');
-                        badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Admin Connected';
-                        badge.className = 'bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1';
-                    } else {
-                        loginOverlay.classList.remove('hidden');
-                        logoutBtn.classList.add('hidden');
-                        const badge = document.getElementById('db-status-badge');
-                        badge.innerHTML = '<i class="fa-solid fa-lock"></i> Admin Login Required';
-                        badge.className = 'bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-400/30 flex items-center gap-1';
+                        await signOut(firebaseAuth);
+                    } catch (error) {
+                        console.error("Logout error:", error);
                     }
                 });
 
-                const qCol = collection(db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
-                onSnapshot(qCol, (snap) => {
-                    window.dbQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderQuestionsList();
-                }, (error) => {
-                    console.error("Firestore listener error:", error);
-                    const badge = document.getElementById('db-status-badge');
-                    if (badge) {
-                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Firestore Error';
-                        badge.className = 'bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full border border-rose-400/30 flex items-center gap-1';
+                onAuthStateChanged(firebaseAuth, (user) => {
+                    setAuthUI(user);
+
+                    if (unsubscribeQuestions) {
+                        unsubscribeQuestions();
+                        unsubscribeQuestions = null;
                     }
+
+                    // Only open the admin question listener for the authorized UID.
+                    // This keeps the feeder aligned with the admin-only Firestore write rule.
+                    if (!user || user.uid !== ADMIN_UID) {
+                        return;
+                    }
+
+                    const qCol = collection(db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+
+                    unsubscribeQuestions = onSnapshot(qCol, (snap) => {
+                        window.dbQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        renderQuestionsList();
+
+                        const badge = document.getElementById('db-status-badge');
+                        if (badge) {
+                            badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Live';
+                            badge.className = 'bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1';
+                        }
+                    }, (error) => {
+                        console.error("Firestore listener error:", error);
+
+                        const badge = document.getElementById('db-status-badge');
+                        if (badge) {
+                            badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Firebase Error';
+                            badge.className = 'bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full border border-rose-400/30 flex items-center gap-1';
+                        }
+
+                        showModal(
+                            "Firebase Error",
+                            `Could not read the question bank.<br><br>${escapeHtml(error?.message || "Permission denied or Firebase error.")}`,
+                            [{ label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }]
+                        );
+                    });
                 });
             } catch (error) {
                 console.error("Firebase initialization error:", error);
                 window.db = null;
+                firebaseAuth = null;
+
+                const status = document.getElementById('auth-status');
+                if (status) {
+                    status.innerHTML = `<span class="text-rose-600 font-bold">Firebase initialization failed.</span><br>${escapeHtml(error?.message || "")}`;
+                }
+
                 showModal("Firebase Error", "Firebase service initialize नहीं हो पाया। Please refresh the page and check your Firebase configuration.", [
                     { label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
                 ]);
