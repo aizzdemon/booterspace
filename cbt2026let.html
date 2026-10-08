@@ -1,850 +1,410 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bihar LET 2026 - CBT Mock Test & Admin Portal</title>
+    <title>Bihar LET 2026 Portal - BCECE LE Entrance Portal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                        },
-                        cbt: {
-                            green: '#28a745',
-                            red: '#dc3545',
-                            purple: '#6f42c1',
-                            gray: '#6c757d',
-                            orange: '#fd7e14'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
+
+// Database configuration for Bihar LET 2026
+const DB_NAME = 'BiharLET2026_Database';
+const DB_VERSION = 1;
+const STORE_NAME = 'question_bank';
+
+// Open IndexedDB Connection
+function getDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject('Database connection failed: ' + e.target.error);
+    });
+}
+
+/**
+ * Reads questions strictly from the local database.
+ * No fallback or preloaded static data is used.
+ */
+async function fetchQuestionsFromDatabase(selectedCategory = 'all') {
+    try {
+        const db = await getDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                let questions = request.result || [];
+                if (selectedCategory !== 'all') {
+                    questions = questions.filter(q => q.subject === selectedCategory || q.category === selectedCategory);
+                }
+                resolve(questions);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    } catch (err) {
+        console.error('Error reading database:', err);
+        return [];
+    }
+}
+
+
+    <!-- Top Bar Header -->
+async function loadExamQuestions() {
+    // Removed all preloaded mock data array fallbacks
+    showLoadingSpinner();
+
+    const questions = await fetchQuestionsFromDatabase(currentSubjectFilter);
+
+    if (!questions || questions.length === 0) {
+        renderEmptyDatabaseState();
+        return;
+    }
+
+    renderQuestions(questions);
+}
+
+function renderEmptyDatabaseState() {
+    const mainContainer = document.getElementById('question-display-area');
+    if (!mainContainer) return;
+
+    mainContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-10 text-center bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 shadow-sm my-6">
+            <div class="w-16 h-16 bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s8-1.79-8-4"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Database Empty</h3>
+            <p class="text-slate-500 dark:text-slate-400 max-w-md text-sm mb-6">
+                No questions were found in the database. Preloaded questions have been disabled; this portal reads data exclusively from your registered question database.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="triggerDatabaseImport()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition shadow-sm">
+                    Import Question Database (JSON / CSV)
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+        // --- STATE VARIABLES ---
+        let currentIndex = 0;
+        let activeSubject = 'ALL';
+        let userAnswers = new Array(150).fill(null); // stores index of selected option
+        let questionStatus = new Array(150).fill('not-visited'); // 'not-visited', 'not-answered', 'answered', 'marked'
+        let timerSeconds = 7200; // 2 hours
+        let timerInterval = null;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            renderQuestion(currentIndex);
+            renderPalette();
+            startTimer();
+            updateCounts();
+        };
+
+        // --- NAVIGATION TABS ---
+        function switchTab(tabId) {
+            const tabs = ['mock-test', 'syllabus', 'pyq', 'rank-calc'];
+            tabs.forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`tab-${t}`);
+                if (navBtn) {
+                    navBtn.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-200 hover:bg-white/10";
+                }
+            });
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-white/10 text-white hover:bg-white/20";
+            }
+
+            // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // --- QUESTION FILTERING BY SUBJECT ---
+        function filterSubject(sub) {
+            activeSubject = sub;
+            const buttons = document.querySelectorAll('.sub-tab-btn');
+            buttons.forEach(btn => {
+                btn.className = "sub-tab-btn px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition whitespace-nowrap";
+            });
+
+            const active = document.getElementById(`sub-${sub}`);
+            if (active) {
+                active.className = "sub-tab-btn active px-4 py-2 rounded-xl text-xs font-bold border border-bihar-600 bg-bihar-600 text-white transition shadow-sm whitespace-nowrap";
+            }
+
+            // Find first question matching subject
+            if (sub !== 'ALL') {
+                const targetIdx = fullQuestionBank.findIndex(q => q.subject === sub);
+                if (targetIdx !== -1) {
+                    currentIndex = targetIdx;
+                    renderQuestion(currentIndex);
                 }
             }
         }
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; user-select: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
-</head>
-<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
 
-    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center space-x-3">
-                <a href="https://aizzdemon.github.io/booterspace/govt.html" class="bg-indigo-800 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-2 border border-indigo-700">
-                    <i class="fa-solid fa-arrow-left"></i>
-                    <span class="hidden sm:inline">Back to Govt Portal</span>
-                </a>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold leading-tight">Bihar School Librarian Eligibility Test (LET) 2026</h1>
-                    <p class="text-xs text-indigo-200">Official CBT Mock Examination Portal</p>
-                </div>
-            </div>
+        // --- STREAMING_CHUNK:Render Question without any Shuffled indicators ---
+        function renderQuestion(index) {
+            const q = fullQuestionBank[index];
+            if (!q) return;
 
-            <!-- Mode Switcher Tabs -->
-            <div class="flex items-center space-x-2 bg-indigo-950 p-1 rounded-xl text-xs sm:text-sm font-medium border border-indigo-800">
-                <button id="nav-btn-student" onclick="switchView('view-instructions')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-laptop-code"></i> Student CBT Test
-                </button>
-                <a href="bihar_let_2026_admin.html" class="px-3 py-1.5 rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-file-circle-plus"></i> Admin Portal
-                </a>
-            </div>
-        </div>
-    </header>
-
-    <main class="flex-grow flex flex-col">
-
-        <section id="view-instructions" class="max-w-4xl mx-auto w-full p-4 sm:p-6 my-auto">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <div class="bg-indigo-800 px-6 py-5 text-white">
-                    <div class="flex items-center justify-between">
-                        <span class="bg-indigo-700 text-indigo-100 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">CBT Online Exam</span>
-                        <span class="text-xs text-indigo-200"><i class="fa-regular fa-clock mr-1"></i> 150 Minutes</span>
-                    </div>
-                    <h2 class="text-2xl font-extrabold mt-2">Bihar School Librarian (LET) 2026 Mock Test</h2>
-                    <p class="text-indigo-200 text-sm mt-1">Please read the instructions carefully before starting the exam.</p>
-                </div>
-
-                <div class="p-6 space-y-6">
-                    <!-- Exam Pattern Overview Grid -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
-                            <span class="text-xs text-slate-500 font-medium block uppercase">Total Questions</span>
-                            <span class="text-2xl font-black text-indigo-900">150</span>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
-                            <span class="text-xs text-slate-500 font-medium block uppercase">Total Marks</span>
-                            <span class="text-2xl font-black text-emerald-600">150</span>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
-                            <span class="text-xs text-slate-500 font-medium block uppercase">Time Duration</span>
-                            <span class="text-2xl font-black text-amber-600">150 Min</span>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
-                            <span class="text-xs text-slate-500 font-medium block uppercase">Negative Marking</span>
-                            <span class="text-2xl font-black text-slate-700">None (0)</span>
-                        </div>
-                    </div>
-
-                    <!-- Subject Breakdown Table -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Subject Wise Marks Distribution</h3>
-                        <div class="overflow-x-auto rounded-xl border border-slate-200">
-                            <table class="w-full text-left text-sm text-slate-600">
-                                <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                                    <tr>
-                                        <th class="p-3">Exam Part</th>
-                                        <th class="p-3">Subject (विषय)</th>
-                                        <th class="p-3 text-center">Questions</th>
-                                        <th class="p-3 text-center">Marks</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-semibold text-indigo-900">Part 1</td>
-                                        <td class="p-3 font-medium">Library Science (पुस्तकालय विज्ञान)</td>
-                                        <td class="p-3 text-center font-bold text-slate-800">100</td>
-                                        <td class="p-3 text-center font-bold text-emerald-600">100</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-semibold text-indigo-900">Part 2</td>
-                                        <td class="p-3 font-medium">General Knowledge & Reasoning (सामान्य ज्ञान एवं तर्कशक्ति)</td>
-                                        <td class="p-3 text-center font-bold text-slate-800">50</td>
-                                        <td class="p-3 text-center font-bold text-emerald-600">50</td>
-                                    </tr>
-                                    <tr class="bg-indigo-50 font-bold text-indigo-950">
-                                        <td class="p-3" colspan="2">Total (कुल योग)</td>
-                                        <td class="p-3 text-center">150 Questions</td>
-                                        <td class="p-3 text-center">150 Marks</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Color Code Legend -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Question Palette Color Codes</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                            <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border">
-                                <span class="w-5 h-5 bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center rounded">1</span>
-                                <span>Answered</span>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border">
-                                <span class="w-5 h-5 bg-rose-600 text-white font-bold text-[10px] flex items-center justify-center rounded">2</span>
-                                <span>Not Answered</span>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border">
-                                <span class="w-5 h-5 bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center rounded">3</span>
-                                <span>Marked for Review</span>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border">
-                                <span class="w-5 h-5 bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center rounded">4</span>
-                                <span>Not Visited</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Student Details Input -->
-                    <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center gap-4">
-                        <div class="flex-grow w-full">
-                            <label class="block text-xs font-bold text-indigo-900 mb-1">Candidate Name / Roll No.</label>
-                            <input type="text" id="candidate-name" placeholder="Enter your full name" value="Librarian Aspirant" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
-                        </div>
-                        <button onclick="startMockTest()" class="w-full sm:w-auto mt-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-emerald-200 transition flex items-center justify-center gap-2">
-                            <span>Start Test Now</span>
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-cbt" class="hidden flex-grow flex flex-col h-[calc(100vh-61px)]">
-            <!-- CBT Top Header Info & Timer -->
-            <div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <div class="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-indigo-100 text-indigo-800 font-bold text-sm">
-                        <i class="fa-solid fa-user-graduate"></i>
-                    </div>
-                    <div>
-                        <div id="cbt-user-display" class="font-bold text-sm text-slate-800">Librarian Aspirant</div>
-                        <div class="text-xs text-slate-500">Bihar LET 2026 Paper</div>
-                    </div>
-                </div>
-
-                <!-- Section Navigation Tabs -->
-                <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    <button id="tab-part1" onclick="switchSection('Part 1')" class="px-3 py-1 rounded text-xs font-semibold bg-white text-indigo-900 shadow">
-                        Part 1: Library Science (<span id="part1-count">0</span>)
-                    </button>
-                    <button id="tab-part2" onclick="switchSection('Part 2')" class="px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900">
-                        Part 2: GK & Reasoning (<span id="part2-count">0</span>)
-                    </button>
-                </div>
-
-                <!-- Live Timer Display -->
-                <div class="flex items-center space-x-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
-                    <i class="fa-regular fa-clock text-amber-600 animate-pulse text-sm"></i>
-                    <div class="text-right">
-                        <span class="text-[10px] text-amber-700 block font-semibold leading-none">TIME LEFT</span>
-                        <span id="timer-display" class="font-mono text-base font-extrabold text-amber-900">150:00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CBT Main Workspace Grid -->
-            <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
-                <!-- Left Column: Question Screen -->
-                <div class="flex-grow flex flex-col bg-white overflow-y-auto custom-scrollbar p-4 sm:p-6 border-r border-slate-200">
-                    
-                    <!-- Question Header & Language Badge -->
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                        <div class="flex items-center space-x-2">
-                            <span id="q-number-badge" class="bg-indigo-900 text-white font-bold text-xs px-2.5 py-1 rounded-md">Question #1</span>
-                            <span id="q-section-badge" class="bg-indigo-100 text-indigo-800 font-semibold text-xs px-2.5 py-1 rounded-md">Part 1: Library Science</span>
-                        </div>
-                        <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">+1 Mark | No Negative</span>
-                    </div>
-
-                    <!-- Question Body -->
-                    <div class="flex-grow space-y-6">
-                        <div id="question-text" class="text-base sm:text-lg font-medium text-slate-900 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            Loading question data...
-                        </div>
-
-                        <!-- Options List -->
-                        <div id="options-container" class="space-y-3">
-                            <!-- Options injected dynamically by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- CBT Bottom Action Buttons -->
-                    <div class="border-t border-slate-200 pt-4 mt-6 flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center space-x-2">
-                            <button onclick="markForReview()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow transition flex items-center gap-1.5">
-                                <i class="fa-regular fa-bookmark"></i> Mark for Review & Next
-                            </button>
-                            <button onclick="clearResponse()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs sm:text-sm font-medium rounded-lg transition">
-                                Clear Response
-                            </button>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <button onclick="prevQuestion()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center gap-1">
-                                <i class="fa-solid fa-chevron-left"></i> Previous
-                            </button>
-                            <button onclick="saveAndNext()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow transition flex items-center gap-1">
-                                Save & Next <i class="fa-solid fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: Question Palette Sidebar -->
-                <div class="w-full md:w-80 lg:w-96 bg-slate-50 flex flex-col border-t md:border-t-0 border-slate-200">
-                    <div class="p-3 bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-between border-b border-slate-300">
-                        <span>QUESTION PALETTE</span>
-                        <span id="palette-summary" class="text-[11px] font-normal text-slate-600">150 Questions</span>
-                    </div>
-
-                    <!-- Palette Grid -->
-                    <div class="p-3 flex-grow overflow-y-auto custom-scrollbar">
-                        <div id="question-palette-grid" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-6 gap-2">
-                            <!-- Palette buttons injected dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Submit Test Button Footer -->
-                    <div class="p-3 bg-white border-t border-slate-200">
-                        <button onclick="confirmSubmitTest()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            <span>Submit Test</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-result" class="hidden max-w-4xl mx-auto w-full p-4 sm:p-6 my-auto">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <div class="bg-emerald-700 px-6 py-6 text-white text-center">
-                    <div class="w-16 h-16 bg-white text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold shadow-md">
-                        <i class="fa-solid fa-trophy"></i>
-                    </div>
-                    <h2 class="text-2xl font-black">Mock Test Completed!</h2>
-                    <p class="text-emerald-100 text-sm mt-1">Here is your detailed performance scorecard for Bihar LET 2026.</p>
-                </div>
-
-                <div class="p-6 space-y-6">
-                    <!-- High Level Score Cards -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-center">
-                            <span class="text-xs text-emerald-800 font-bold uppercase block">Total Score</span>
-                            <span id="res-score" class="text-3xl font-black text-emerald-700">0 / 150</span>
-                        </div>
-                        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 text-center">
-                            <span class="text-xs text-indigo-800 font-bold uppercase block">Percentage</span>
-                            <span id="res-percentage" class="text-3xl font-black text-indigo-700">0%</span>
-                        </div>
-                        <div class="bg-green-50 p-4 rounded-xl border border-green-200 text-center">
-                            <span class="text-xs text-green-800 font-bold uppercase block">Correct</span>
-                            <span id="res-correct" class="text-3xl font-black text-green-600">0</span>
-                        </div>
-                        <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 text-center">
-                            <span class="text-xs text-rose-800 font-bold uppercase block">Incorrect</span>
-                            <span id="res-wrong" class="text-3xl font-black text-rose-600">0</span>
-                        </div>
-                    </div>
-
-                    <!-- Additional Details -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between text-sm">
-                        <div>
-                            <span class="text-slate-500 block">Skipped / Unattempted:</span>
-                            <strong id="res-skipped" class="text-slate-800 text-lg">0 Questions</strong>
-                        </div>
-                        <div>
-                            <span class="text-slate-500 block">Time Taken:</span>
-                            <strong id="res-time-taken" class="text-slate-800 text-lg">00:00</strong>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-                        <button onclick="switchView('view-solutions')" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-file-lines"></i>
-                            <span>View Detailed Solutions & Key</span>
-                        </button>
-                        <button onclick="switchView('view-instructions')" class="w-full sm:w-auto px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-xl transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-rotate-right"></i>
-                            <span>Re-take Test</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-solutions" class="hidden max-w-5xl mx-auto w-full p-4 sm:p-6">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold">Solutions & Explanations</h2>
-                        <p class="text-xs text-slate-400">Review correct answers with explanation</p>
-                    </div>
-                    <button onclick="switchView('view-result')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg border border-slate-700">
-                        Back to Scorecard
-                    </button>
-                </div>
-
-                <!-- Solution Filters -->
-                <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2 text-xs font-semibold">
-                    <button onclick="filterSolutions('all')" class="sol-filter-btn px-3 py-1.5 bg-indigo-600 text-white rounded-lg">All Questions</button>
-                    <button onclick="filterSolutions('correct')" class="sol-filter-btn px-3 py-1.5 bg-white text-slate-700 border rounded-lg">Correct Only</button>
-                    <button onclick="filterSolutions('incorrect')" class="sol-filter-btn px-3 py-1.5 bg-white text-slate-700 border rounded-lg">Incorrect Only</button>
-                    <button onclick="filterSolutions('skipped')" class="sol-filter-btn px-3 py-1.5 bg-white text-slate-700 border rounded-lg">Skipped</button>
-                </div>
-
-                <div id="solutions-list" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    <!-- Solution items rendered by JavaScript -->
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Custom Modal for Confirmation / Messages -->
-    <div id="modal-container" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100">
-            <h3 id="modal-title" class="text-lg font-bold text-slate-900">Confirmation</h3>
-            <p id="modal-body" class="text-sm text-slate-600 leading-relaxed">Are you sure you want to submit the test?</p>
-            <div id="modal-actions" class="flex items-center justify-end space-x-2 pt-2">
-                <!-- Action buttons dynamic -->
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global Firebase Configuration Setup
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bihar-let-2026-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : {
-                apiKey: "demo-api-key",
-                authDomain: "bihar-let-2026.firebaseapp.com",
-                projectId: "bihar-let-2026",
-                storageBucket: "bihar-let-2026.appspot.com",
-                messagingSenderId: "123456789",
-                appId: "1:123456789:web:abcdef"
-            };
-
-        // Preloaded Default Mock Data for Bihar LET 2026
-        const defaultSampleQuestions = [
-            {
-                id: 1,
-                section: "Part 1",
-                question: "डॉ. एस.आर. रंगनाथन द्वारा प्रतिपादित पुस्तकालय विज्ञान का प्रथम नियम (First Law) इनमें से कौन सा है?",
-                options: {
-                    A: "प्रत्येक पाठक को उसकी पुस्तक मिले",
-                    B: "पुस्तकें उपयोग के लिए हैं (Books are for use)",
-                    C: "प्रत्येक पुस्तक को उसका पाठक मिले",
-                    D: "पाठक का समय बचाएं"
-                },
-                correct: "B",
-                solution: "पुस्तकालय विज्ञान का पहला नियम है 'Books are for use' (पुस्तकें उपयोग के लिए हैं)।"
-            },
-            {
-                id: 2,
-                section: "Part 1",
-                question: "कोलन क्लासिफिकेशन (Colon Classification - CC) का विकास किसके द्वारा किया गया था?",
-                options: {
-                    A: "मेल्विल डेवी (Melvil Dewey)",
-                    B: "डॉ. एस.आर. रंगनाथन (Dr. S.R. Ranganathan)",
-                    C: "सी.ए. कटर (C.A. Cutter)",
-                    D: "डब्ल्यू.सी. बर्बिक सेयर्स"
-                },
-                correct: "B",
-                solution: "Colon Classification (CC) was created by Dr. S.R. Ranganathan in 1933."
-            },
-            {
-                id: 3,
-                section: "Part 1",
-                question: "DDC (Dewey Decimal Classification) का प्रथम संस्करण (First Edition) किस वर्ष प्रकाशित हुआ था?",
-                options: {
-                    A: "1876",
-                    B: "1933",
-                    C: "1902",
-                    D: "1850"
-                },
-                correct: "A",
-                solution: "DDC's 1st edition was published in 1876 by Melvil Dewey."
-            },
-            {
-                id: 4,
-                section: "Part 2",
-                question: "बिहार राज्य का राजकीय वृक्ष (State Tree of Bihar) कौन सा है?",
-                options: {
-                    A: "आम (Mango)",
-                    B: "पीपल (Peepal)",
-                    C: "बरगद (Banyan)",
-                    D: "साल (Sal)"
-                },
-                correct: "B",
-                solution: "बिहार का राजकीय वृक्ष 'पीपल' (Peepal) है।"
-            },
-            {
-                id: 5,
-                section: "Part 2",
-                question: "यदि A, B का भाई है और C, A का पिता है, तो C का B से क्या संबंध है?",
-                options: {
-                    A: "भाई (Brother)",
-                    B: "पिता (Father)",
-                    C: "चाचा (Uncle)",
-                    D: "दादा (Grandfather)"
-                },
-                correct: "B",
-                solution: "C, A का पिता है और A तथा B भाई हैं, इसलिए C, B का भी पिता है।"
+            // Update status if first visit
+            if (questionStatus[index] === 'not-visited') {
+                questionStatus[index] = 'not-answered';
             }
-        ];
 
-        // Global State
-        window.questions = [];
-        window.userAnswers = {}; // { qIndex: { option: 'A', status: 'answered' | 'marked' } }
-        window.currentQIndex = 0;
-        window.currentSection = 'Part 1';
-        window.timerInterval = null;
-        window.secondsLeft = 150 * 60; // 150 minutes
-        window.db = null;
+            // Update UI Badges & Text
+            document.getElementById('q-number-badge').innerText = `Question ${index + 1} of 150`;
+            document.getElementById('q-subject-badge').innerText = q.subjectName;
+            document.getElementById('q-text').innerText = q.question;
 
-        // Initialize Firebase
-        async function initFirebase() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                window.db = getFirestore(app);
-                const auth = getAuth(app);
-                await signInAnonymously(auth);
+            // Render Options (Clean A, B, C, D without any Shuffled option text)
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
 
-                // Setup listener for questions from Firestore
-                const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', 'bihar_let_questions');
-                onSnapshot(qCol, (snapshot) => {
-                    const fetchedData = [];
-                    snapshot.forEach(doc => {
-                        fetchedData.push({ id: doc.id, ...doc.data() });
-                    });
-                    if (fetchedData.length > 0) {
-                        window.questions = fetchedData;
-                    } else {
-                        window.questions = [...defaultSampleQuestions];
-                    }
-                    updateQuestionsUI();
-                }, (error) => {
-                    console.log("Using local default questions due to connection state.");
-                    window.questions = [...defaultSampleQuestions];
-                    updateQuestionsUI();
-                });
-            } catch (e) {
-                console.log("Fallback to local questions");
-                window.questions = [...defaultSampleQuestions];
-                updateQuestionsUI();
-            }
-        }
+            const optionPrefixes = ['A', 'B', 'C', 'D'];
 
-        function updateQuestionsUI() {
-            const p1 = window.questions.filter(q => q.section === 'Part 1').length;
-            const p2 = window.questions.filter(q => q.section === 'Part 2').length;
-            document.getElementById('part1-count').innerText = p1;
-            document.getElementById('part2-count').innerText = p2;
-            document.getElementById('admin-total-qs').innerText = window.questions.length;
-            
-            if (document.getElementById('view-cbt').classList.contains('hidden') === false) {
-                renderPalette();
-                renderQuestion();
-            }
-        }
+            q.options.forEach((optText, optIdx) => {
+                const isSelected = userAnswers[index] === optIdx;
+                
+                const optCard = document.createElement('div');
+                optCard.className = `option-card border rounded-2xl p-4 cursor-pointer transition flex items-start space-x-3 ${isSelected ? 'selected' : 'border-slate-200 bg-white'}`;
+                optCard.onclick = () => selectOption(optIdx);
 
-        // View Navigation
-        window.switchView = function(viewId) {
-            ['view-instructions', 'view-cbt', 'view-result', 'view-solutions'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add('hidden');
+                optCard.innerHTML = `
+                    <div class="w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center shrink-0 transition ${isSelected ? 'bg-bihar-600 text-white' : 'bg-slate-100 text-slate-600 border border-slate-300'}">
+                        ${optionPrefixes[optIdx]}
+                    </div>
+                    <div class="text-sm font-medium text-slate-800 pt-0.5 flex-1">
+                        ${optText}
+                    </div>
+                `;
+                optionsContainer.appendChild(optCard);
             });
-            const target = document.getElementById(viewId);
-            if (target) target.classList.remove('hidden');
-        };
 
-        // Start Mock Test
-        window.startMockTest = function() {
-            const name = document.getElementById('candidate-name').value.trim() || 'Librarian Aspirant';
-            document.getElementById('cbt-user-display').innerText = name;
-            
-            window.userAnswers = {};
-            window.currentQIndex = 0;
-            window.secondsLeft = 150 * 60; // 150 mins
-            
-            switchView('view-cbt');
+            // Button Disable State
+            document.getElementById('btn-prev').disabled = (index === 0);
+            document.getElementById('btn-prev').style.opacity = (index === 0) ? '0.5' : '1';
+
             renderPalette();
-            renderQuestion();
-            startTimer();
-        };
+            updateCounts();
+        }
 
-        // Timer Logic
+        // --- OPTION SELECTION LOGIC ---
+        function selectOption(optIdx) {
+            userAnswers[currentIndex] = optIdx;
+            questionStatus[currentIndex] = 'answered';
+            renderQuestion(currentIndex);
+        }
+
+        function clearResponse() {
+            userAnswers[currentIndex] = null;
+            questionStatus[currentIndex] = 'not-answered';
+            renderQuestion(currentIndex);
+            showToast("Selected response cleared");
+        }
+
+        function markForReview() {
+            questionStatus[currentIndex] = 'marked';
+            renderQuestion(currentIndex);
+            showToast("Marked for review");
+        }
+
+        function nextQuestion() {
+            if (currentIndex < fullQuestionBank.length - 1) {
+                currentIndex++;
+                renderQuestion(currentIndex);
+            } else {
+                showToast("You are at the last question.");
+            }
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion(currentIndex);
+            }
+        }
+
+        function jumpToQuestion(index) {
+            currentIndex = index;
+            renderQuestion(currentIndex);
+        }
+
+        // --- STREAMING_CHUNK:Rendering Question Palette Grid ---
+        function renderPalette() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+
+            fullQuestionBank.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                btn.innerText = idx + 1;
+                
+                let statusClass = "bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200"; // not visited
+                
+                if (idx === currentIndex) {
+                    statusClass += " ring-2 ring-bihar-600 ring-offset-1 font-bold";
+                }
+
+                if (questionStatus[idx] === 'answered') {
+                    statusClass = "bg-emerald-500 text-white font-bold";
+                } else if (questionStatus[idx] === 'not-answered') {
+                    statusClass = "bg-rose-500 text-white font-bold";
+                } else if (questionStatus[idx] === 'marked') {
+                    statusClass = "bg-amber-400 text-slate-900 font-bold";
+                }
+
+                btn.className = `h-9 rounded-lg text-xs flex items-center justify-center transition shadow-xs ${statusClass}`;
+                btn.onclick = () => jumpToQuestion(idx);
+                grid.appendChild(btn);
+            });
+        }
+
+        function updateCounts() {
+            let answered = 0;
+            let notAnswered = 0;
+            let marked = 0;
+            let notVisited = 0;
+
+            questionStatus.forEach(st => {
+                if (st === 'answered') answered++;
+                else if (st === 'not-answered') notAnswered++;
+                else if (st === 'marked') marked++;
+                else notVisited++;
+            });
+
+            document.getElementById('count-answered').innerText = answered;
+            document.getElementById('count-not-answered').innerText = notAnswered;
+            document.getElementById('count-marked').innerText = marked;
+            document.getElementById('count-not-visited').innerText = notVisited;
+        }
+
+        // --- TIMER ENGINE ---
         function startTimer() {
-            if (window.timerInterval) clearInterval(window.timerInterval);
-            
-            window.timerInterval = setInterval(() => {
-                if (window.secondsLeft <= 0) {
-                    clearInterval(window.timerInterval);
-                    finishSubmitTest();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    confirmSubmitTest();
                     return;
                 }
-                window.secondsLeft--;
-                const mins = Math.floor(window.secondsLeft / 60);
-                const secs = window.secondsLeft % 60;
-                document.getElementById('timer-display').innerText = 
-                    `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                timerSeconds--;
+                const hrs = Math.floor(timerSeconds / 3600);
+                const mins = Math.floor((timerSeconds % 3600) / 60);
+                const secs = timerSeconds % 60;
+                document.getElementById('exam-timer').innerText = 
+                    `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
             }, 1000);
         }
 
-        // Render Current Question
-        window.renderQuestion = function() {
-            if (window.questions.length === 0) return;
-            
-            const q = window.questions[window.currentQIndex];
-            document.getElementById('q-number-badge').innerText = `Question #${window.currentQIndex + 1}`;
-            document.getElementById('q-section-badge').innerText = q.section === 'Part 1' ? 'Part 1: Library Science' : 'Part 2: GK & Reasoning';
-            document.getElementById('question-text').innerText = `${window.currentQIndex + 1}. ${q.question}`;
+        // --- SUBMIT TEST & SCORE CALCULATION ---
+        function confirmSubmitTest() {
+            let totalMarks = 0;
+            let attempted = 0;
+            let correctCount = 0;
+            let englishMarks = 0;
 
-            const optContainer = document.getElementById('options-container');
-            optContainer.innerHTML = '';
-
-            const keys = ['A', 'B', 'C', 'D'];
-            const userAns = window.userAnswers[window.currentQIndex]?.option;
-
-            keys.forEach(key => {
-                if (!q.options[key]) return;
-                const isSelected = userAns === key;
-
-                const optCard = document.createElement('div');
-                optCard.className = `p-3.5 rounded-xl border-2 cursor-pointer transition flex items-center space-x-3 ${
-                    isSelected 
-                        ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 font-semibold shadow-sm' 
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                }`;
-                optCard.onclick = () => selectOption(key);
-
-                optCard.innerHTML = `
-                    <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border ${
-                        isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 border-slate-300'
-                    }">${key}</div>
-                    <div class="text-sm flex-grow">${q.options[key]}</div>
-                `;
-                optContainer.appendChild(optCard);
-            });
-
-            renderPalette();
-        };
-
-        // Select Option
-        window.selectOption = function(key) {
-            const currentStatus = window.userAnswers[window.currentQIndex]?.status || 'answered';
-            window.userAnswers[window.currentQIndex] = {
-                option: key,
-                status: currentStatus === 'marked' ? 'marked' : 'answered'
-            };
-            renderQuestion();
-        };
-
-        // Save & Next
-        window.saveAndNext = function() {
-            if (window.userAnswers[window.currentQIndex] && window.userAnswers[window.currentQIndex].status === 'marked') {
-                window.userAnswers[window.currentQIndex].status = 'answered';
-            } else if (!window.userAnswers[window.currentQIndex]) {
-                window.userAnswers[window.currentQIndex] = { option: null, status: 'visited' };
-            }
-            
-            if (window.currentQIndex < window.questions.length - 1) {
-                window.currentQIndex++;
-                renderQuestion();
-            }
-        };
-
-        // Mark for Review & Next
-        window.markForReview = function() {
-            const currentAns = window.userAnswers[window.currentQIndex]?.option || null;
-            window.userAnswers[window.currentQIndex] = {
-                option: currentAns,
-                status: 'marked'
-            };
-            if (window.currentQIndex < window.questions.length - 1) {
-                window.currentQIndex++;
-                renderQuestion();
-            } else {
-                renderQuestion();
-            }
-        };
-
-        // Clear Response
-        window.clearResponse = function() {
-            delete window.userAnswers[window.currentQIndex];
-            renderQuestion();
-        };
-
-        // Previous Question
-        window.prevQuestion = function() {
-            if (window.currentQIndex > 0) {
-                window.currentQIndex--;
-                renderQuestion();
-            }
-        };
-
-        // Switch Section Tab
-        window.switchSection = function(section) {
-            window.currentSection = section;
-            document.getElementById('tab-part1').className = section === 'Part 1' 
-                ? "px-3 py-1 rounded text-xs font-semibold bg-white text-indigo-900 shadow"
-                : "px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900";
-            document.getElementById('tab-part2').className = section === 'Part 2' 
-                ? "px-3 py-1 rounded text-xs font-semibold bg-white text-indigo-900 shadow"
-                : "px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900";
-
-            // Find first question of section
-            const targetIdx = window.questions.findIndex(q => q.section === section);
-            if (targetIdx !== -1) {
-                window.currentQIndex = targetIdx;
-                renderQuestion();
-            }
-        };
-
-        // Render Question Palette Grid
-        window.renderPalette = function() {
-            const paletteGrid = document.getElementById('question-palette-grid');
-            paletteGrid.innerHTML = '';
-
-            window.questions.forEach((q, idx) => {
-                const ans = window.userAnswers[idx];
-                let bgClass = "bg-slate-200 text-slate-700 hover:bg-slate-300"; // default not visited
-                
-                if (ans) {
-                    if (ans.status === 'answered' && ans.option) {
-                        bgClass = "bg-emerald-600 text-white font-bold";
-                    } else if (ans.status === 'marked') {
-                        bgClass = "bg-purple-600 text-white font-bold";
-                    } else if (ans.status === 'visited' && !ans.option) {
-                        bgClass = "bg-rose-600 text-white font-bold";
-                    }
-                }
-
-                const isActive = idx === window.currentQIndex;
-                const ringClass = isActive ? "ring-2 ring-indigo-900 ring-offset-1" : "";
-
-                const btn = document.createElement('button');
-                btn.className = `w-8 h-8 rounded-lg text-xs font-medium flex items-center justify-center transition ${bgClass} ${ringClass}`;
-                btn.innerText = idx + 1;
-                btn.onclick = () => {
-                    window.currentQIndex = idx;
-                    renderQuestion();
-                };
-                paletteGrid.appendChild(btn);
-            });
-        };
-
-        // Confirm Submit Test Modal
-        window.confirmSubmitTest = function() {
-            let answered = 0, marked = 0, skipped = 0;
-            window.questions.forEach((q, idx) => {
-                const u = window.userAnswers[idx];
-                if (u && u.option) answered++;
-                else if (u && u.status === 'marked') marked++;
-                else skipped++;
-            });
-
-            showModal(
-                "Submit Bihar LET 2026 Test?",
-                `You have answered <strong>${answered}</strong> out of <strong>${window.questions.length}</strong> questions.<br>Skipped: ${skipped}`,
-                [
-                    { label: "Cancel", class: "bg-slate-200 text-slate-800 text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal },
-                    { label: "Yes, Submit Test", class: "bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold shadow", onClick: finishSubmitTest }
-                ]
-            );
-        };
-
-        // Finish and Calculate Results
-        function finishSubmitTest() {
-            closeModal();
-            if (window.timerInterval) clearInterval(window.timerInterval);
-
-            let score = 0;
-            let correct = 0;
-            let wrong = 0;
-            let skipped = 0;
-
-            window.questions.forEach((q, idx) => {
-                const userChoice = window.userAnswers[idx]?.option;
-                if (userChoice) {
-                    if (userChoice === q.correct) {
-                        score += 1; // +1 Mark
-                        correct++;
+            fullQuestionBank.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                if (userAns !== null) {
+                    attempted++;
+                    if (userAns === q.correct) {
+                        correctCount++;
+                        totalMarks += 4;
+                        if (q.subject === 'ENG') englishMarks += 4;
                     } else {
-                        wrong++; // 0 negative marking
+                        totalMarks -= 1;
+                        if (q.subject === 'ENG') englishMarks -= 1;
                     }
-                } else {
-                    skipped++;
                 }
             });
 
-            const total = window.questions.length || 150;
-            const percentage = Math.round((score / total) * 100);
+            const accuracy = attempted > 0 ? Math.round((correctCount / attempted) * 100) : 0;
 
-            document.getElementById('res-score').innerText = `${score} / ${total}`;
-            document.getElementById('res-percentage').innerText = `${percentage}%`;
-            document.getElementById('res-correct').innerText = correct;
-            document.getElementById('res-wrong').innerText = wrong;
-            document.getElementById('res-skipped').innerText = `${skipped} Questions`;
+            document.getElementById('score-total').innerText = `${totalMarks} / 600`;
+            document.getElementById('score-accuracy').innerText = `${accuracy}%`;
+            document.getElementById('score-attempted').innerText = `${attempted} / 150`;
+            document.getElementById('score-english').innerText = `${englishMarks} Marks`;
 
-            const timeSpentSeconds = (150 * 60) - window.secondsLeft;
-            const minsSpent = Math.floor(timeSpentSeconds / 60);
-            const secsSpent = timeSpentSeconds % 60;
-            document.getElementById('res-time-taken').innerText = `${minsSpent}m ${secsSpent}s`;
-
-            switchView('view-result');
-            renderSolutions();
+            document.getElementById('modal-result').classList.remove('hidden');
         }
 
-        // Render Solutions View
-        function renderSolutions(filter = 'all') {
-            const container = document.getElementById('solutions-list');
-            container.innerHTML = '';
-
-            window.questions.forEach((q, idx) => {
-                const userAns = window.userAnswers[idx]?.option;
-                const isCorrect = userAns === q.correct;
-                const isSkipped = !userAns;
-
-                if (filter === 'correct' && !isCorrect) return;
-                if (filter === 'incorrect' && (isCorrect || isSkipped)) return;
-                if (filter === 'skipped' && !isSkipped) return;
-
-                const solCard = document.createElement('div');
-                solCard.className = "p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3";
-
-                let statusBadge = isCorrect 
-                    ? `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded">Correct</span>`
-                    : isSkipped 
-                    ? `<span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded">Skipped</span>`
-                    : `<span class="bg-rose-100 text-rose-800 text-xs font-bold px-2 py-0.5 rounded">Incorrect</span>`;
-
-                solCard.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-500">Q${idx + 1} (${q.section})</span>
-                        ${statusBadge}
-                    </div>
-                    <p class="text-sm font-semibold text-slate-900">${q.question}</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        <div class="p-2 rounded border ${q.correct === 'A' ? 'bg-emerald-100 border-emerald-400 font-bold' : userAns === 'A' ? 'bg-rose-100 border-rose-300' : 'bg-white'}">A. ${q.options.A}</div>
-                        <div class="p-2 rounded border ${q.correct === 'B' ? 'bg-emerald-100 border-emerald-400 font-bold' : userAns === 'B' ? 'bg-rose-100 border-rose-300' : 'bg-white'}">B. ${q.options.B}</div>
-                        <div class="p-2 rounded border ${q.correct === 'C' ? 'bg-emerald-100 border-emerald-400 font-bold' : userAns === 'C' ? 'bg-rose-100 border-rose-300' : 'bg-white'}">C. ${q.options.C}</div>
-                        <div class="p-2 rounded border ${q.correct === 'D' ? 'bg-emerald-100 border-emerald-400 font-bold' : userAns === 'D' ? 'bg-rose-100 border-rose-300' : 'bg-white'}">D. ${q.options.D}</div>
-                    </div>
-                    ${q.solution ? `<div class="p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-950"><strong>Explanation:</strong> ${q.solution}</div>` : ''}
-                `;
-                container.appendChild(solCard);
-            });
+        function closeResultModal() {
+            document.getElementById('modal-result').classList.add('hidden');
         }
 
-        window.filterSolutions = function(filter) {
-            renderSolutions(filter);
-        };
-
-        // Custom Modal Utilities
-        function showModal(title, bodyHtml, actions) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-body').innerHTML = bodyHtml;
-            const actionsDiv = document.getElementById('modal-actions');
-            actionsDiv.innerHTML = '';
-
-            actions.forEach(act => {
-                const b = document.createElement('button');
-                b.className = act.class;
-                b.innerHTML = act.label;
-                b.onclick = act.onClick;
-                actionsDiv.appendChild(b);
-            });
-
-            document.getElementById('modal-container').classList.remove('hidden');
+        function restartTest() {
+            userAnswers = new Array(150).fill(null);
+            questionStatus = new Array(150).fill('not-visited');
+            currentIndex = 0;
+            timerSeconds = 7200;
+            closeResultModal();
+            renderQuestion(currentIndex);
+            startTimer();
+            showToast("Test restarted successfully");
         }
 
-        function closeModal() {
-            document.getElementById('modal-container').classList.add('hidden');
+        // --- RANK ESTIMATOR CALCULATOR ---
+        function calculateRank() {
+            const score = parseInt(document.getElementById('calc-score').value) || 0;
+            const engScore = parseInt(document.getElementById('calc-eng').value) || 0;
+
+            const resBox = document.getElementById('calc-result');
+            const resRank = document.getElementById('res-rank');
+            const resEng = document.getElementById('res-eng-status');
+
+            resBox.classList.remove('hidden');
+
+            if (engScore >= 35) {
+                resEng.innerText = "QUALIFIED (Eligible for Merit Rank)";
+                resEng.className = "font-bold text-emerald-600";
+            } else {
+                resEng.innerText = "NOT QUALIFIED (Requires min 35 Marks in Technical English)";
+                resEng.className = "font-bold text-rose-600";
+            }
+
+            if (score >= 320) {
+                resRank.innerText = "AIR 1 - 50 (Top Bihar Govt Engineering Colleges)";
+            } else if (score >= 240) {
+                resRank.innerText = "AIR 51 - 200 (MIT Muzaffarpur, BCE Bhagalpur)";
+            } else if (score >= 160) {
+                resRank.innerText = "AIR 201 - 600 (GEC Gaya, BCE Patna)";
+            } else {
+                resRank.innerText = "AIR 600+ (New State Engineering Colleges)";
+            }
         }
 
-        // Run on Page Load
-        window.onload = function() {
-            initFirebase();
-        };
+        // --- TOAST NOTIFICATION HELPERS ---
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
+            }, 3000);
+        }
     </script>
 </body>
 </html>
