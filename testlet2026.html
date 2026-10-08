@@ -40,6 +40,26 @@
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+    <div id="admin-login-overlay" class="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg"><i class="fa-solid fa-shield-halved"></i></div>
+                <h2 class="text-xl font-extrabold text-slate-900 mt-4">Admin Question Feeder</h2>
+                <p class="text-xs text-slate-500 mt-1">Sign in with your Firebase Admin account to save questions.</p>
+            </div>
+            <div class="space-y-3">
+                <input id="admin-login-email" type="email" autocomplete="username" placeholder="Admin email"
+                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input id="admin-login-password" type="password" autocomplete="current-password" placeholder="Password"
+                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="admin-login-btn" type="button" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Sign In
+                </button>
+                <p id="admin-login-error" class="text-xs text-rose-600 text-center min-h-4"></p>
+            </div>
+        </div>
+    </div>
+
 
     <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -75,9 +95,12 @@
                         <h2 class="text-lg font-bold">Question Bank Entry</h2>
                         <p class="text-xs text-indigo-200">Single or Bulk Import (100 Questions in 1 Click)</p>
                     </div>
+                    <div class="flex items-center gap-2">
+                    <button id="admin-logout-btn" type="button" class="hidden bg-white/10 hover:bg-white/20 text-white text-[11px] px-2.5 py-1 rounded-full border border-white/20">Logout</button>
                     <span id="db-status-badge" class="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1">
                         <i class="fa-solid fa-database"></i> Live Sync
                     </span>
+                </div>
                 </div>
 
                 <!-- Test Metadata -->
@@ -266,6 +289,7 @@
     <script type="module">
         import { getFirebaseServices } from "./public/js/firebase-singleton.js";
         import { collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         // Firebase Setup — same app/path used by the CBT frontend.
         const appId = "bihar-let-2026-app";
@@ -461,16 +485,13 @@ Answer: B. पीपल`;
             btnSave.innerText = `Saving ${parsed.length} Questions...`;
 
             try {
-                if (window.db) {
+                if (window.db && window.auth?.currentUser?.uid === "nkXAUBb7ffZQ5CtyShWl6YcQ39t2") {
                     const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
                     for (const q of parsed) {
                         await addDoc(qCol, q);
                     }
                 } else {
-                    parsed.forEach((q, idx) => {
-                        window.dbQuestions.push({ id: 'bulk_loc_' + Date.now() + '_' + idx, ...q });
-                    });
-                    renderQuestionsList();
+                    throw new Error("Admin login required. Please sign in first.");
                 }
 
                 showModal("Bulk Upload Complete!", `Successfully imported <b>${parsed.length} questions</b> into ${section}!`, [
@@ -481,11 +502,7 @@ Answer: B. पीपल`;
                 document.getElementById('parsed-count').innerText = '0';
             } catch (err) {
                 console.error("Bulk upload error:", err);
-                parsed.forEach((q, idx) => {
-                    window.dbQuestions.push({ id: 'bulk_loc_' + Date.now() + '_' + idx, ...q });
-                });
-                renderQuestionsList();
-                showModal("Saved Locally", `Imported ${parsed.length} questions locally into state.`, [
+                showModal("Firebase Save Failed", `Could not save questions to Firebase.<br><br><span class="text-rose-600">${err?.message || "Unknown Firestore error"}</span>`, [
                     { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
                 ]);
             } finally {
@@ -584,24 +601,21 @@ Answer: B. पीपल`;
             };
 
             try {
-                if (window.db) {
+                if (window.db && window.auth?.currentUser?.uid === "nkXAUBb7ffZQ5CtyShWl6YcQ39t2") {
                     const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
                     await addDoc(qCol, newQ);
                     showModal("Success!", "Question saved successfully into Firebase database.", [
                         { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
                     ]);
                 } else {
-                    window.dbQuestions.push({ id: 'loc_' + Date.now(), ...newQ });
-                    renderQuestionsList();
+                    throw new Error("Admin login required. Please sign in first.");
                 }
 
                 statusEl.innerText = "Question added successfully!";
                 document.getElementById('add-question-form').reset();
             } catch (err) {
                 console.error(err);
-                window.dbQuestions.push({ id: 'loc_' + Date.now(), ...newQ });
-                renderQuestionsList();
-                statusEl.innerText = "Saved to local state!";
+                statusEl.innerText = "Firebase save failed: " + (err?.message || "Unknown error");
             } finally {
                 saveBtn.disabled = false;
             }
@@ -664,23 +678,64 @@ Answer: B. पीपल`;
 
         async function initAdmin() {
             try {
-                const { db } = await getFirebaseServices();
+                const { db, auth } = await getFirebaseServices();
                 window.db = db;
+                window.auth = auth;
+
+                const loginOverlay = document.getElementById('admin-login-overlay');
+                const loginBtn = document.getElementById('admin-login-btn');
+                const logoutBtn = document.getElementById('admin-logout-btn');
+                const emailEl = document.getElementById('admin-login-email');
+                const passwordEl = document.getElementById('admin-login-password');
+                const errorEl = document.getElementById('admin-login-error');
+                const ADMIN_UID = "nkXAUBb7ffZQ5CtyShWl6YcQ39t2";
+
+                loginBtn.onclick = async () => {
+                    errorEl.textContent = "";
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Signing in...';
+                    try {
+                        const credential = await signInWithEmailAndPassword(auth, emailEl.value.trim(), passwordEl.value);
+                        if (credential.user.uid !== ADMIN_UID) {
+                            await signOut(auth);
+                            throw new Error("This Firebase account is not authorized as admin.");
+                        }
+                    } catch (err) {
+                        console.error("Admin login error:", err);
+                        errorEl.textContent = err?.message || "Login failed.";
+                    } finally {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i> Sign In';
+                    }
+                };
+
+                logoutBtn.onclick = () => signOut(auth);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user && user.uid === ADMIN_UID) {
+                        loginOverlay.classList.add('hidden');
+                        logoutBtn.classList.remove('hidden');
+                        const badge = document.getElementById('db-status-badge');
+                        badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Admin Connected';
+                        badge.className = 'bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1';
+                    } else {
+                        loginOverlay.classList.remove('hidden');
+                        logoutBtn.classList.add('hidden');
+                        const badge = document.getElementById('db-status-badge');
+                        badge.innerHTML = '<i class="fa-solid fa-lock"></i> Admin Login Required';
+                        badge.className = 'bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-400/30 flex items-center gap-1';
+                    }
+                });
 
                 const qCol = collection(db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
                 onSnapshot(qCol, (snap) => {
                     window.dbQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderQuestionsList();
-                    const badge = document.getElementById('db-status-badge');
-                    if (badge) {
-                        badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Live';
-                        badge.className = 'bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1';
-                    }
                 }, (error) => {
                     console.error("Firestore listener error:", error);
                     const badge = document.getElementById('db-status-badge');
                     if (badge) {
-                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Firebase Error';
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Firestore Error';
                         badge.className = 'bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full border border-rose-400/30 flex items-center gap-1';
                     }
                 });
