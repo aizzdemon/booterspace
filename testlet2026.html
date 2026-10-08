@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bihar LET 2026 - Admin Question Feeder Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+    <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+            <button id="themeToggle" class="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <i class="fas hover:rotate-12 transition-transform fa-moon text-lg" id="themeIcon"></i>
+            </button>
+            <button class="relative p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
+            </button>
+            <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <div class="flex items-center space-x-3 cursor-pointer pl-1">
+              <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                AD
+              </div>
+              <div class="hidden sm:block text-left">
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-none">Admin Control</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Super Admin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Add Question Form & Bulk Importer -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="bg-indigo-900 px-6 py-4 text-white flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold">Question Bank Entry</h2>
+                        <p class="text-xs text-indigo-200">Single or Bulk Import (100 Questions in 1 Click)</p>
+                    </div>
+                    <span id="db-status-badge" class="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1">
+                        <i class="fa-solid fa-database"></i> Live Sync
+                    </span>
+                </div>
+
+                <!-- Test Metadata -->
+                <div class="px-6 pt-5">
+                    <div class="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-slate-50 p-4">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-slate-900">Test Information</h3>
+                                <p class="text-[11px] text-slate-500">Ye details Firebase me har question ke saath save hongi aur CBT frontend par automatically dikhenगी.</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-indigo-100 text-indigo-700">Firebase Metadata</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Test Name <span class="text-rose-500">*</span></label>
+                                <input id="test-name-input" type="text" required placeholder="e.g. Bihar LET Library Science Mock Test 1"
+                                    class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Test No. <span class="text-rose-500">*</span></label>
+                                <input id="test-no-input" type="text" required placeholder="e.g. 1"
+                                    class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode Switcher Tabs -->
+                <div class="flex border-b border-slate-200 bg-slate-100 p-1">
+                    <button type="button" onclick="switchFeederTab('bulk')" id="tab-btn-bulk" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-900 shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-import text-amber-600"></i> Bulk Import Text (बलक में प्रश्न डालें)
+                    </button>
+                    <button type="button" onclick="switchFeederTab('single')" id="tab-btn-single" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-indigo-600"></i> Single Entry Form
+                    </button>
+                </div>
+
+                <!-- Bulk Import Form -->
+                <form id="bulk-question-form" onsubmit="handleBulkSubmit(event)" class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Target Section <span class="text-rose-500">*</span></label>
+                            <select id="bulk-input-section" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                                <option value="Part 1">Part 1: Library Science (100 Marks)</option>
+                                <option value="Part 2">Part 2: GK & Reasoning (50 Marks)</option>
+                            </select>
+                        </div>
+                        <div class="text-right flex items-center justify-end">
+                            <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg">
+                                Support format: 1. Question / A. B. C. D. / Answer: B
+                            </span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-700">Paste Plain Text Questions (सभी प्रश्न यहाँ पेस्ट करें) <span class="text-rose-500">*</span></label>
+                        </div>
+                        <textarea id="bulk-input-text" rows="12" required placeholder="Paste questions here..." class="w-full font-mono text-xs p-3 bg-slate-900 text-amber-300 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <div id="bulk-preview-stats" class="text-xs font-semibold text-slate-600">
+                            Parsed: <span id="parsed-count" class="font-bold text-indigo-600">0</span> questions detected
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="previewParsedQuestions()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-lg transition">
+                                Validate & Preview
+                            </button>
+                            <button type="submit" id="btn-bulk-save" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Save All Questions to DB
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Single Question Form (Hidden by default) -->
+                <form id="add-question-form" onsubmit="handleQuestionSubmit(event)" class="p-6 space-y-4 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Select Exam Section <span class="text-rose-500">*</span></label>
+                            <select id="input-section" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                                <option value="Part 1">Part 1: Library Science (100 Marks)</option>
+                                <option value="Part 2">Part 2: GK & Reasoning (50 Marks)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Question ID Tag (Optional)</label>
+                            <input type="text" id="input-qnum" placeholder="Auto-assigned if empty" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Question Statement (प्रश्न कथन) <span class="text-rose-500">*</span></label>
+                        <textarea id="input-question" rows="3" placeholder="Enter question statement here" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+                    </div>
+
+                    <!-- Options Inputs Grid -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-700">Answer Options (विकल्प) <span class="text-rose-500">*</span></label>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center">A</span>
+                                <input type="text" id="input-opt-a" placeholder="Option A text" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center">B</span>
+                                <input type="text" id="input-opt-b" placeholder="Option B text" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center">C</span>
+                                <input type="text" id="input-opt-c" placeholder="Option C text" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center">D</span>
+                                <input type="text" id="input-opt-d" placeholder="Option D text" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-700 mb-1">Correct Answer <span class="text-rose-500">*</span></label>
+                            <select id="input-correct" class="w-full px-3 py-2 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="A">Option A</option>
+                                <option value="B">Option B</option>
+                                <option value="C">Option C</option>
+                                <option value="D">Option D</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Solution / Explanation (व्याख्या)</label>
+                            <input type="text" id="input-solution" placeholder="Detailed answer explanation for student view" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-4 mt-2">
+                        <span id="admin-status" class="text-xs font-semibold text-indigo-600">Ready to save new question</span>
+                        <button type="submit" id="btn-save" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle"></i> Save Single Question
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Database Question Preview & List -->
+        <div class="lg:col-span-5 space-y-4 flex flex-col">
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Database Question Bank</h3>
+                    <p class="text-xs text-slate-500"><span id="admin-total-qs" class="font-bold text-indigo-600">0</span> Total Questions</p>
+                </div>
+                <button onclick="resetToSampleQuestions()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition border border-slate-300 flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-left text-slate-500"></i> Load Default Samples
+                </button>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex items-center space-x-2 text-xs font-medium bg-slate-200 p-1 rounded-xl">
+                <button onclick="filterQuestionList('all')" id="filter-btn-all" class="flex-1 py-1.5 rounded-lg bg-white text-indigo-900 font-bold shadow text-center">All Questions</button>
+                <button onclick="filterQuestionList('Part 1')" id="filter-btn-p1" class="flex-1 py-1.5 rounded-lg text-slate-600 text-center hover:text-slate-900">Part 1 (Library)</button>
+                <button onclick="filterQuestionList('Part 2')" id="filter-btn-p2" class="flex-1 py-1.5 rounded-lg text-slate-600 text-center hover:text-slate-900">Part 2 (GK)</button>
+            </div>
+
+            <!-- Scrollable Questions Container -->
+            <div id="db-questions-list" class="flex-grow space-y-3 overflow-y-auto max-h-[600px] custom-scrollbar pr-1">
+                <!-- Dynamically populated by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Custom Modal Popup -->
+    <div id="modal-container" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+            <h3 id="modal-title" class="text-lg font-bold text-slate-900">Notice</h3>
+            <p id="modal-body" class="text-sm text-slate-600 leading-relaxed">Action completed.</p>
+            <div id="modal-actions" class="flex items-center justify-end space-x-2 pt-2">
+                <!-- Action buttons dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getFirebaseServices } from "./public/js/firebase-singleton.js";
+        import { collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        // Firebase Setup — same app/path used by the CBT frontend.
+        const appId = "bihar-let-2026-app";
+        const QUESTION_COLLECTION = "bihar_let_questions";
+
+        // Sample Preloaded Questions
+        const defaultSampleQuestions = [
+            {
+                id: "sample_1",
+                section: "Part 1",
+                question: "डॉ. एस.आर. रंगनाथन द्वारा प्रतिपादित पुस्तकालय विज्ञान का प्रथम नियम (First Law) इनमें से कौन सा है?",
+                options: {
+                    A: "प्रत्येक पाठक को उसकी पुस्तक मिले",
+                    B: "पुस्तकें उपयोग के लिए हैं (Books are for use)",
+                    C: "प्रत्येक पुस्तक को उसका पाठक मिले",
+                    D: "पाठक का समय बचाएं"
+                },
+                correct: "B",
+                solution: "पुस्तकालय विज्ञान का पहला नियम है 'Books are for use' (पुस्तकें उपयोग के लिए हैं)।"
+            },
+            {
+                id: "sample_2",
+                section: "Part 1",
+                question: "कोलन क्लासिफिकेशन (Colon Classification - CC) का विकास किसके द्वारा किया गया था?",
+                options: {
+                    A: "मेल्विल डेवी (Melvil Dewey)",
+                    B: "डॉ. एस.आर. रंगनाथन (Dr. S.R. Ranganathan)",
+                    C: "सी.ए. कटर (C.A. Cutter)",
+                    D: "डब्ल्यू.सी. बर्बिक सेयर्स"
+                },
+                correct: "B",
+                solution: "Colon Classification (CC) was created by Dr. S.R. Ranganathan in 1933."
+            },
+            {
+                id: "sample_3",
+                section: "Part 2",
+                question: "बिहार राज्य का राजकीय वृक्ष (State Tree of Bihar) कौन सा है?",
+                options: {
+                    A: "आम (Mango)",
+                    B: "पीपल (Peepal)",
+                    C: "बरगद (Banyan)",
+                    D: "साल (Sal)"
+                },
+                correct: "B",
+                solution: "बिहार का राजकीय वृक्ष 'पीपल' (Peepal) है।"
+            }
+        ];
+
+        window.dbQuestions = [];
+        window.db = null;
+        window.currentFilter = 'all';
+
+        // Tab switching handler
+        window.switchFeederTab = function(tab) {
+            const bulkForm = document.getElementById('bulk-question-form');
+            const singleForm = document.getElementById('add-question-form');
+            const bulkBtn = document.getElementById('tab-btn-bulk');
+            const singleBtn = document.getElementById('tab-btn-single');
+
+            if (tab === 'bulk') {
+                bulkForm.classList.remove('hidden');
+                singleForm.classList.add('hidden');
+                bulkBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-900 shadow transition flex items-center justify-center gap-2";
+                singleBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2";
+            } else {
+                bulkForm.classList.add('hidden');
+                singleForm.classList.remove('hidden');
+                singleBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-900 shadow transition flex items-center justify-center gap-2";
+                bulkBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2";
+            }
+        };
+
+        // Example loader for bulk text
+        window.loadSampleBulkText = function() {
+            const sampleText = `1. डॉ. एस.आर. रंगनाथन द्वारा प्रतिपादित पुस्तकालय विज्ञान का प्रथम नियम (First Law) इनमें से कौन सा है?
+A. प्रत्येक पाठक को उसकी पुस्तक मिले
+B. पुस्तकें उपयोग के लिए हैं
+C. प्रत्येक पुस्तक को उसका पाठक मिले
+D. पाठक का समय बचाएं
+Answer: B. पुस्तकें उपयोग के लिए हैं
+
+2. भारत में पुस्तकालय आंदोलन (Library Movement) का जनक किसे माना जाता है?
+A. डॉ. एस.आर. रंगनाथन
+B. महाराजा सयाजीराव गायकवाड़ III
+C. डब्ल्यू.ए. बोर्डन
+D. बी.एस. केसवन
+Answer: B
+
+3. बिहार राज्य का राजकीय वृक्ष (State Tree) कौन सा है?
+A. आम
+B. पीपल
+C. बरगद
+D. साल
+Answer: B. पीपल`;
+            document.getElementById('bulk-input-text').value = sampleText;
+            previewParsedQuestions();
+        };
+
+        // Text Parser Logic for Bulk Questions
+        window.parseBulkQuestionsText = function(rawText, targetSection) {
+            if (!rawText.trim()) return [];
+
+            // Split into potential question blocks using regex for numbering pattern e.g. "1.", "2)", "Q1."
+            const blocks = rawText.split(/\n(?=\s*(?:\d+[\.\)]|Q\d+[\.\)]?)\s+)/gi);
+            const parsedList = [];
+
+            blocks.forEach(block => {
+                const text = block.trim();
+                if (!text) return;
+
+                // Extract Question line
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length < 5) return; // Must have question + 4 options minimum
+
+                let qText = "";
+                let optA = "", optB = "", optC = "", optD = "";
+                let correctOpt = "A";
+                let solutionText = "";
+
+                lines.forEach(line => {
+                    if (/^(?:\d+[\.\)]|Q\d+[\.\)]?)\s+/i.test(line)) {
+                        qText = line.replace(/^(?:\d+[\.\)]|Q\d+[\.\)]?)\s+/i, '').trim();
+                    } else if (/^[A][\.\)]\s*/i.test(line)) {
+                        optA = line.replace(/^[A][\.\)]\s*/i, '').trim();
+                    } else if (/^[B][\.\)]\s*/i.test(line)) {
+                        optB = line.replace(/^[B][\.\)]\s*/i, '').trim();
+                    } else if (/^[C][\.\)]\s*/i.test(line)) {
+                        optC = line.replace(/^[C][\.\)]\s*/i, '').trim();
+                    } else if (/^[D][\.\)]\s*/i.test(line)) {
+                        optD = line.replace(/^[D][\.\)]\s*/i, '').trim();
+                    } else if (/^(?:Answer|Ans|उत्तर|Correct Answer)\s*:\s*/i.test(line)) {
+                        const ansStr = line.replace(/^(?:Answer|Ans|उत्तर|Correct Answer)\s*:\s*/i, '').trim();
+                        const match = ansStr.match(/^([A-Da-d])/);
+                        if (match) {
+                            correctOpt = match[1].toUpperCase();
+                        }
+                        solutionText = ansStr;
+                    }
+                });
+
+                if (qText && optA && optB && optC && optD) {
+                    parsedList.push({
+                        testName: document.getElementById('test-name-input')?.value.trim() || "",
+                        testNo: document.getElementById('test-no-input')?.value.trim() || "",
+                        section: targetSection,
+                        question: qText,
+                        options: { A: optA, B: optB, C: optC, D: optD },
+                        correct: correctOpt,
+                        solution: solutionText || `Correct Option is ${correctOpt}`,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            });
+
+            return parsedList;
+        };
+
+        // Preview & Count
+        window.previewParsedQuestions = function() {
+            const text = document.getElementById('bulk-input-text').value;
+            const section = document.getElementById('bulk-input-section').value;
+            const parsed = parseBulkQuestionsText(text, section);
+            document.getElementById('parsed-count').innerText = parsed.length;
+            return parsed;
+        };
+
+        // Submit Bulk Import
+        window.handleBulkSubmit = async function(e) {
+            e.preventDefault();
+            const text = document.getElementById('bulk-input-text').value;
+            const section = document.getElementById('bulk-input-section').value;
+            const testName = document.getElementById('test-name-input')?.value.trim() || "";
+            const testNo = document.getElementById('test-no-input')?.value.trim() || "";
+
+            if (!testName || !testNo) {
+                showModal("Test Information Required", "Please enter <b>Test Name</b> and <b>Test No.</b> before uploading questions.", [
+                    { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
+                return;
+            }
+
+            const parsed = parseBulkQuestionsText(text, section);
+
+            if (parsed.length === 0) {
+                showModal("Parsing Failed", "Could not detect valid questions. Please format each question as:<br><br><b>1. Question text<br>A. Option 1<br>B. Option 2<br>C. Option 3<br>D. Option 4<br>Answer: B</b>", [
+                    { label: "Got It", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
+                return;
+            }
+
+            const btnSave = document.getElementById('btn-bulk-save');
+            btnSave.disabled = true;
+            btnSave.innerText = `Saving ${parsed.length} Questions...`;
+
+            try {
+                if (window.db) {
+                    const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+                    for (const q of parsed) {
+                        await addDoc(qCol, q);
+                    }
+                } else {
+                    parsed.forEach((q, idx) => {
+                        window.dbQuestions.push({ id: 'bulk_loc_' + Date.now() + '_' + idx, ...q });
+                    });
+                    renderQuestionsList();
+                }
+
+                showModal("Bulk Upload Complete!", `Successfully imported <b>${parsed.length} questions</b> into ${section}!`, [
+                    { label: "Great!", class: "bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
+
+                document.getElementById('bulk-input-text').value = '';
+                document.getElementById('parsed-count').innerText = '0';
+            } catch (err) {
+                console.error("Bulk upload error:", err);
+                parsed.forEach((q, idx) => {
+                    window.dbQuestions.push({ id: 'bulk_loc_' + Date.now() + '_' + idx, ...q });
+                });
+                renderQuestionsList();
+                showModal("Saved Locally", `Imported ${parsed.length} questions locally into state.`, [
+                    { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Save All Questions to DB`;
+            }
+        };
+
+        // Listen for live input in text area
+        document.addEventListener("DOMContentLoaded", () => {
+            const bulkTextEl = document.getElementById('bulk-input-text');
+            if (bulkTextEl) {
+                bulkTextEl.addEventListener('input', previewParsedQuestions);
+            }
+        });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs bg-white rounded-xl border">No questions found for this section. Add one from the form!</div>`;
+                return;
+            }
+
+            filtered.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 relative group hover:border-indigo-300 transition";
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="bg-indigo-100 text-indigo-900 font-bold px-2 py-0.5 rounded">${q.section}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Ans: ${q.correct}</span>
+                            <button onclick="confirmDeleteQuestion('${q.id}')" class="text-rose-500 hover:text-rose-700 p-1 text-sm font-bold" title="Delete Question">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-800">${idx + 1}. ${q.question}</p>
+                    <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600 bg-slate-50 p-2 rounded">
+                        <div>A: ${q.options.A}</div>
+                        <div>B: ${q.options.B}</div>
+                        <div>C: ${q.options.C}</div>
+                        <div>D: ${q.options.D}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        // Filter Function
+        window.filterQuestionList = function(filter) {
+            window.currentFilter = filter;
+            ['all', 'p1', 'p2'].forEach(id => {
+                const btn = document.getElementById(`filter-btn-${id}`);
+                if (btn) {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-slate-600 text-center hover:text-slate-900";
+                }
+            });
+            
+            const activeId = filter === 'all' ? 'all' : filter === 'Part 1' ? 'p1' : 'p2';
+            document.getElementById(`filter-btn-${activeId}`).className = "flex-1 py-1.5 rounded-lg bg-white text-indigo-900 font-bold shadow text-center";
+
+            renderQuestionsList();
+        };
+
+        // Form Submit Handler
+        window.handleQuestionSubmit = async function(e) {
+            e.preventDefault();
+            const statusEl = document.getElementById('admin-status');
+            const saveBtn = document.getElementById('btn-save');
+            
+            statusEl.innerText = "Saving to Database...";
+            saveBtn.disabled = true;
+
+            const testName = document.getElementById('test-name-input')?.value.trim() || "";
+            const testNo = document.getElementById('test-no-input')?.value.trim() || "";
+
+            if (!testName || !testNo) {
+                statusEl.innerText = "Please enter Test Name and Test No.";
+                saveBtn.disabled = false;
+                return;
+            }
+
+            const newQ = {
+                testName,
+                testNo,
+                section: document.getElementById('input-section').value,
+                question: document.getElementById('input-question').value.trim(),
+                options: {
+                    A: document.getElementById('input-opt-a').value.trim(),
+                    B: document.getElementById('input-opt-b').value.trim(),
+                    C: document.getElementById('input-opt-c').value.trim(),
+                    D: document.getElementById('input-opt-d').value.trim(),
+                },
+                correct: document.getElementById('input-correct').value,
+                solution: document.getElementById('input-solution').value.trim(),
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                if (window.db) {
+                    const qCol = collection(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+                    await addDoc(qCol, newQ);
+                    showModal("Success!", "Question saved successfully into Firebase database.", [
+                        { label: "OK", class: "bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                    ]);
+                } else {
+                    window.dbQuestions.push({ id: 'loc_' + Date.now(), ...newQ });
+                    renderQuestionsList();
+                }
+
+                statusEl.innerText = "Question added successfully!";
+                document.getElementById('add-question-form').reset();
+            } catch (err) {
+                console.error(err);
+                window.dbQuestions.push({ id: 'loc_' + Date.now(), ...newQ });
+                renderQuestionsList();
+                statusEl.innerText = "Saved to local state!";
+            } finally {
+                saveBtn.disabled = false;
+            }
+        };
+
+        // Delete Question
+        window.confirmDeleteQuestion = function(id) {
+            showModal(
+                "Delete Question?",
+                "Are you sure you want to remove this question from the database?",
+                [
+                    { label: "Cancel", class: "bg-slate-200 text-slate-800 text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal },
+                    { label: "Delete", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold shadow", onClick: () => executeDelete(id) }
+                ]
+            );
+        };
+
+        async function executeDelete(id) {
+            closeModal();
+            try {
+                if (window.db && !id.startsWith('sample_') && !id.startsWith('loc_')) {
+                    const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION, id);
+                    await deleteDoc(docRef);
+                } else {
+                    window.dbQuestions = window.dbQuestions.filter(q => q.id !== id);
+                    renderQuestionsList();
+                }
+            } catch (e) {
+                window.dbQuestions = window.dbQuestions.filter(q => q.id !== id);
+                renderQuestionsList();
+            }
+        }
+
+        window.resetToSampleQuestions = function() {
+            window.dbQuestions = [...defaultSampleQuestions];
+            renderQuestionsList();
+        };
+
+        // Modal Helpers
+        function showModal(title, bodyHtml, actions) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = bodyHtml;
+            const actionsDiv = document.getElementById('modal-actions');
+            actionsDiv.innerHTML = '';
+
+            actions.forEach(act => {
+                const b = document.createElement('button');
+                b.className = act.class;
+                b.innerHTML = act.label;
+                b.onclick = act.onClick;
+                actionsDiv.appendChild(b);
+            });
+
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        async function initAdmin() {
+            try {
+                const { db } = await getFirebaseServices();
+                window.db = db;
+
+                const qCol = collection(db, 'artifacts', appId, 'public', 'data', QUESTION_COLLECTION);
+                onSnapshot(qCol, (snap) => {
+                    window.dbQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderQuestionsList();
+                    const badge = document.getElementById('db-status-badge');
+                    if (badge) {
+                        badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Live';
+                        badge.className = 'bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1';
+                    }
+                }, (error) => {
+                    console.error("Firestore listener error:", error);
+                    const badge = document.getElementById('db-status-badge');
+                    if (badge) {
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Firebase Error';
+                        badge.className = 'bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full border border-rose-400/30 flex items-center gap-1';
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                window.db = null;
+                showModal("Firebase Error", "Firebase service initialize नहीं हो पाया। Please refresh the page and check your Firebase configuration.", [
+                    { label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }
+                ]);
+            }
+        }
+
+        window.onload = function() {
+            initAdmin();
+        };
+    </script>
+</body>
+</html>
