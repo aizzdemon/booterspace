@@ -434,18 +434,23 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
 <script type="module">
 
 /* =========================================================
-   FIREBASE IMPORTS
+   FIREBASE SINGLETON
    ========================================================= */
 
-import {
-  collection,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+/*
+  IMPORTANT FIX:
 
+  Do NOT import Firestore from Firebase 11.x here.
 
-/* =========================================================
-   FIREBASE / APP CONFIG
-   ========================================================= */
+  firebase-singleton.js already uses Firebase 10.13.2.
+  Therefore both the Firestore db instance AND the
+  Firestore functions must come from the SAME Firebase SDK.
+
+  This prevents:
+
+  "Expected first argument to collection() to be a
+   CollectionReference, a DocumentReference or FirebaseFirestore"
+*/
 
 const APP_ID = "bihar-let-2026-app";
 const QUESTION_COLLECTION = "bihar_let_questions";
@@ -513,17 +518,6 @@ const hide = el => {
    FIREBASE SINGLETON LOADER
    ========================================================= */
 
-/*
-  IMPORTANT:
-  GitHub Pages does not provide __firebase_config or __app_id.
-
-  Therefore we first load the project's existing
-  firebase-singleton.js.
-
-  Multiple paths are tried so the page works whether the
-  HTML is at repository root or inside a subfolder.
-*/
-
 async function loadFirebaseSingleton() {
 
   const possiblePaths = [
@@ -532,34 +526,43 @@ async function loadFirebaseSingleton() {
     "../public/js/firebase-singleton.js"
   ];
 
-  for (const path of possiblePaths) {
+  const uniquePaths = [
+    ...new Set(
+      possiblePaths.map(
+        path => new URL(path, document.baseURI).href
+      )
+    )
+  ];
+
+  for (const url of uniquePaths) {
 
     try {
 
-      console.log("[Firebase] Trying singleton:", path);
-
-      const module = await import(
-        new URL(path, document.baseURI).href
+      console.log(
+        "[Firebase] Trying singleton:",
+        url
       );
 
+      const firebaseModule =
+        await import(url);
+
       if (
-        module &&
-        typeof module.getFirebaseServices === "function"
+        firebaseModule &&
+        typeof firebaseModule.getFirebaseServices === "function"
       ) {
 
         console.log(
-          "[Firebase] firebase-singleton.js loaded successfully:",
-          path
+          "[Firebase] firebase-singleton.js loaded successfully."
         );
 
-        return module;
+        return firebaseModule;
       }
 
     } catch (error) {
 
       console.warn(
         "[Firebase] Singleton path failed:",
-        path,
+        url,
         error
       );
 
@@ -579,7 +582,14 @@ async function fetchQuestionsFromFirebase() {
 
   let firebaseQuestions = [];
 
-  const singleton = await loadFirebaseSingleton();
+
+  /* ---------------------------------------------------------
+     LOAD SINGLETON
+     --------------------------------------------------------- */
+
+  const singleton =
+    await loadFirebaseSingleton();
+
 
   if (!singleton) {
 
@@ -589,30 +599,98 @@ async function fetchQuestionsFromFirebase() {
     );
   }
 
-  if (typeof singleton.getFirebaseServices !== "function") {
+
+  if (
+    typeof singleton.getFirebaseServices !==
+    "function"
+  ) {
 
     throw new Error(
       "getFirebaseServices() was not found in firebase-singleton.js"
     );
   }
 
-  console.log("[Firebase] Requesting Firebase services...");
 
-  const services = await singleton.getFirebaseServices();
+  if (
+    typeof singleton.loadFirebaseModule !==
+    "function"
+  ) {
 
-  if (!services || !services.db) {
+    throw new Error(
+      "loadFirebaseModule() was not found in firebase-singleton.js"
+    );
+  }
+
+
+  /* ---------------------------------------------------------
+     GET FIREBASE SERVICES
+     --------------------------------------------------------- */
+
+  console.log(
+    "[Firebase] Requesting Firebase services..."
+  );
+
+
+  const services =
+    await singleton.getFirebaseServices();
+
+
+  if (
+    !services ||
+    !services.db
+  ) {
 
     throw new Error(
       "Firebase database instance (db) was not returned by getFirebaseServices()."
     );
   }
 
-  const db = services.db;
 
-  console.log("[Firebase] Firestore initialized.");
+  const db =
+    services.db;
+
+
   console.log(
-    "[Firebase] Reading:",
-    `artifacts/${APP_ID}/public/data/${QUESTION_COLLECTION}`
+    "[Firebase] Firestore initialized."
+  );
+
+
+  /* ---------------------------------------------------------
+     IMPORTANT:
+     GET FIRESTORE FUNCTIONS FROM SAME SDK VERSION
+     --------------------------------------------------------- */
+
+  console.log(
+    "[Firebase] Loading Firestore functions from singleton..."
+  );
+
+
+  const firestoreModule =
+    await singleton.loadFirebaseModule(
+      "firebase-firestore.js"
+    );
+
+
+  if (
+    !firestoreModule ||
+    typeof firestoreModule.collection !== "function" ||
+    typeof firestoreModule.getDocs !== "function"
+  ) {
+
+    throw new Error(
+      "Firestore collection/getDocs functions could not be loaded from the Firebase singleton."
+    );
+  }
+
+
+  const {
+    collection,
+    getDocs
+  } = firestoreModule;
+
+
+  console.log(
+    "[Firebase] Firestore module loaded from the same Firebase SDK."
   );
 
 
@@ -620,96 +698,133 @@ async function fetchQuestionsFromFirebase() {
      PRIMARY COLLECTION
      --------------------------------------------------------- */
 
-  const artifactRef = collection(
-    db,
-    "artifacts",
-    APP_ID,
-    "public",
-    "data",
-    QUESTION_COLLECTION
+  console.log(
+    "[Firebase] Reading:",
+    `artifacts/${APP_ID}/public/data/${QUESTION_COLLECTION}`
   );
 
-  const artifactSnapshot = await getDocs(artifactRef);
+
+  const artifactRef =
+    collection(
+      db,
+      "artifacts",
+      APP_ID,
+      "public",
+      "data",
+      QUESTION_COLLECTION
+    );
+
+
+  const artifactSnapshot =
+    await getDocs(
+      artifactRef
+    );
+
 
   console.log(
     "[Firebase] Artifact collection documents:",
     artifactSnapshot.size
   );
 
-  artifactSnapshot.forEach(doc => {
 
-    try {
+  artifactSnapshot.forEach(
+    doc => {
 
-      const parsed = parseFirestoreDoc(
-        doc.id,
-        doc.data()
-      );
+      try {
 
-      if (parsed) {
-        firebaseQuestions.push(parsed);
+        const parsed =
+          parseFirestoreDoc(
+            doc.id,
+            doc.data()
+          );
+
+
+        if (parsed) {
+
+          firebaseQuestions.push(
+            parsed
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "[Firebase] Error parsing document:",
+          doc.id,
+          error
+        );
+
       }
 
-    } catch (error) {
-
-      console.error(
-        "[Firebase] Error parsing document:",
-        doc.id,
-        error
-      );
-
     }
-
-  });
+  );
 
 
   /* ---------------------------------------------------------
      ROOT COLLECTION FALLBACK
      --------------------------------------------------------- */
 
-  if (firebaseQuestions.length === 0) {
+  if (
+    firebaseQuestions.length === 0
+  ) {
 
     console.log(
       "[Firebase] Artifact collection empty. Trying root collection..."
     );
 
+
     try {
 
-      const rootRef = collection(
-        db,
-        QUESTION_COLLECTION
-      );
+      const rootRef =
+        collection(
+          db,
+          QUESTION_COLLECTION
+        );
 
-      const rootSnapshot = await getDocs(rootRef);
+
+      const rootSnapshot =
+        await getDocs(
+          rootRef
+        );
+
 
       console.log(
         "[Firebase] Root collection documents:",
         rootSnapshot.size
       );
 
-      rootSnapshot.forEach(doc => {
 
-        try {
+      rootSnapshot.forEach(
+        doc => {
 
-          const parsed = parseFirestoreDoc(
-            doc.id,
-            doc.data()
-          );
+          try {
 
-          if (parsed) {
-            firebaseQuestions.push(parsed);
+            const parsed =
+              parseFirestoreDoc(
+                doc.id,
+                doc.data()
+              );
+
+
+            if (parsed) {
+
+              firebaseQuestions.push(
+                parsed
+              );
+            }
+
+          } catch (error) {
+
+            console.error(
+              "[Firebase] Root document parse error:",
+              doc.id,
+              error
+            );
+
           }
 
-        } catch (error) {
-
-          console.error(
-            "[Firebase] Root document parse error:",
-            doc.id,
-            error
-          );
-
         }
-
-      });
+      );
 
     } catch (rootError) {
 
@@ -728,6 +843,7 @@ async function fetchQuestionsFromFirebase() {
     firebaseQuestions.length
   );
 
+
   return firebaseQuestions;
 }
 
@@ -736,7 +852,10 @@ async function fetchQuestionsFromFirebase() {
    QUESTION PARSER
    ========================================================= */
 
-function parseFirestoreDoc(docId, data) {
+function parseFirestoreDoc(
+  docId,
+  data
+) {
 
   if (!data) return null;
 
@@ -748,7 +867,9 @@ function parseFirestoreDoc(docId, data) {
     "";
 
 
-  if (!String(qText).trim()) {
+  if (
+    !String(qText).trim()
+  ) {
 
     console.warn(
       "[Firebase] Skipping document because question field is empty:",
@@ -762,11 +883,17 @@ function parseFirestoreDoc(docId, data) {
   let opts = [];
 
 
-  if (Array.isArray(data.options)) {
+  if (
+    Array.isArray(data.options)
+  ) {
 
-    opts = data.options.map(
-      option => String(option ?? "")
-    );
+    opts =
+      data.options.map(
+        option =>
+          String(
+            option ?? ""
+          )
+      );
 
   } else if (
     typeof data.options === "object" &&
@@ -774,41 +901,75 @@ function parseFirestoreDoc(docId, data) {
   ) {
 
     opts = [
-      data.options.A ?? data.options.a ?? "",
-      data.options.B ?? data.options.b ?? "",
-      data.options.C ?? data.options.c ?? "",
-      data.options.D ?? data.options.d ?? ""
+
+      data.options.A ??
+      data.options.a ??
+      "",
+
+      data.options.B ??
+      data.options.b ??
+      "",
+
+      data.options.C ??
+      data.options.c ??
+      "",
+
+      data.options.D ??
+      data.options.d ??
+      ""
+
     ].map(String);
 
   }
 
 
   /*
-    Some feeder versions may store individual option fields.
-    This does not affect the existing format, but makes the
-    reader more tolerant.
+    Some feeder versions may store individual
+    option fields.
   */
 
-  if (opts.length !== 4) {
+  if (
+    opts.length !== 4
+  ) {
 
     const individualOptions = [
-      data.optionA ?? data.A ?? "",
-      data.optionB ?? data.B ?? "",
-      data.optionC ?? data.C ?? "",
-      data.optionD ?? data.D ?? ""
+
+      data.optionA ??
+      data.A ??
+      "",
+
+      data.optionB ??
+      data.B ??
+      "",
+
+      data.optionC ??
+      data.C ??
+      "",
+
+      data.optionD ??
+      data.D ??
+      ""
+
     ];
+
 
     if (
       individualOptions.some(
-        value => String(value).trim() !== ""
+        value =>
+          String(value).trim() !== ""
       )
     ) {
 
-      opts = individualOptions.map(String);
+      opts =
+        individualOptions.map(String);
     }
 
   }
 
+
+  /* ---------------------------------------------------------
+     CORRECT ANSWER
+     --------------------------------------------------------- */
 
   let rawCorrect =
     data.correct ??
@@ -817,49 +978,64 @@ function parseFirestoreDoc(docId, data) {
     "A";
 
 
-  rawCorrect = String(rawCorrect)
-    .trim()
-    .toUpperCase();
+  rawCorrect =
+    String(rawCorrect)
+      .trim()
+      .toUpperCase();
 
 
-  let correctLetter = "A";
+  let correctLetter =
+    "A";
 
 
-  if (["0", "1", "2", "3"].includes(rawCorrect)) {
+  if (
+    ["0", "1", "2", "3"]
+      .includes(rawCorrect)
+  ) {
 
     correctLetter =
       ["A", "B", "C", "D"][
-        parseInt(rawCorrect, 10)
+        parseInt(
+          rawCorrect,
+          10
+        )
       ];
 
   } else if (
-    ["A", "B", "C", "D"].includes(
-      rawCorrect.charAt(0)
-    )
+    ["A", "B", "C", "D"]
+      .includes(
+        rawCorrect.charAt(0)
+      )
   ) {
 
-    correctLetter = rawCorrect.charAt(0);
+    correctLetter =
+      rawCorrect.charAt(0);
   }
 
 
-  /*
-     Section handling
-  */
+  /* ---------------------------------------------------------
+     SECTION
+     --------------------------------------------------------- */
 
-  const rawSection = String(
-    data.section ??
-    data.part ??
-    "Part 1"
-  ).trim();
+  const rawSection =
+    String(
+      data.section ??
+      data.part ??
+      "Part 1"
+    ).trim();
 
 
-  let partGroup = "Part 1";
+  let partGroup =
+    "Part 1";
 
 
   const normalizedSection =
     rawSection
       .toLowerCase()
-      .replace(/[\s_-]+/g, "");
+      .replace(
+        /[\s_-]+/g,
+        ""
+      );
 
 
   if (
@@ -868,19 +1044,24 @@ function parseFirestoreDoc(docId, data) {
     normalizedSection.includes("gk")
   ) {
 
-    partGroup = "Part 2";
+    partGroup =
+      "Part 2";
   }
 
 
   return {
 
-    id: docId,
+    id:
+      docId,
 
-    section: rawSection,
+    section:
+      rawSection,
 
-    partGroup: partGroup,
+    partGroup:
+      partGroup,
 
-    question: String(qText),
+    question:
+      String(qText),
 
     options:
       opts.length === 4
@@ -892,23 +1073,27 @@ function parseFirestoreDoc(docId, data) {
             "Option D"
           ],
 
-    correct: correctLetter,
+    correct:
+      correctLetter,
 
-    solution: String(
-      data.solution ??
-      data.explanation ??
-      ""
-    ),
+    solution:
+      String(
+        data.solution ??
+        data.explanation ??
+        ""
+      ),
 
-    testName: String(
-      data.testName ??
-      ""
-    ),
+    testName:
+      String(
+        data.testName ??
+        ""
+      ),
 
-    testNo: String(
-      data.testNo ??
-      ""
-    )
+    testNo:
+      String(
+        data.testNo ??
+        ""
+      )
   };
 }
 
@@ -925,10 +1110,12 @@ async function initPortal() {
       "[CBT] Starting Bihar LET CBT portal..."
     );
 
+
     console.log(
       "[CBT] App ID:",
       APP_ID
     );
+
 
     console.log(
       "[CBT] Collection:",
@@ -940,18 +1127,34 @@ async function initPortal() {
       await fetchQuestionsFromFirebase();
 
 
-    hide($("loadingView"));
+    hide(
+      $("loadingView")
+    );
 
 
-    if (!allQuestions.length) {
+    if (
+      !allQuestions.length
+    ) {
 
       console.error(
         "[CBT] Firebase connected, but no valid questions were found."
       );
 
-      flexHide($("loadingView"));
-      flexHide($("examInterface"));
-      flexShow($("emptyView"));
+
+      flexHide(
+        $("loadingView")
+      );
+
+
+      flexHide(
+        $("examInterface")
+      );
+
+
+      flexShow(
+        $("emptyView")
+      );
+
 
       return;
     }
@@ -963,13 +1166,17 @@ async function initPortal() {
 
     part1Questions =
       allQuestions.filter(
-        q => q.partGroup === "Part 1"
+        q =>
+          q.partGroup ===
+          "Part 1"
       );
 
 
     part2Questions =
       allQuestions.filter(
-        q => q.partGroup === "Part 2"
+        q =>
+          q.partGroup ===
+          "Part 2"
       );
 
 
@@ -998,11 +1205,18 @@ async function initPortal() {
           part1Questions.length / 2
         );
 
+
       part2Questions =
-        part1Questions.slice(half);
+        part1Questions.slice(
+          half
+        );
+
 
       part1Questions =
-        part1Questions.slice(0, half);
+        part1Questions.slice(
+          0,
+          half
+        );
     }
 
 
@@ -1014,14 +1228,17 @@ async function initPortal() {
     questionStatusesMap = {};
 
 
-    allQuestions.forEach(q => {
+    allQuestions.forEach(
+      q => {
 
-      userAnswersMap[q.id] = null;
+        userAnswersMap[q.id] =
+          null;
 
-      questionStatusesMap[q.id] =
-        "not-visited";
+        questionStatusesMap[q.id] =
+          "not-visited";
 
-    });
+      }
+    );
 
 
     /* -------------------------------------------------------
@@ -1030,33 +1247,49 @@ async function initPortal() {
 
     const metaDoc =
       allQuestions.find(
-        q => q.testName || q.testNo
+        q =>
+          q.testName ||
+          q.testNo
       );
 
 
     if (metaDoc) {
 
-      if (metaDoc.testName) {
+      if (
+        metaDoc.testName
+      ) {
 
-        $("headerExamTitle").textContent =
+        $("headerExamTitle")
+          .textContent =
           metaDoc.testName;
       }
 
 
-      if (metaDoc.testNo) {
+      if (
+        metaDoc.testNo
+      ) {
 
-        $("headerTestBadge").textContent =
+        $("headerTestBadge")
+          .textContent =
           `Test No. ${metaDoc.testNo}`;
       }
     }
 
 
-    hide($("emptyView"));
+    hide(
+      $("emptyView")
+    );
 
-    flexShow($("examInterface"));
+
+    flexShow(
+      $("examInterface")
+    );
 
 
-    loadPart("PART1");
+    loadPart(
+      "PART1"
+    );
+
 
     startTimer();
 
@@ -1065,9 +1298,11 @@ async function initPortal() {
       `[CBT] Successfully loaded ${allQuestions.length} questions.`
     );
 
+
     console.log(
       `[CBT] Part 1: ${part1Questions.length}`
     );
+
 
     console.log(
       `[CBT] Part 2: ${part2Questions.length}`
@@ -1081,14 +1316,37 @@ async function initPortal() {
       err
     );
 
+
     console.error(
       "[CBT] Error message:",
       err?.message
     );
 
-    flexHide($("loadingView"));
-    flexHide($("examInterface"));
-    flexShow($("emptyView"));
+
+    if (
+      err?.code
+    ) {
+
+      console.error(
+        "[CBT] Firebase error code:",
+        err.code
+      );
+    }
+
+
+    flexHide(
+      $("loadingView")
+    );
+
+
+    flexHide(
+      $("examInterface")
+    );
+
+
+    flexShow(
+      $("emptyView")
+    );
 
   }
 
@@ -1099,40 +1357,54 @@ async function initPortal() {
    PART LOADER
    ========================================================= */
 
-function loadPart(partName) {
+function loadPart(
+  partName
+) {
 
-  currentPart = partName;
+  currentPart =
+    partName;
 
 
-  if (partName === "PART1") {
+  if (
+    partName === "PART1"
+  ) {
 
-    activeQuestions = part1Questions;
+    activeQuestions =
+      part1Questions;
+
 
     $("tabPart1").className =
       "px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-600 text-white shadow-sm flex items-center gap-1.5";
 
+
     $("tabPart2").className =
       "px-4 py-1.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5";
+
 
     $("palettePartLabel").textContent =
       "Part 1 Palette";
 
   } else {
 
-    activeQuestions = part2Questions;
+    activeQuestions =
+      part2Questions;
+
 
     $("tabPart2").className =
       "px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-600 text-white shadow-sm flex items-center gap-1.5";
 
+
     $("tabPart1").className =
       "px-4 py-1.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5";
+
 
     $("palettePartLabel").textContent =
       "Part 2 Palette";
   }
 
 
-  currentIndex = 0;
+  currentIndex =
+    0;
 
 
   $("paletteTotalText").textContent =
@@ -1151,7 +1423,9 @@ function loadPart(partName) {
 
 function renderQuestion() {
 
-  if (!activeQuestions.length) return;
+  if (
+    !activeQuestions.length
+  ) return;
 
 
   const q =
@@ -1177,8 +1451,13 @@ function renderQuestion() {
 
 
   $("questionBody").innerHTML =
-    escapeHTML(q.question)
-      .replace(/\n/g, "<br>");
+    escapeHTML(
+      q.question
+    )
+      .replace(
+        /\n/g,
+        "<br>"
+      );
 
 
   const letters =
@@ -1187,10 +1466,14 @@ function renderQuestion() {
 
   $("optionsContainer").innerHTML =
     q.options.map(
-      (optText, idx) => {
+      (
+        optText,
+        idx
+      ) => {
 
         const letter =
           letters[idx];
+
 
         const isSelected =
           userAnswersMap[q.id] ===
@@ -1227,27 +1510,36 @@ function renderQuestion() {
     ).join("");
 
 
-  if (!isSubmitted) {
+  if (
+    !isSubmitted
+  ) {
 
     document
-      .querySelectorAll(".option-card")
-      .forEach(card => {
+      .querySelectorAll(
+        ".option-card"
+      )
+      .forEach(
+        card => {
 
-        card.addEventListener(
-          "click",
-          () => {
+          card.addEventListener(
+            "click",
+            () => {
 
-            const sel =
-              card.dataset.letter;
+              const sel =
+                card.dataset.letter;
 
-            userAnswersMap[q.id] =
-              sel;
 
-            renderQuestion();
-          }
-        );
+              userAnswersMap[q.id] =
+                sel;
 
-      });
+
+              renderQuestion();
+
+            }
+          );
+
+        }
+      );
   }
 
 
@@ -1306,7 +1598,10 @@ function renderPalette() {
 
   grid.innerHTML =
     activeQuestions.map(
-      (q, idx) => {
+      (
+        q,
+        idx
+      ) => {
 
         const st =
           questionStatusesMap[q.id];
@@ -1316,17 +1611,23 @@ function renderPalette() {
           "btn-cbt w-8 h-8 font-extrabold text-xs flex items-center justify-center border shadow-xs cursor-pointer ";
 
 
-        if (st === "answered") {
+        if (
+          st === "answered"
+        ) {
 
           classNames +=
             "p-answered";
 
-        } else if (st === "not-answered") {
+        } else if (
+          st === "not-answered"
+        ) {
 
           classNames +=
             "p-not-answered";
 
-        } else if (st === "marked") {
+        } else if (
+          st === "marked"
+        ) {
 
           classNames +=
             "p-marked";
@@ -1345,7 +1646,9 @@ function renderPalette() {
         }
 
 
-        if (idx === currentIndex) {
+        if (
+          idx === currentIndex
+        ) {
 
           classNames +=
             " p-current";
@@ -1366,24 +1669,30 @@ function renderPalette() {
 
 
   grid
-    .querySelectorAll("button")
-    .forEach(btn => {
+    .querySelectorAll(
+      "button"
+    )
+    .forEach(
+      btn => {
 
-      btn.addEventListener(
-        "click",
-        () => {
+        btn.addEventListener(
+          "click",
+          () => {
 
-          currentIndex =
-            parseInt(
-              btn.dataset.idx,
-              10
-            );
+            currentIndex =
+              parseInt(
+                btn.dataset.idx,
+                10
+              );
 
-          renderQuestion();
-        }
-      );
 
-    });
+            renderQuestion();
+
+          }
+        );
+
+      }
+    );
 }
 
 
@@ -1402,28 +1711,36 @@ function updatePaletteCounts() {
   };
 
 
-  activeQuestions.forEach(q => {
+  activeQuestions.forEach(
+    q => {
 
-    const st =
-      questionStatusesMap[q.id] ||
-      "not-visited";
+      const st =
+        questionStatusesMap[q.id] ||
+        "not-visited";
 
-    counts[st] =
-      (counts[st] || 0) + 1;
-  });
+
+      counts[st] =
+        (counts[st] || 0) + 1;
+
+    }
+  );
 
 
   $("cntAnswered").textContent =
     counts.answered || 0;
 
+
   $("cntNotAnswered").textContent =
     counts["not-answered"] || 0;
+
 
   $("cntMarked").textContent =
     counts.marked || 0;
 
+
   $("cntAnsMarked").textContent =
     counts["answered-marked"] || 0;
+
 
   $("cntNotVisited").textContent =
     counts["not-visited"] || 0;
@@ -1436,7 +1753,9 @@ function updatePaletteCounts() {
 
 function handleSaveNext() {
 
-  if (isSubmitted) return;
+  if (
+    isSubmitted
+  ) return;
 
 
   const q =
@@ -1473,7 +1792,10 @@ function handleSaveNext() {
         "Part 1 Complete! Loading Part 2..."
       );
 
-      loadPart("PART2");
+
+      loadPart(
+        "PART2"
+      );
 
     } else {
 
@@ -1489,7 +1811,9 @@ function handleSaveNext() {
 
 function handleSaveMarkReview() {
 
-  if (isSubmitted) return;
+  if (
+    isSubmitted
+  ) return;
 
 
   const q =
@@ -1500,10 +1824,13 @@ function handleSaveMarkReview() {
     userAnswersMap[q.id];
 
 
-  if (selected) {
+  if (
+    selected
+  ) {
 
     questionStatusesMap[q.id] =
       "answered-marked";
+
 
     showToast(
       "Answer saved & marked for review"
@@ -1513,6 +1840,7 @@ function handleSaveMarkReview() {
 
     questionStatusesMap[q.id] =
       "marked";
+
 
     showToast(
       "Marked for review without answer"
@@ -1534,7 +1862,9 @@ function handleSaveMarkReview() {
     part2Questions.length > 0
   ) {
 
-    loadPart("PART2");
+    loadPart(
+      "PART2"
+    );
 
   } else {
 
@@ -1549,7 +1879,9 @@ function handleSaveMarkReview() {
 
 function handleMarkReviewNext() {
 
-  if (isSubmitted) return;
+  if (
+    isSubmitted
+  ) return;
 
 
   const q =
@@ -1579,7 +1911,9 @@ function handleMarkReviewNext() {
     part2Questions.length > 0
   ) {
 
-    loadPart("PART2");
+    loadPart(
+      "PART2"
+    );
 
   } else {
 
@@ -1594,7 +1928,9 @@ function handleMarkReviewNext() {
 
 function handleClearResponse() {
 
-  if (isSubmitted) return;
+  if (
+    isSubmitted
+  ) return;
 
 
   const q =
@@ -1624,7 +1960,9 @@ function handleClearResponse() {
 
 function handlePrevQuestion() {
 
-  if (currentIndex > 0) {
+  if (
+    currentIndex > 0
+  ) {
 
     currentIndex--;
 
@@ -1634,10 +1972,14 @@ function handlePrevQuestion() {
     currentPart === "PART2"
   ) {
 
-    loadPart("PART1");
+    loadPart(
+      "PART1"
+    );
+
 
     currentIndex =
       part1Questions.length - 1;
+
 
     renderQuestion();
   }
@@ -1650,32 +1992,46 @@ function handlePrevQuestion() {
 
 function startTimer() {
 
-  clearInterval(timerInterval);
+  clearInterval(
+    timerInterval
+  );
+
 
   updateTimerDisplay();
 
 
   timerInterval =
-    setInterval(() => {
+    setInterval(
+      () => {
 
-      if (isSubmitted) return;
-
-
-      timerSeconds--;
-
-      updateTimerDisplay();
+        if (
+          isSubmitted
+        ) return;
 
 
-      if (timerSeconds <= 0) {
+        timerSeconds--;
 
-        clearInterval(
-          timerInterval
-        );
 
-        finalizeSubmission(true);
-      }
+        updateTimerDisplay();
 
-    }, 1000);
+
+        if (
+          timerSeconds <= 0
+        ) {
+
+          clearInterval(
+            timerInterval
+          );
+
+
+          finalizeSubmission(
+            true
+          );
+        }
+
+      },
+      1000
+    );
 }
 
 
@@ -1700,16 +2056,24 @@ function updateTimerDisplay() {
   const display =
     [hrs, mins, secs]
       .map(
-        v => String(v).padStart(2, "0")
+        v =>
+          String(v)
+            .padStart(
+              2,
+              "0"
+            )
       )
       .join(":");
 
 
-  $("timerDisplay").textContent =
+  $("timerDisplay")
+    .textContent =
     display;
 
 
-  if (timerSeconds <= 300) {
+  if (
+    timerSeconds <= 300
+  ) {
 
     $("timerDisplay")
       .classList.add(
@@ -1730,40 +2094,46 @@ function showSubmitConfirmModal() {
   let unansCount = 0;
 
 
-  allQuestions.forEach(q => {
+  allQuestions.forEach(
+    q => {
 
-    const st =
-      questionStatusesMap[q.id];
+      const st =
+        questionStatusesMap[q.id];
 
 
-    if (
-      st === "answered" ||
-      st === "answered-marked"
-    ) {
+      if (
+        st === "answered" ||
+        st === "answered-marked"
+      ) {
 
-      ansCount++;
+        ansCount++;
 
-    } else if (
-      st === "marked"
-    ) {
+      } else if (
+        st === "marked"
+      ) {
 
-      markCount++;
+        markCount++;
 
-    } else {
+      } else {
 
-      unansCount++;
+        unansCount++;
+      }
+
     }
-  });
+  );
 
 
   $("modTotalQ").textContent =
     allQuestions.length;
 
+
   $("modAnsQ").textContent =
     ansCount;
 
+
   $("modMarkQ").textContent =
     markCount;
+
 
   $("modUnansQ").textContent =
     unansCount;
@@ -1779,13 +2149,17 @@ function showSubmitConfirmModal() {
    FINAL SUBMISSION
    ========================================================= */
 
-function finalizeSubmission(auto = false) {
+function finalizeSubmission(
+  auto = false
+) {
 
   isSubmitted = true;
+
 
   clearInterval(
     timerInterval
   );
+
 
   hide(
     $("modalConfirmSubmit")
@@ -1797,27 +2171,33 @@ function finalizeSubmission(auto = false) {
   let skippedCount = 0;
 
 
-  allQuestions.forEach(q => {
+  allQuestions.forEach(
+    q => {
 
-    const userAns =
-      userAnswersMap[q.id];
+      const userAns =
+        userAnswersMap[q.id];
 
 
-    if (!userAns) {
+      if (
+        !userAns
+      ) {
 
-      skippedCount++;
+        skippedCount++;
 
-    } else if (
-      userAns === q.correct
-    ) {
+      } else if (
+        userAns ===
+        q.correct
+      ) {
 
-      rightCount++;
+        rightCount++;
 
-    } else {
+      } else {
 
-      wrongCount++;
+        wrongCount++;
+      }
+
     }
-  });
+  );
 
 
   const marksObtained =
@@ -1840,25 +2220,38 @@ function finalizeSubmission(auto = false) {
       : 0;
 
 
-  $("resMarksObtained").textContent =
+  $("resMarksObtained")
+    .textContent =
     marksObtained;
 
-  $("resMaxMarks").textContent =
+
+  $("resMaxMarks")
+    .textContent =
     `Out of ${allQuestions.length}`;
 
-  $("resRightCount").textContent =
+
+  $("resRightCount")
+    .textContent =
     rightCount;
 
-  $("resWrongCount").textContent =
+
+  $("resWrongCount")
+    .textContent =
     wrongCount;
 
-  $("resSkippedCount").textContent =
+
+  $("resSkippedCount")
+    .textContent =
     skippedCount;
 
-  $("resAccuracyPercent").textContent =
+
+  $("resAccuracyPercent")
+    .textContent =
     `${accuracy}%`;
 
-  $("resAccuracyBar").style.width =
+
+  $("resAccuracyBar")
+    .style.width =
     `${accuracy}%`;
 
 
@@ -1866,12 +2259,15 @@ function finalizeSubmission(auto = false) {
     $("examInterface")
   );
 
+
   show(
     $("resultView")
   );
 
 
-  if (auto) {
+  if (
+    auto
+  ) {
 
     showToast(
       "Time expired. Exam submitted automatically."
@@ -1892,7 +2288,9 @@ function renderSolutionsPortal(
     [...allQuestions];
 
 
-  if (filter === "PART1") {
+  if (
+    filter === "PART1"
+  ) {
 
     questionsToDisplay =
       part1Questions;
@@ -1900,7 +2298,9 @@ function renderSolutionsPortal(
   }
 
 
-  if (filter === "PART2") {
+  if (
+    filter === "PART2"
+  ) {
 
     questionsToDisplay =
       part2Questions;
@@ -1918,14 +2318,18 @@ function renderSolutionsPortal(
 
   container.innerHTML =
     questionsToDisplay.map(
-      (q, idx) => {
+      (
+        q,
+        idx
+      ) => {
 
         const userAns =
           userAnswersMap[q.id];
 
 
         const isCorrect =
-          userAns === q.correct;
+          userAns ===
+          q.correct;
 
 
         const isSkipped =
@@ -1938,14 +2342,18 @@ function renderSolutionsPortal(
           </span>`;
 
 
-        if (isSkipped) {
+        if (
+          isSkipped
+        ) {
 
           statusBadge =
             `<span class="px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs">
               <i class="fa-solid fa-forward mr-1"></i> Skipped
             </span>`;
 
-        } else if (!isCorrect) {
+        } else if (
+          !isCorrect
+        ) {
 
           statusBadge =
             `<span class="px-2.5 py-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-bold text-xs">
@@ -1956,18 +2364,23 @@ function renderSolutionsPortal(
 
         const optionsHTML =
           q.options.map(
-            (optText, optIdx) => {
+            (
+              optText,
+              optIdx
+            ) => {
 
               const letter =
                 letters[optIdx];
 
 
               const isCorrectOption =
-                letter === q.correct;
+                letter ===
+                q.correct;
 
 
               const isUserPick =
-                letter === userAns;
+                letter ===
+                userAns;
 
 
               let cardStyle =
@@ -1978,16 +2391,21 @@ function renderSolutionsPortal(
                 "bg-slate-200 text-slate-700";
 
 
-              let extraTag = "";
+              let extraTag =
+                "";
 
 
-              if (isCorrectOption) {
+              if (
+                isCorrectOption
+              ) {
 
                 cardStyle =
                   "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold shadow-sm";
 
+
                 badgeStyle =
                   "bg-emerald-600 text-white";
+
 
                 extraTag =
                   `<span class="ml-auto text-xs font-black text-emerald-700 flex items-center gap-1">
@@ -2003,8 +2421,10 @@ function renderSolutionsPortal(
                 cardStyle =
                   "bg-rose-50 border-rose-500 text-rose-950 font-bold shadow-sm";
 
+
                 badgeStyle =
                   "bg-rose-600 text-white";
+
 
                 extraTag =
                   `<span class="ml-auto text-xs font-black text-rose-700 flex items-center gap-1">
@@ -2097,7 +2517,10 @@ function renderFullQuestionPaper() {
 
   container.innerHTML =
     allQuestions.map(
-      (q, idx) => `
+      (
+        q,
+        idx
+      ) => `
         <div class="pt-3">
 
           <div class="font-bold text-slate-800 text-sm mb-1">
@@ -2140,9 +2563,13 @@ function renderFullQuestionPaper() {
    HTML ESCAPE
    ========================================================= */
 
-function escapeHTML(str) {
+function escapeHTML(
+  str
+) {
 
-  return String(str || "")
+  return String(
+    str || ""
+  )
     .replace(
       /[&<>"']/g,
       c => ({
@@ -2160,13 +2587,16 @@ function escapeHTML(str) {
    TOAST
    ========================================================= */
 
-function showToast(msg) {
+function showToast(
+  msg
+) {
 
   const t =
     $("toastAlert");
 
 
-  $("toastMsg").textContent =
+  $("toastMsg")
+    .textContent =
     msg;
 
 
@@ -2209,7 +2639,9 @@ window.addEventListener(
 
     /* Refresh */
 
-    if ($("btnRetrySync")) {
+    if (
+      $("btnRetrySync")
+    ) {
 
       $("btnRetrySync")
         .addEventListener(
@@ -2226,21 +2658,30 @@ window.addEventListener(
     $("tabPart1")
       .addEventListener(
         "click",
-        () => loadPart("PART1")
+        () =>
+          loadPart(
+            "PART1"
+          )
       );
 
 
     $("tabPart2")
       .addEventListener(
         "click",
-        () => loadPart("PART2")
+        () =>
+          loadPart(
+            "PART2"
+          )
       );
 
 
     $("btnSwitchToPart2")
       .addEventListener(
         "click",
-        () => loadPart("PART2")
+        () =>
+          loadPart(
+            "PART2"
+          )
       );
 
 
@@ -2304,7 +2745,9 @@ window.addEventListener(
       .addEventListener(
         "click",
         () =>
-          finalizeSubmission(false)
+          finalizeSubmission(
+            false
+          )
       );
 
 
@@ -2366,9 +2809,13 @@ window.addEventListener(
         "click",
         () => {
 
-          if (currentFontSize < 130) {
+          if (
+            currentFontSize < 130
+          ) {
 
-            currentFontSize += 10;
+            currentFontSize +=
+              10;
+
 
             $("questionZoomArea")
               .style.fontSize =
@@ -2383,9 +2830,13 @@ window.addEventListener(
         "click",
         () => {
 
-          if (currentFontSize > 80) {
+          if (
+            currentFontSize > 80
+          ) {
 
-            currentFontSize -= 10;
+            currentFontSize -=
+              10;
+
 
             $("questionZoomArea")
               .style.fontSize =
@@ -2400,7 +2851,9 @@ window.addEventListener(
         "click",
         () => {
 
-          currentFontSize = 100;
+          currentFontSize =
+            100;
+
 
           $("questionZoomArea")
             .style.fontSize =
@@ -2416,17 +2869,23 @@ window.addEventListener(
         "click",
         () => {
 
-          if (!document.fullscreenElement) {
+          if (
+            !document.fullscreenElement
+          ) {
 
             document.documentElement
               .requestFullscreen()
-              .catch(() => {});
+              .catch(
+                () => {}
+              );
 
           } else {
 
             document
               .exitFullscreen()
-              .catch(() => {});
+              .catch(
+                () => {}
+              );
           }
         }
       );
@@ -2443,9 +2902,11 @@ window.addEventListener(
             $("resultView")
           );
 
+
           renderSolutionsPortal(
             "ALL"
           );
+
 
           flexShow(
             $("solutionsPortal")
@@ -2462,6 +2923,7 @@ window.addEventListener(
           hide(
             $("solutionsPortal")
           );
+
 
           flexShow(
             $("resultView")
@@ -2507,7 +2969,9 @@ window.addEventListener(
         "click",
         () => {
 
-          isSubmitted = false;
+          isSubmitted =
+            false;
+
 
           timerSeconds =
             DURATION_SECONDS;
@@ -2517,28 +2981,38 @@ window.addEventListener(
             $("resultView")
           );
 
+
           hide(
             $("solutionsPortal")
           );
+
 
           flexShow(
             $("examInterface")
           );
 
 
-          allQuestions.forEach(q => {
+          allQuestions.forEach(
+            q => {
 
-            userAnswersMap[q.id] =
-              null;
-
-            questionStatusesMap[q.id] =
-              "not-visited";
-          });
+              userAnswersMap[q.id] =
+                null;
 
 
-          loadPart("PART1");
+              questionStatusesMap[q.id] =
+                "not-visited";
+
+            }
+          );
+
+
+          loadPart(
+            "PART1"
+          );
+
 
           startTimer();
+
         }
       );
 
@@ -2556,8 +3030,10 @@ window.addEventListener(
 
           e.preventDefault();
 
-          e.returnValue = "";
+          e.returnValue =
+            "";
         }
+
       }
     );
 
