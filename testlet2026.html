@@ -315,15 +315,62 @@
     </div>
 
     <script type="module">
-        import { getFirebaseServices } from "./public/js/firebase-singleton.js";
-        import { collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import {
+            getAuth,
             signInWithEmailAndPassword,
             signInWithPopup,
             GoogleAuthProvider,
             onAuthStateChanged,
             signOut
         } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+        // ====== FIREBASE CONFIG (paste yours here) ======
+        // Firebase Console > Project settings > General > Your apps > Web app > SDK setup and configuration
+        const firebaseConfig = {
+            apiKey: "PASTE_YOUR_API_KEY",
+            authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "PASTE_YOUR_PROJECT_ID",
+            storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "PASTE_YOUR_SENDER_ID",
+            appId: "PASTE_YOUR_APP_ID"
+        };
+
+        // Uses ./public/js/firebase-singleton.js if it exists, otherwise falls back to the config above.
+        async function getFirebaseServices() {
+            try {
+                const mod = await import("./public/js/firebase-singleton.js");
+                const services = await mod.getFirebaseServices();
+                if (services?.db && services?.auth) return services;
+            } catch (e) {
+                console.warn("firebase-singleton.js not usable, using inline config:", e);
+            }
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE_")) {
+                throw new Error("Firebase config missing. Paste your firebaseConfig values in the script, or add public/js/firebase-singleton.js.");
+            }
+            const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+            return { app, db: getFirestore(app), auth: getAuth(app) };
+        }
+
+        function friendlyAuthError(error) {
+            const map = {
+                "auth/invalid-credential": "Wrong email or password.",
+                "auth/invalid-login-credentials": "Wrong email or password.",
+                "auth/wrong-password": "Wrong password.",
+                "auth/user-not-found": "No user found with this email.",
+                "auth/invalid-email": "Invalid email address.",
+                "auth/too-many-requests": "Too many attempts. Try again later.",
+                "auth/network-request-failed": "Network error. Check your internet connection.",
+                "auth/operation-not-allowed": "This sign-in method is disabled. Enable it in Firebase Console > Authentication > Sign-in method.",
+                "auth/unauthorized-domain": "This domain is not authorized. Add it in Firebase Console > Authentication > Settings > Authorized domains.",
+                "auth/popup-blocked": "Popup blocked. Allow popups and try again.",
+                "auth/popup-closed-by-user": "Google sign-in popup was closed.",
+                "auth/api-key-not-valid.-please-pass-a-valid-api-key.": "Invalid Firebase API key in config.",
+                "auth/invalid-api-key": "Invalid Firebase API key in config."
+            };
+            return map[error?.code] || error?.message || "Login failed.";
+        }
 
         // Firebase Setup — same app/path used by the CBT frontend.
         const appId = "bihar-let-2026-app";
@@ -792,11 +839,11 @@ Answer: B. पीपल`;
 
                 if (result.user.uid !== ADMIN_UID) {
                     await signOut(firebaseAuth);
-                    throw new Error("This account is not authorized as the Firebase admin.");
+                    throw new Error("This account is not the authorized admin. Your UID is: " + result.user.uid + " (set ADMIN_UID to this value if it is your admin account).");
                 }
             } catch (error) {
                 console.error("Admin email login error:", error);
-                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(error?.message || "Login failed.")}</span>`;
+                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(friendlyAuthError(error))}</span>`;
             } finally {
                 button.disabled = false;
                 button.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-1"></i> Sign in as Admin';
@@ -816,11 +863,11 @@ Answer: B. पीपल`;
 
                 if (result.user.uid !== ADMIN_UID) {
                     await signOut(firebaseAuth);
-                    throw new Error("This Google account is not authorized as the Firebase admin.");
+                    throw new Error("This Google account is not the authorized admin. Your UID is: " + result.user.uid + " (set ADMIN_UID to this value if it is your admin account).");
                 }
             } catch (error) {
                 console.error("Admin Google login error:", error);
-                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(error?.message || "Google login failed.")}</span>`;
+                if (status) status.innerHTML = `<span class="text-rose-600 font-bold">${escapeHtml(friendlyAuthError(error))}</span>`;
             } finally {
                 button.disabled = false;
                 button.innerHTML = '<i class="fa-brands fa-google mr-1"></i> Continue with Google';
