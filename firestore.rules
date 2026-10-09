@@ -39,6 +39,17 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Test metadata and nested questions.
+    match /artifacts/{appId}/public/data/tests/{testId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      match /questions/{questionId} {
+        allow read: if true;
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
     /* ================= USERS ================= */
 
     match /users/{userId} {
