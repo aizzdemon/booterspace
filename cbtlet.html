@@ -1192,45 +1192,7 @@ async function initPortal() {
       );
 
 
-    /*
-      Existing fallback retained.
-    */
-
-    if (
-      part1Questions.length === 0 &&
-      part2Questions.length > 0
-    ) {
-
-      part1Questions = [
-        ...part2Questions
-      ];
-
-      part2Questions = [];
-
-    } else if (
-      part2Questions.length === 0 &&
-      part1Questions.length > 1
-    ) {
-
-      const half =
-        Math.ceil(
-          part1Questions.length / 2
-        );
-
-
-      part2Questions =
-        part1Questions.slice(
-          half
-        );
-
-
-      part1Questions =
-        part1Questions.slice(
-          0,
-          half
-        );
-    }
-
+    // Preserve the exact Part 1 / Part 2 labels from Firestore.
 
     /* -------------------------------------------------------
        ANSWER STATE
