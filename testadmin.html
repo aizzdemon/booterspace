@@ -2251,19 +2251,19 @@ async function executeDelete(id) {
         }
 
 
-        const docRef =
-            doc(
-                window.db,
-                "artifacts",
-                appId,
-                "public",
-                "data",
-                QUESTION_COLLECTION,
-                id
-            );
-
-
+        const questionToDelete = window.dbQuestions.find(question => question.id === id);
+        if (!questionToDelete) throw new Error("Question was not found in the selected test.");
+        const testId = getTestId(questionToDelete.testName || "", questionToDelete.testNo || "");
+        const docRef = doc(window.db, "artifacts", appId, "public", "data", TEST_COLLECTION, testId, "questions", id);
         await deleteDoc(docRef);
+        const testRef = doc(window.db, "artifacts", appId, "public", "data", TEST_COLLECTION, testId);
+        const testSnapshot = await getDoc(testRef);
+        if (testSnapshot.exists()) {
+            await setDoc(testRef, {
+                questionCount: Math.max(0, Number(testSnapshot.data().questionCount || 1) - 1),
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        }
 
 
         showModal(
