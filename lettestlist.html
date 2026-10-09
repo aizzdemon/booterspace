@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="BooterSpace Bihar LET 2026 Official Test Series Portal & Exam Selection">
+<title>Bihar LET 2026 — Test Series Portal | BooterSpace</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<style>
+*{box-sizing:border-box}
+body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#f8fafc;color:#1e293b;-webkit-tap-highlight-color:transparent}
+.glass-card{background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,0.8)}
+.test-card{transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1)}
+.test-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(37,99,235,0.12)}
+.badge-pulse{animation:pulseGlow 2s infinite}
+@keyframes pulseGlow{0%,100%{opacity:1}50%{opacity:0.6}}
+.loader-spinner{border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scrollbar::-webkit-scrollbar{width:6px;height:6px}
+.scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+.scrollbar::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased">
+
+<!-- HEADER NAVBAR -->
+<header class="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
+    
+    <!-- Logo & Title -->
+    <div class="flex items-center gap-2.5 sm:gap-3">
+      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-black text-white text-base sm:text-lg shadow-md">
+        BS
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-black text-sm sm:text-lg tracking-tight text-white">BooterSpace</h1>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">Bihar LET 2026</span>
+        </div>
+        <p class="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Official Online CBT Test Series & Practice Hub</p>
+      </div>
+    </div>
+
+    <!-- Right Header Actions / User Info -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <a href="cbtlet1.html" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 border border-slate-700 transition">
+        <i class="fa-solid fa-laptop-code text-blue-400"></i> Direct Portal
+      </a>
+
+      <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700/80">
+        <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="text-left">
+          <div id="userNameDisplay" class="font-extrabold text-xs text-white leading-tight truncate max-w-[110px] sm:max-w-[160px]">Loading User...</div>
+          <div id="userAuthStatus" class="text-[9px] text-emerald-400 font-semibold leading-tight flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Connected
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- MAIN HERO SECTION -->
+<main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-5 sm:gap-6">
+
+  <!-- HERO BANNER -->
+  <section class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white overflow-hidden shadow-xl border border-slate-800">
+    <!-- Abstract background light shapes -->
+    <div class="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-600/20 blur-3xl pointer-events-none"></div>
+    <div class="absolute right-1/3 -bottom-10 w-64 h-64 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-3xl">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-extrabold mb-3">
+        <i class="fa-solid fa-bullhorn text-amber-400"></i> Bihar LET 2026 Mock Exam Series
+      </div>
+
+      <h2 class="text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2 sm:mb-3">
+        Prepare for Bihar Lateral Entrance Test (LET)
+      </h2>
+
+      <p class="text-slate-300 text-xs sm:text-base leading-relaxed mb-5">
+        Select a test below to start your real CBT exam simulation. Questions include Engineering Mathematics, Mechanics, Electricals, and General Engineering concepts formatted exactly like the official NTA/BCECE portal.
+      </p>
+
+      <!-- Quick Stats Counters -->
+      <div class="grid grid-cols-2 xs:grid-cols-4 gap-2.5 sm:gap-4 pt-2 border-t border-slate-800/80">
+        <div class="bg-slate-800/50 p-2.5 sm:p-3 rounded-xl border border-slate-700/50">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-medium block">Total Tests</span>
+          <span id="statTotalTests" class="text-lg sm:text-2xl font-black text-blue-400">0</span>
+        </div>
+        <div class="bg-slate-800/50 p-2.5 sm:p-3 rounded-xl border border-slate-700/50">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-medium block">Attempted</span>
+          <span id="statAttemptedCount" class="text-lg sm:text-2xl font-black text-emerald-400">0</span>
+        </div>
+        <div class="bg-slate-800/50 p-2.5 sm:p-3 rounded-xl border border-slate-700/50">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-medium block">Avg. Score</span>
+          <span id="statAvgScore" class="text-lg sm:text-2xl font-black text-amber-400">0%</span>
+        </div>
+        <div class="bg-slate-800/50 p-2.5 sm:p-3 rounded-xl border border-slate-700/50">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-medium block">Free Mocks</span>
+          <span id="statFreeCount" class="text-lg sm:text-2xl font-black text-purple-400">100% Free</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTROLS & FILTER BAR -->
+  <section class="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    
+    <!-- Search Bar -->
+    <div class="relative flex-1">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input type="text" id="searchInput" placeholder="Search test title, subject or syllabus..." 
+        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar pb-1 md:pb-0" id="filterTabs">
+      <button data-category="ALL" class="btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-xs shrink-0 transition">
+        All Tests
+      </button>
+      <button data-category="FULL_MOCK" class="btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition">
+        Full Mocks
+      </button>
+      <button data-category="PART_1" class="btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition">
+        Part 1 (Engg)
+      </button>
+      <button data-category="PART_2" class="btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition">
+        Part 2 (Maths & Sci)
+      </button>
+      <button data-category="ATTEMPTED" class="btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition">
+        Attempted
+      </button>
+    </div>
+
+  </section>
+
+  <!-- TESTS GRID & LIST SECTION -->
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="font-black text-slate-900 text-base sm:text-xl flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-blue-600"></i>
+        <span>Available Test Series</span>
+        <span id="testCountBadge" class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">0</span>
+      </h3>
+
+      <button id="btnRefreshList" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 transition">
+        <i class="fa-solid fa-rotate"></i> Sync Firestore
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingBox" class="py-16 text-center bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center gap-3">
+      <div class="loader-spinner w-10 h-10"></div>
+      <p class="text-xs sm:text-sm font-semibold text-slate-600">Fetching live test papers from Firebase Firestore...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyBox" class="hidden py-16 text-center bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+      <h4 class="text-base font-extrabold text-slate-800">No Tests Match Your Search</h4>
+      <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Try selecting a different filter category or clear the search keyword.</p>
+      <button id="btnResetSearch" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">
+        Reset Search Filters
+      </button>
+    </div>
+
+    <!-- Dynamic Tests Card Grid -->
+    <div id="testsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"></div>
+  </section>
+
+</main>
+
+<!-- PRE-EXAM INSTRUCTIONS MODAL -->
+<div id="modalTestStart" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
+  <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-xl w-full p-5 sm:p-6 max-h-[90vh] flex flex-col animate-in fade-in duration-200">
+    
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+          <i class="fa-solid fa-file-signature"></i>
+        </div>
+        <div>
+          <h3 id="modalTestTitle" class="font-black text-sm sm:text-base text-slate-900 leading-tight">Bihar LET Exam</h3>
+          <span id="modalTestTag" class="text-[10px] text-blue-600 font-bold">Full Syllabus Mock Test</span>
+        </div>
+      </div>
+      <button id="btnCloseStartModal" class="text-slate-400 hover:text-slate-700 text-lg p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="py-4 text-xs text-slate-700 space-y-3.5 overflow-y-auto scrollbar leading-relaxed">
+      <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center font-bold">
+        <div>
+          <span class="text-[10px] text-slate-400 block uppercase">Duration</span>
+          <span id="modalDuration" class="text-sm text-slate-800">150 Mins</span>
+        </div>
+        <div class="border-x border-slate-200">
+          <span class="text-[10px] text-slate-400 block uppercase">Questions</span>
+          <span id="modalQuestions" class="text-sm text-slate-800">100 Qs</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block uppercase">Max Marks</span>
+          <span id="modalMarks" class="text-sm text-blue-600">100 Marks</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <p class="font-extrabold text-slate-900 text-xs sm:text-sm">Important Instructions before starting:</p>
+        <ul class="list-disc pl-4 space-y-1.5 text-slate-600">
+          <li>Ensure stable internet connectivity throughout the 150-minute exam window.</li>
+          <li>Each correct response carries <b>+1 mark</b>. There is <b>no negative marking</b>.</li>
+          <li>You can switch between <b>Part 1</b> and <b>Part 2</b> freely using the palette buttons.</li>
+          <li>The test will auto-submit when the timer reaches 00:00:00.</li>
+        </ul>
+      </div>
+
+      <div id="modalPastScoreNotice" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
+        <div class="font-bold flex items-center gap-1.5 mb-1">
+          <i class="fa-solid fa-circle-check text-emerald-600"></i> Previous Attempt Found
+        </div>
+        <div>Highest Score: <b id="modalHighestScore">0 / 100</b>. You may re-take this test anytime to improve your score.</div>
+      </div>
+    </div>
+
+    <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button id="btnCancelStart" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+        Cancel
+      </button>
+      <button id="btnLaunchCBT" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-md flex items-center gap-2 transition">
+        Start CBT Exam Now <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="mt-auto bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800">
+  <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+    <p class="font-semibold text-slate-300">BooterSpace Bihar LET 2026 CBT Examination Portal</p>
+    <p class="text-[11px] text-slate-500">Designed for Bihar Lateral Entrance Test Aspirants. All test series synced with real-time Firebase Firestore.</p>
+  </div>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+/* =========================================================
+   FIREBASE CONFIGURATION & INITIALIZATION
+   ========================================================= */
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'bihar-let-2026-app';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+  apiKey: "AIzaSyDemoKeyForLETExam2026Portal",
+  authDomain: "bihar-let-2026.firebaseapp.com",
+  projectId: "bihar-let-2026",
+  storageBucket: "bihar-let-2026.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:let2026demo"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUserId = null;
+let allTestsList = [];
+let userAttemptsMap = {};
+let selectedTestForLaunch = null;
+let activeCategory = "ALL";
+let searchQuery = "";
+
+/* =========================================================
+   DEFAULT SEED DATA (Used if Firestore has no test metadata)
+   ========================================================= */
+const DEFAULT_TESTS = [
+  {
+    id: "bihar-let-mock-01",
+    testNo: "01",
+    testName: "Bihar LET 2026 — Official Full Length Mock Test #01",
+    category: "FULL_MOCK",
+    durationMins: 150,
+    questionsCount: 100,
+    totalMarks: 100,
+    language: "Hindi / English",
+    description: "Complete full syllabus mock exam covering Engineering Mathematics, Mechanics, Basic Electricals, and General Engineering.",
+    isFree: true,
+    targetPage: "cbtlet1.html"
+  },
+  {
+    id: "bihar-let-part1-special",
+    testNo: "02",
+    testName: "Part 1 — Engineering Mechanics & Electricals Special",
+    category: "PART_1",
+    durationMins: 75,
+    questionsCount: 50,
+    totalMarks: 50,
+    language: "English / Hindi",
+    description: "Focused practice test for Engineering Mechanics, Thermodynamics, and Electrical Engineering fundamentals.",
+    isFree: true,
+    targetPage: "cbtlet1.html"
+  },
+  {
+    id: "bihar-let-part2-special",
+    testNo: "03",
+    testName: "Part 2 — Engineering Mathematics & Aptitude Mock",
+    category: "PART_2",
+    durationMins: 75,
+    questionsCount: 50,
+    totalMarks: 50,
+    language: "English / Hindi",
+    description: "Covers Differential Calculus, Matrices, Vector Algebra, Probability, and Logical Reasoning.",
+    isFree: true,
+    targetPage: "cbtlet1.html"
+  },
+  {
+    id: "bihar-let-pyq-2025",
+    testNo: "04",
+    testName: "Bihar LET 2025 Official Previous Year Paper",
+    category: "FULL_MOCK",
+    durationMins: 150,
+    questionsCount: 100,
+    totalMarks: 100,
+    language: "Hindi / English",
+    description: "Authentic previous year exam paper from BCECE LET 2025 with answer solutions.",
+    isFree: true,
+    targetPage: "cbtlet1.html"
+  }
+];
+
+/* =========================================================
+   DOM HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+function show(el) { if (el) el.classList.remove('hidden'); }
+function hide(el) { if (el) el.classList.add('hidden'); }
+
+/* =========================================================
+   AUTH SETUP
+   ========================================================= */
+async function authenticateUser() {
+  try {
+    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+      const userCred = await signInWithCustomToken(auth, __initial_auth_token);
+      currentUserId = userCred.user.uid;
+    } else {
+      const userCred = await signInAnonymously(auth);
+      currentUserId = userCred.user.uid;
+    }
+    console.log("[Auth] Authenticated user:", currentUserId);
+    $("userNameDisplay").textContent = `Aspirant #${currentUserId.slice(-5)}`;
+  } catch (err) {
+    console.warn("[Auth] Fallback auth or offline mode:", err);
+    currentUserId = "guest_user";
+    $("userNameDisplay").textContent = "Aspirant User";
+  }
+}
+
+/* =========================================================
+   FIRESTORE FETCHING & ATTEMPTS MAPPING
+   ========================================================= */
+async function loadTestSeriesData() {
+  show($("loadingBox"));
+  hide($("emptyBox"));
+  $("testsGrid").innerHTML = "";
+
+  try {
+    // 1. Fetch Tests from Firestore
+    const publicTestsCol = collection(db, 'artifacts', appId, 'public', 'data', 'tests');
+    const snapshot = await getDocs(publicTestsCol);
+
+    let fetchedTests = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      fetchedTests.push({
+        id: docSnap.id,
+        ...data,
+        // Priority for dynamic title directly from Firebase Firestore fields
+        testName: data.testName || data.title || data.name || data.testTitle || `Bihar LET Test #${data.testNo || docSnap.id}`
+      });
+    });
+
+    // Also check for individual test metadata document in bihar_let_questions collection
+    try {
+      const questionsMetaDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bihar_let_questions', 'meta'));
+      if (questionsMetaDoc.exists()) {
+        const metaData = questionsMetaDoc.data();
+        const firebaseTitle = metaData.testName || metaData.title || metaData.test_title;
+        if (firebaseTitle) {
+          const targetTest = fetchedTests.find(t => t.testNo === (metaData.testNo || "01") || t.id === "bihar-let-mock-01");
+          if (targetTest) {
+            targetTest.testName = firebaseTitle;
+          }
+        }
+      }
+    } catch (metaErr) {
+      console.warn("[Firestore] Question meta title check note:", metaErr);
+    }
+
+    if (fetchedTests.length === 0) {
+      console.log("[Firestore] No tests found in collection. Populating default Bihar LET test series...");
+      fetchedTests = [...DEFAULT_TESTS];
+      // Sync default tests into Firestore so titles are initialized in Firebase
+      syncDefaultTestsToFirestore(publicTestsCol);
+    }
+
+    allTestsList = fetchedTests;
+
+    // 2. Fetch User Attempt History
+    if (currentUserId && currentUserId !== "guest_user") {
+      try {
+        const attemptsCol = collection(db, 'artifacts', appId, 'users', currentUserId, 'test_attempts');
+        const attemptsSnap = await getDocs(attemptsCol);
+        userAttemptsMap = {};
+
+        attemptsSnap.forEach(aDoc => {
+          const data = aDoc.data();
+          const tNo = data.testNo || "01";
+          if (!userAttemptsMap[tNo] || (data.marksObtained > userAttemptsMap[tNo].marksObtained)) {
+            userAttemptsMap[tNo] = data;
+          }
+        });
+      } catch (aErr) {
+        console.warn("[Firestore] Could not load user attempts history:", aErr);
+      }
+    }
+
+    updateHeaderStats();
+    renderTestsGrid();
+
+  } catch (err) {
+    console.error("[Firestore] Error fetching tests:", err);
+    // Fallback to local default tests
+    allTestsList = [...DEFAULT_TESTS];
+    updateHeaderStats();
+    renderTestsGrid();
+  } finally {
+    hide($("loadingBox"));
+  }
+}
+
+async function syncDefaultTestsToFirestore(colRef) {
+  try {
+    for (const testItem of DEFAULT_TESTS) {
+      const docRef = doc(colRef, testItem.id);
+      await setDoc(docRef, testItem, { merge: true });
+    }
+    console.log("[Firestore] Seeded default test series into database.");
+  } catch (err) {
+    console.warn("[Firestore] Sync default tests error:", err);
+  }
+}
+
+/* =========================================================
+   STATISTICS UPDATER
+   ========================================================= */
+function updateHeaderStats() {
+  $("statTotalTests").textContent = allTestsList.length;
+  
+  const attemptedKeys = Object.keys(userAttemptsMap);
+  $("statAttemptedCount").textContent = attemptedKeys.length;
+
+  if (attemptedKeys.length > 0) {
+    let sumPct = 0;
+    attemptedKeys.forEach(k => {
+      const item = userAttemptsMap[k];
+      sumPct += item.accuracy || (item.totalQuestions ? Math.round((item.marksObtained / item.totalQuestions) * 100) : 0);
+    });
+    $("statAvgScore").textContent = `${Math.round(sumPct / attemptedKeys.length)}%`;
+  } else {
+    $("statAvgScore").textContent = "0%";
+  }
+}
+
+/* =========================================================
+   RENDER TESTS GRID
+   ========================================================= */
+function renderTestsGrid() {
+  const container = $("testsGrid");
+  container.innerHTML = "";
+
+  const filtered = allTestsList.filter(test => {
+    // Category filter
+    let matchesCategory = true;
+    if (activeCategory === "FULL_MOCK") matchesCategory = test.category === "FULL_MOCK";
+    else if (activeCategory === "PART_1") matchesCategory = test.category === "PART_1";
+    else if (activeCategory === "PART_2") matchesCategory = test.category === "PART_2";
+    else if (activeCategory === "ATTEMPTED") matchesCategory = !!userAttemptsMap[test.testNo || test.id];
+
+    // Search query filter
+    let matchesSearch = true;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      matchesSearch = (test.testName || "").toLowerCase().includes(q) ||
+                      (test.description || "").toLowerCase().includes(q) ||
+                      (test.category || "").toLowerCase().includes(q);
+    }
+
+    return matchesCategory && matchesSearch;
+  });
+
+  $("testCountBadge").textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    show($("emptyBox"));
+    return;
+  } else {
+    hide($("emptyBox"));
+  }
+
+  filtered.forEach(test => {
+    const attemptInfo = userAttemptsMap[test.testNo] || userAttemptsMap[test.id];
+    const isAttempted = !!attemptInfo;
+
+    const card = document.createElement("div");
+    card.className = "test-card bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-sm relative overflow-hidden";
+
+    const badgeCategory = test.category === "PART_1" ? "bg-indigo-100 text-indigo-800" :
+                          test.category === "PART_2" ? "bg-purple-100 text-purple-800" :
+                          "bg-blue-100 text-blue-800";
+
+    const categoryText = test.category === "PART_1" ? "Part 1 Special" :
+                         test.category === "PART_2" ? "Part 2 Special" : "Full Mock Test";
+
+    card.innerHTML = `
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg ${badgeCategory}">
+            ${categoryText}
+          </span>
+          ${isAttempted ? `
+            <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i> Attempted
+            </span>
+          ` : `
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+              Free Access
+            </span>
+          `}
+        </div>
+
+        <h4 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug mb-1.5 line-clamp-2">
+          ${escapeHTML(test.testName || test.title || test.name || "Bihar LET CBT Test")}
+        </h4>
+
+        <p class="text-slate-500 text-xs leading-relaxed line-clamp-2 mb-3">
+          ${escapeHTML(test.description || "Official practice paper for Bihar LET CBT preparation.")}
+        </p>
+
+        <!-- Metadata chips -->
+        <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] sm:text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
+          <div>
+            <i class="fa-regular fa-clock text-blue-500 mr-1"></i>${test.durationMins || 150}m
+          </div>
+          <div class="border-x border-slate-200">
+            <i class="fa-solid fa-list text-indigo-500 mr-1"></i>${test.questionsCount || 100} Qs
+          </div>
+          <div>
+            <i class="fa-solid fa-trophy text-amber-500 mr-1"></i>${test.totalMarks || 100} Marks
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+        <div>
+          ${isAttempted ? `
+            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Highest Score</span>
+            <span class="text-xs sm:text-sm font-black text-emerald-600">${attemptInfo.marksObtained || 0} / ${test.totalMarks || 100}</span>
+          ` : `
+            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Status</span>
+            <span class="text-xs font-bold text-slate-700">Not Attempted</span>
+          `}
+        </div>
+
+        <button class="btn-start-test px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition" data-id="${test.id}">
+          ${isAttempted ? 'Re-take Test <i class="fa-solid fa-arrow-rotate-right text-[10px]"></i>' : 'Start Exam <i class="fa-solid fa-play text-[10px]"></i>'}
+        </button>
+      </div>
+    `;
+
+    // Click handlers
+    card.querySelector(".btn-start-test").addEventListener("click", () => {
+      openStartModal(test);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+/* =========================================================
+   START MODAL HANDLER
+   ========================================================= */
+function openStartModal(test) {
+  selectedTestForLaunch = test;
+  const attemptInfo = userAttemptsMap[test.testNo] || userAttemptsMap[test.id];
+
+  $("modalTestTitle").textContent = test.testName || test.title || test.name || "Bihar LET Exam";
+  $("modalTestTag").textContent = test.category === "PART_1" ? "Part 1 (Engineering Mechanics & Sci)" :
+                                   test.category === "PART_2" ? "Part 2 (Mathematics & Aptitude)" : "Full Length Mock Exam";
+  $("modalDuration").textContent = `${test.durationMins || 150} Mins`;
+  $("modalQuestions").textContent = `${test.questionsCount || 100} Qs`;
+  $("modalMarks").textContent = `${test.totalMarks || 100} Marks`;
+
+  if (attemptInfo) {
+    $("modalHighestScore").textContent = `${attemptInfo.marksObtained || 0} / ${test.totalMarks || 100} (${attemptInfo.accuracy || 0}% accuracy)`;
+    show($("modalPastScoreNotice"));
+  } else {
+    hide($("modalPastScoreNotice"));
+  }
+
+  show($("modalTestStart"));
+}
+
+function launchCBTExam() {
+  if (!selectedTestForLaunch) return;
+  const target = selectedTestForLaunch.targetPage || "cbtlet1.html";
+  const testNo = selectedTestForLaunch.testNo || "01";
+  
+  // Navigate directly to cbtlet1.html passing parameters
+  window.location.href = `${target}?testNo=${encodeURIComponent(testNo)}&testId=${encodeURIComponent(selectedTestForLaunch.id)}`;
+}
+
+/* =========================================================
+   UTILITIES & ESCAPING
+   ========================================================= */
+function escapeHTML(str) {
+  return String(str || "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[c]));
+}
+
+/* =========================================================
+   EVENT LISTENERS & INIT
+   ========================================================= */
+window.addEventListener("DOMContentLoaded", async () => {
+  await authenticateUser();
+  await loadTestSeriesData();
+
+  // Category Filters
+  document.querySelectorAll(".btn-filter").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".btn-filter").forEach(b => {
+        b.className = "btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition";
+      });
+      btn.className = "btn-filter px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-xs shrink-0 transition";
+      activeCategory = btn.dataset.category;
+      renderTestsGrid();
+    });
+  });
+
+  // Search Input
+  $("searchInput").addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    renderTestsGrid();
+  });
+
+  $("btnResetSearch").addEventListener("click", () => {
+    $("searchInput").value = "";
+    searchQuery = "";
+    activeCategory = "ALL";
+    renderTestsGrid();
+  });
+
+  $("btnRefreshList").addEventListener("click", () => {
+    loadTestSeriesData();
+  });
+
+  // Modal Actions
+  $("btnCloseStartModal").addEventListener("click", () => hide($("modalTestStart")));
+  $("btnCancelStart").addEventListener("click", () => hide($("modalTestStart")));
+  $("btnLaunchCBT").addEventListener("click", launchCBTExam);
+});
+</script>
+
+</body>
+</html>
