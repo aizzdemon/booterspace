@@ -454,6 +454,8 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
 
 const APP_ID = "bihar-let-2026-app";
 const QUESTION_COLLECTION = "bihar_let_questions";
+const TEST_COLLECTION = "tests";
+const requestedTestId = new URLSearchParams(window.location.search).get("testId");
 
 const DURATION_SECONDS = 150 * 60;
 const MARKS_PER_CORRECT = 1;
@@ -683,16 +685,26 @@ async function fetchQuestionsFromFirebase() {
   }
 
 
-  const {
-    collection,
-    getDocs
-  } = firestoreModule;
+  const { collection, getDocs, doc, getDoc } = firestoreModule;
 
 
   console.log(
     "[Firebase] Firestore module loaded from the same Firebase SDK."
   );
 
+
+  if (requestedTestId) {
+    const testRef = doc(db, "artifacts", APP_ID, "public", "data", TEST_COLLECTION, requestedTestId);
+    const testSnapshot = await getDoc(testRef);
+    if (!testSnapshot.exists()) throw new Error("Selected test was not found.");
+    const testData = testSnapshot.data() || {};
+    $("headerExamTitle").textContent = String(testData.testName || "Bihar LET") + " — CBT Portal";
+    $("headerTestBadge").textContent = "Test No. " + String(testData.testNo || "");
+    const nestedRef = collection(db, "artifacts", APP_ID, "public", "data", TEST_COLLECTION, requestedTestId, "questions");
+    const nestedSnapshot = await getDocs(nestedRef);
+    nestedSnapshot.forEach(item => { const parsed = parseFirestoreDoc(item.id, item.data()); if (parsed) firebaseQuestions.push(parsed); });
+    return firebaseQuestions;
+  }
 
   /* ---------------------------------------------------------
      PRIMARY COLLECTION
