@@ -324,7 +324,7 @@
                             </h3>
 
                             <p class="text-[11px] text-slate-500">
-                                Ye details Firebase me har question ke saath save hongi aur CBT frontend par automatically dikhenगी.
+                                Test Name + Test No. se Firebase me alag test record banega; questions usi test ke folder me save honge.
                             </p>
 
                         </div>
@@ -938,12 +938,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 
 import {
-    getFirestore,
-    collection,
-    addDoc,
-    onSnapshot,
-    doc,
-    deleteDoc
+    getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, setDoc, getDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 import {
@@ -1025,6 +1020,27 @@ window.firebaseAuth = firebaseAuth;
 const appId = "bihar-let-2026-app";
 
 const QUESTION_COLLECTION = "bihar_let_questions";
+const TEST_COLLECTION = "tests";
+function getTestId(testName, testNo) {
+    const slug = String(testName).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "test";
+    const serial = String(testNo).trim().replace(/[^a-zA-Z0-9_-]+/g, "-");
+    return "test_" + serial + "_" + slug;
+}
+function testDocRef(testName, testNo) {
+    return doc(db, "artifacts", appId, "public", "data", TEST_COLLECTION, getTestId(testName, testNo));
+}
+async function ensureTest(testName, testNo) {
+    const ref = testDocRef(testName, testNo);
+    const existing = await getDoc(ref);
+    const now = new Date().toISOString();
+    await setDoc(ref, {
+        testName, testNo: String(testNo),
+        status: existing.exists() ? (existing.data().status || "published") : "published",
+        createdAt: existing.exists() ? (existing.data().createdAt || now) : now,
+        updatedAt: now, createdBy: firebaseAuth?.currentUser?.uid || "", schemaVersion: 2
+    }, { merge: true });
+    return { id: ref.id, ref };
+}
 
 /*
  IMPORTANT:
@@ -1655,25 +1671,16 @@ window.handleBulkSubmit = async function(event) {
         }
 
 
-        const qCol =
-            collection(
-                window.db,
-                "artifacts",
-                appId,
-                "public",
-                "data",
-                QUESTION_COLLECTION
-            );
-
-
+        const test = await ensureTest(testName, testNo);
+        const qCol = collection(window.db, "artifacts", appId, "public", "data", TEST_COLLECTION, test.id, "questions");
         for (const question of parsed) {
-
-            await addDoc(
-                qCol,
-                question
-            );
-
+            await addDoc(qCol, { ...question, testName, testNo: String(testNo) });
         }
+        const testSnapshot = await getDoc(test.ref);
+        await setDoc(test.ref, {
+            questionCount: Number(testSnapshot.data()?.questionCount || 0) + parsed.length,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
 
 
         showModal(
@@ -1881,28 +1888,21 @@ window.handleQuestionSubmit = async function(event) {
         }
 
 
-        const qCol =
-            collection(
-                window.db,
-                "artifacts",
-                appId,
-                "public",
-                "data",
-                QUESTION_COLLECTION
-            );
-
-
-        await addDoc(
-            qCol,
-            newQuestion
-        );
+        const test = await ensureTest(testName, testNo);
+        const qCol = collection(window.db, "artifacts", appId, "public", "data", TEST_COLLECTION, test.id, "questions");
+        await addDoc(qCol, { ...newQuestion, testName, testNo: String(testNo) });
+        const testSnapshot = await getDoc(test.ref);
+        await setDoc(test.ref, {
+            questionCount: Number(testSnapshot.data()?.questionCount || 0) + 1,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
 
 
         showModal(
 
             "Success!",
 
-            "Question saved successfully into Firebase database.",
+            "Question saved inside the selected test in Firebase.",
 
             [
                 {
