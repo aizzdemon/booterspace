@@ -493,6 +493,54 @@
       100% { background-position: -200% 0; }
     }
 
+    /* ── Bihar LET CBT practice promo ── */
+    .let-practice-promo {
+      position: fixed; z-index: 1000; left: 18px; top: 42%; width: 190px;
+      padding: 17px 15px; border: 2px solid #fcd34d; border-radius: 16px;
+      background: linear-gradient(145deg, #7f1d1d, #dc2626 58%, #991b1b);
+      color: #fff; text-align: center;
+      box-shadow: 0 12px 32px rgba(127, 29, 29, .3);
+      animation: letPromoGlow 1.35s ease-in-out infinite;
+    }
+    .let-practice-promo .let-promo-title {
+      font-size: 14px; font-weight: 800; line-height: 1.45;
+      letter-spacing: .025em; color: #fff; margin-bottom: 7px;
+    }
+    .let-practice-promo .let-promo-free {
+      display: inline-block; margin: 0 0 11px; padding: 3px 11px;
+      border-radius: 999px; background: #fef08a; color: #7f1d1d;
+      font-size: 13px; font-weight: 900;
+      animation: letPromoFlash .8s steps(2, start) infinite;
+    }
+    .let-practice-promo a {
+      display: block; padding: 9px 10px; border-radius: 9px;
+      background: #fff; color: #991b1b; font-size: 12px; font-weight: 800;
+      line-height: 1.4; text-decoration: none; transition: transform .2s, background .2s;
+    }
+    .let-practice-promo a:hover { background: #fef3c7; transform: translateY(-2px); }
+    @keyframes letPromoGlow {
+      0%, 100% { box-shadow: 0 8px 22px rgba(127,29,29,.25); }
+      50% { box-shadow: 0 10px 30px rgba(220,38,38,.55); }
+    }
+    @keyframes letPromoFlash { to { visibility: hidden; } }
+    @media (max-width: 1100px) {
+      .let-practice-promo {
+        top: auto; left: 50%; bottom: 12px; transform: translateX(-50%);
+        width: min(360px, calc(100vw - 24px)); padding: 10px 12px;
+        display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 12px;
+      }
+      .let-practice-promo .let-promo-title {
+        grid-column: 1; font-size: 12px; margin-bottom: 3px; text-align: left;
+      }
+      .let-practice-promo .let-promo-free {
+        grid-column: 1; justify-self: start; margin: 0; font-size: 11px;
+      }
+      .let-practice-promo a { grid-column: 2; grid-row: 1 / span 2; max-width: 135px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .let-practice-promo, .let-practice-promo .let-promo-free { animation: none; }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .search-card { padding: 16px; }
@@ -510,6 +558,13 @@
   <div id="navbar"></div>
   <script src="public/js/navbar-loader.js"></script>
 <script>window.loadBooterNavbar && window.loadBooterNavbar();</script>
+  <!-- Bihar LET CBT practice promo -->
+  <aside class="let-practice-promo" aria-label="Free Bihar LET CBT mock test practice">
+    <div class="let-promo-title">BIHAR LET CBT MOCK TEST PRACTICE</div>
+    <div class="let-promo-free">For FREE</div>
+    <a href="tests.html">Practice Now, Click here →</a>
+  </aside>
+
 
   <!-- Hero -->
   <section class="page-hero">
