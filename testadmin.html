@@ -2777,54 +2777,21 @@ function initAdmin() {
             }
 
 
-            const qCol =
-                collection(
-                    db,
-                    "artifacts",
-                    appId,
-                    "public",
-                    "data",
-                    QUESTION_COLLECTION
-                );
-
-
-            unsubscribeQuestions =
-                onSnapshot(
-
-                    qCol,
-
-                    snapshot => {
-
-                        window.dbQuestions =
-                            snapshot.docs.map(
-                                item => ({
-                                    id: item.id,
-                                    ...item.data()
-                                })
-                            );
-
-
-                        renderQuestionsList();
-
-
-                        const badge =
-                            document.getElementById(
-                                "db-status-badge"
-                            );
-
-
-                        if (badge) {
-
-                            badge.innerHTML =
-                                '<i class="fa-solid fa-database"></i> Firebase Live';
-
-                            badge.className =
-                                "bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1";
-
-                        }
-
-                    },
-
+            const testsRef = collection(db, "artifacts", appId, "public", "data", TEST_COLLECTION);
+            unsubscribeQuestions = onSnapshot(testsRef, async snapshot => {
+                const selectedName = document.getElementById("test-name-input")?.value?.trim();
+                const selectedNo = document.getElementById("test-no-input")?.value?.trim();
+                let selectedTest = snapshot.docs.find(item => item.data().testName === selectedName && String(item.data().testNo) === String(selectedNo));
+                if (!selectedTest && snapshot.docs.length) selectedTest = snapshot.docs[0];
+                window.dbQuestions = [];
+                if (selectedTest) {
+                    const qSnap = await getDocs(collection(db, "artifacts", appId, "public", "data", TEST_COLLECTION, selectedTest.id, "questions"));
+                    window.dbQuestions = qSnap.docs.map(item => ({ id: item.id, ...item.data() }));
+                }
+                renderQuestionsList();
+                const badge = document.getElementById("db-status-badge");
+                if (badge) { badge.innerHTML = '<i class="fa-solid fa-database"></i> Firebase Live'; }
+            },
 
                     error => {
 
