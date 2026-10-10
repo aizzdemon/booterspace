@@ -1341,202 +1341,82 @@ window.switchFeederTab = function(tab) {
 ========================================================= */
 
 window.parseBulkQuestionsText = function(rawText, targetSection) {
+    if (!rawText || !rawText.trim()) return [];
 
-    if (!rawText.trim()) {
-
-        return [];
-
-    }
-
-
-    const blocks = rawText.split(
-        /\n(?=\s*(?:\d+[\.\)]|Q\d+[\.\)]?)\s+)/gi
-    );
-
-
+    // Split at numbered question starts, including formats such as "50." and "Q50."
+    const blocks = rawText.split(/\n(?=\s*(?:Q?\d+[.)])\s+)/i);
     const parsedList = [];
 
-
     blocks.forEach(block => {
-
-        const text = block.trim();
-
-        if (!text) return;
-
-
-        const lines = text
-            .split("\n")
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
-
-
+        const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
         if (lines.length < 5) return;
 
-
-        let qText = "";
-
-        let optA = "";
-        let optB = "";
-        let optC = "";
-        let optD = "";
-
+        let qLines = [];
+        let optA = "", optB = "", optC = "", optD = "";
         let correctOpt = "";
-
         let solutionText = "";
-
+        let readingQuestion = false;
 
         lines.forEach(line => {
-
-
-            if (
-                /^(?:\d+[\.\)]|Q\d+[\.\)]?)\s+/i
-                .test(line)
-            ) {
-
-                qText =
-                    line
-                        .replace(
-                            /^(?:\d+[\.\)]|Q\d+[\.\)]?)\s+/i,
-                            ""
-                        )
-                        .trim();
-
+            if (/^(?:Q?\d+[.)])\s*/i.test(line)) {
+                qLines.push(line.replace(/^(?:Q?\d+[.)])\s*/i, "").trim());
+                readingQuestion = true;
+                return;
             }
 
-
-            else if (/^A[\.\)]\s*/i.test(line)) {
-
-                optA =
-                    line
-                        .replace(/^A[\.\)]\s*/i, "")
-                        .trim();
-
+            // Parse options written as A), A., A: etc.
+            const optionMatch = line.match(/^([A-D])[).:]\s*(.*)$/i);
+            if (optionMatch) {
+                readingQuestion = false;
+                const letter = optionMatch[1].toUpperCase();
+                const value = optionMatch[2].trim();
+                if (letter === "A") optA = value;
+                if (letter === "B") optB = value;
+                if (letter === "C") optC = value;
+                if (letter === "D") optD = value;
+                return;
             }
 
-
-            else if (/^B[\.\)]\s*/i.test(line)) {
-
-                optB =
-                    line
-                        .replace(/^B[\.\)]\s*/i, "")
-                        .trim();
-
+            // Accept "उत्तर / Answer: A) ..." as well as "Answer: A", "Ans: B",
+            // "Correct Answer: C", and "उत्तर: D".
+            const answerMatch = line.match(/^(?:(?:उत्तर\s*\/\s*)?(?:Answer|Ans|Correct\s*Answer)|उत्तर)\s*[:：-]\s*(.*)$/i);
+            if (answerMatch) {
+                readingQuestion = false;
+                const answerText = answerMatch[1].trim();
+                const letterMatch = answerText.match(/^(?:Option\s*)?([A-D])(?:\s*[).:\-]|\s|$)/i);
+                if (letterMatch) correctOpt = letterMatch[1].toUpperCase();
+                return;
             }
 
-
-            else if (/^C[\.\)]\s*/i.test(line)) {
-
-                optC =
-                    line
-                        .replace(/^C[\.\)]\s*/i, "")
-                        .trim();
-
+            // Keep bilingual question text together until the options begin.
+            if (readingQuestion) {
+                qLines.push(line);
+                return;
             }
 
-
-            else if (/^D[\.\)]\s*/i.test(line)) {
-
-                optD =
-                    line
-                        .replace(/^D[\.\)]\s*/i, "")
-                        .trim();
-
-            }
-
-
-            else if (
-                /^(?:Answer|Ans|उत्तर|Correct Answer)\s*:/i
-                    .test(line)
-            ) {
-
-                const ansStr =
-                    line
-                        .replace(
-                            /^(?:Answer|Ans|उत्तर|Correct Answer)\s*:/i,
-                            ""
-                        )
-                        .trim();
-
-
-                const match =
-                    ansStr.match(/^([A-Da-d])/);
-
-
-                if (match) {
-
-                    correctOpt =
-                        match[1].toUpperCase();
-
-                }
-
-
-                solutionText = ansStr;
-
-            }
-
+            // Only explicit explanation lines are saved as the solution.
+            const solutionMatch = line.match(/^(?:Solution|Explanation|व्याख्या|समाधान)\s*[:：-]\s*(.*)$/i);
+            if (solutionMatch) solutionText = solutionMatch[1].trim();
         });
 
-
-        if (
-            qText &&
-            optA &&
-            optB &&
-            optC &&
-            optD
-        ) {
-
+        const qText = qLines.join("\n").trim();
+        if (qText && optA && optB && optC && optD) {
             parsedList.push({
-
-                testName:
-                    document
-                        .getElementById("test-name-input")
-                        ?.value
-                        .trim() || "",
-
-                testNo:
-                    document
-                        .getElementById("test-no-input")
-                        ?.value
-                        .trim() || "",
-
+                testName: document.getElementById("test-name-input")?.value.trim() || "",
+                testNo: document.getElementById("test-no-input")?.value.trim() || "",
                 section: targetSection,
-
                 question: qText,
-
-                options: {
-
-                    A: optA,
-
-                    B: optB,
-
-                    C: optC,
-
-                    D: optD
-
-                },
-
+                options: { A: optA, B: optB, C: optC, D: optD },
                 correct: correctOpt,
-
-                solution:
-                    solutionText,
-
-                createdAt:
-                    new Date().toISOString(),
-
-                createdBy:
-                    firebaseAuth?.currentUser?.uid || ""
-
+                solution: solutionText,
+                createdAt: new Date().toISOString(),
+                createdBy: firebaseAuth?.currentUser?.uid || ""
             });
-
         }
-
     });
 
-
     return parsedList;
-
 };
-
 
 /* =========================================================
    PREVIEW
