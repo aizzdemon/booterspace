@@ -35,6 +35,26 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
 .loader-spinner{border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+
+/* Final result layout correction: keep labels horizontal and numbers below */
+#resultView:not(.hidden) { display:block !important; width:100%; }
+#resultView > .text-center { display:block !important; width:100%; }
+#resultView > .grid.grid-cols-2 { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; width:100%; }
+#resultView > .grid.grid-cols-2 > div { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-width:0; width:100%; }
+#resultView > .grid.grid-cols-2 > div > span { display:block; width:100%; white-space:normal; word-break:normal; overflow-wrap:break-word; text-align:center; }
+#resultView > .grid.grid-cols-2 > div > div { display:block; width:100%; white-space:nowrap; text-align:center; }
+#resultView > .bg-slate-50.border-slate-200.rounded-2xl { display:block; width:100%; }
+#resultView > .bg-slate-50.border-slate-200.rounded-2xl > div:first-child { display:flex; flex-direction:row; justify-content:space-between; align-items:center; gap:.75rem; }
+#resultView > .bg-slate-50.border-slate-200.rounded-2xl > div:first-child span { width:auto; white-space:normal; }
+@media (max-width: 760px) {
+  #resultView > .grid.grid-cols-2 { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width: 420px) {
+  #resultView > .grid.grid-cols-2 { grid-template-columns:minmax(0,1fr) !important; }
+  #resultView > .grid.grid-cols-2 > div { padding:1rem .75rem !important; }
+  #resultView > .grid.grid-cols-2 > div > span { font-size:.78rem !important; letter-spacing:0 !important; }
+}
+
 /* Responsive result summary and solution readability */
 #resultView, #solutionsPortal { min-width: 0; }
 #resultView .grid > div { min-width: 0; overflow-wrap: anywhere; }
