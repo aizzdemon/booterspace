@@ -1342,30 +1342,34 @@ window.switchFeederTab = function(tab) {
 
 window.parseBulkQuestionsText = function(rawText, targetSection) {
     if (!rawText || !rawText.trim()) return [];
-
-    // Split at numbered question starts, including formats such as "50." and "Q50."
-    const blocks = rawText.split(/\n(?=\s*(?:Q?\d+[.)])\s+)/i);
+    const blocks = rawText.replace(/\r/g, "").split(/\n(?=\s*(?:Q\s*)?\d+\s*[.)]\s+)/i);
     const parsedList = [];
 
     blocks.forEach(block => {
         const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
         if (lines.length < 5) return;
-
-        let qLines = [];
+        const qLines = [];
         let optA = "", optB = "", optC = "", optD = "";
-        let correctOpt = "";
-        let solutionText = "";
-        let readingQuestion = false;
+        let correctOpt = "", solutionText = "", readingQuestion = false;
 
         lines.forEach(line => {
-            if (/^(?:Q?\d+[.)])\s*/i.test(line)) {
-                qLines.push(line.replace(/^(?:Q?\d+[.)])\s*/i, "").trim());
+            if (/^(?:Q\s*)?\d+\s*[.)]\s*/i.test(line)) {
+                qLines.push(line.replace(/^(?:Q\s*)?\d+\s*[.)]\s*/i, "").trim());
                 readingQuestion = true;
                 return;
             }
 
-            // Parse options written as A), A., A: etc.
-            const optionMatch = line.match(/^([A-D])[).:]\s*(.*)$/i);
+            // Handle bilingual and English answer labels before parsing other lines.
+            const answerMatch = line.match(/^(?:(?:उत्तर\s*\/\s*)?(?:correct\s*answer|answer|ans)|उत्तर)\s*(?:is\s*)*[:：=.-]\s*(.*)$/i);
+            if (answerMatch) {
+                readingQuestion = false;
+                const answerText = answerMatch[1].trim();
+                const letterMatch = answerText.match(/^(?:OPTION\s*)?([A-D])(?=\s*(?:[).:\-]|$|\s))/i);
+                if (letterMatch) correctOpt = letterMatch[1].toUpperCase();
+                return;
+            }
+
+            const optionMatch = line.match(/^([A-D])\s*[).:]\s*(.*)$/i);
             if (optionMatch) {
                 readingQuestion = false;
                 const letter = optionMatch[1].toUpperCase();
@@ -1377,24 +1381,11 @@ window.parseBulkQuestionsText = function(rawText, targetSection) {
                 return;
             }
 
-            // Accept "उत्तर / Answer: A) ..." as well as "Answer: A", "Ans: B",
-            // "Correct Answer: C", and "उत्तर: D".
-            const answerMatch = line.match(/^(?:(?:उत्तर\s*\/\s*)?(?:Answer|Ans|Correct\s*Answer)|उत्तर)\s*[:：-]\s*(.*)$/i);
-            if (answerMatch) {
-                readingQuestion = false;
-                const answerText = answerMatch[1].trim();
-                const letterMatch = answerText.match(/^(?:Option\s*)?([A-D])(?:\s*[).:\-]|\s|$)/i);
-                if (letterMatch) correctOpt = letterMatch[1].toUpperCase();
-                return;
-            }
-
-            // Keep bilingual question text together until the options begin.
             if (readingQuestion) {
                 qLines.push(line);
                 return;
             }
 
-            // Only explicit explanation lines are saved as the solution.
             const solutionMatch = line.match(/^(?:Solution|Explanation|व्याख्या|समाधान)\s*[:：-]\s*(.*)$/i);
             if (solutionMatch) solutionText = solutionMatch[1].trim();
         });
@@ -1408,13 +1399,13 @@ window.parseBulkQuestionsText = function(rawText, targetSection) {
                 question: qText,
                 options: { A: optA, B: optB, C: optC, D: optD },
                 correct: correctOpt,
+                correctAnswer: correctOpt,
                 solution: solutionText,
                 createdAt: new Date().toISOString(),
                 createdBy: firebaseAuth?.currentUser?.uid || ""
             });
         }
     });
-
     return parsedList;
 };
 
