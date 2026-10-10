@@ -1380,7 +1380,7 @@ window.parseBulkQuestionsText = function(rawText, targetSection) {
         let optC = "";
         let optD = "";
 
-        let correctOpt = "A";
+        let correctOpt = "";
 
         let solutionText = "";
 
@@ -1518,8 +1518,7 @@ window.parseBulkQuestionsText = function(rawText, targetSection) {
                 correct: correctOpt,
 
                 solution:
-                    solutionText ||
-                    `Correct Option is ${correctOpt}`,
+                    solutionText,
 
                 createdAt:
                     new Date().toISOString(),
@@ -1983,6 +1982,18 @@ window.handleQuestionSubmit = async function(event) {
    RENDER QUESTIONS
 ========================================================= */
 
+function getCorrectOption(q) {
+    // Support answer-field names used by older Firestore feeder versions.
+    const raw = q?.correct ?? q?.correctAnswer ?? q?.correctOption ?? q?.answer ?? q?.answerKey ?? q?.rightAnswer ?? q?.correct_answer;
+    if (raw === undefined || raw === null || String(raw).trim() === "") return "";
+    const value = String(raw).trim().toUpperCase();
+    const match = value.match(/^(?:OPTION\\s*)?([A-D])(?:[.)\\s:]|$)/) || value.match(/(?:ANSWER|ANS|CORRECT ANSWER|उत्तर)\\s*[:=-]\\s*([A-D])/);
+    if (match) return match[1];
+    if (/^[0-3]$/.test(value)) return ["A", "B", "C", "D"][Number(value)];
+    if (/^[1-4]$/.test(value)) return ["A", "B", "C", "D"][Number(value) - 1];
+    return value;
+}
+
 function renderQuestionsList() {
     const container = document.getElementById("db-questions-list");
     if (!container) return;
@@ -2003,17 +2014,17 @@ function renderQuestionsList() {
           <div class="flex items-center justify-between gap-2 text-xs">
             <span class="bg-indigo-100 text-indigo-900 font-bold px-2 py-1 rounded">${escapeHtml(q.section || "")}</span>
             <div class="flex items-center gap-2">
-              <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">Correct Answer: ${escapeHtml(q.correct || "Not set")}</span>
+              <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">Correct Answer: ${escapeHtml(getCorrectOption(q) || "Not set in Firebase")}</span>
               <button type="button" class="edit-q text-indigo-600 p-1" title="Edit question"><i class="fa-solid fa-pen-to-square"></i></button>
               <button type="button" class="delete-q text-rose-500 p-1" title="Delete question"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </div>
           <p class="text-sm font-semibold text-slate-800 whitespace-pre-wrap">${index+1}. ${escapeHtml(q.question || "")}</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">
-            <div class="${q.correct==="A"?"font-bold text-emerald-700":""}">A. ${escapeHtml(q.options?.A || "")}</div>
-            <div class="${q.correct==="B"?"font-bold text-emerald-700":""}">B. ${escapeHtml(q.options?.B || "")}</div>
-            <div class="${q.correct==="C"?"font-bold text-emerald-700":""}">C. ${escapeHtml(q.options?.C || "")}</div>
-            <div class="${q.correct==="D"?"font-bold text-emerald-700":""}">D. ${escapeHtml(q.options?.D || "")}</div>
+            <div class="${getCorrectOption(q)==="A"?"font-bold text-emerald-700":""}">A. ${escapeHtml(q.options?.A || "")}</div>
+            <div class="${getCorrectOption(q)==="B"?"font-bold text-emerald-700":""}">B. ${escapeHtml(q.options?.B || "")}</div>
+            <div class="${getCorrectOption(q)==="C"?"font-bold text-emerald-700":""}">C. ${escapeHtml(q.options?.C || "")}</div>
+            <div class="${getCorrectOption(q)==="D"?"font-bold text-emerald-700":""}">D. ${escapeHtml(q.options?.D || "")}</div>
           </div>
           ${q.solution ? `<div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs whitespace-pre-wrap"><b class="text-amber-800">Solution / Explanation:</b><div class="mt-1">${escapeHtml(q.solution)}</div></div>` : ""}
         `;
@@ -2280,13 +2291,13 @@ async function executeDeleteTest(id){closeModal();try{
  showModal("Test Set Deleted","Deleted the test and all "+s.size+" questions from both parts.",[{label:"OK",class:"bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold",onClick:closeModal}]);
  }catch(e){showModal("Delete Failed",escapeHtml(e.message||"Could not delete test."),[{label:"OK",class:"bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold",onClick:closeModal}]);}}
 function editQuestion(id){
- const q=(window.dbQuestions||[]).find(x=>x.id===id);if(!q||!window.selectedTestId)return;const o=q.options||{};
+ const q=(window.dbQuestions||[]).find(x=>x.id===id);if(!q||!window.selectedTestId)return;const o=q.options||{}; const currentCorrect=getCorrectOption(q);
  const inp=(label,key,val)=>`<label class="block text-xs font-bold mb-2">${label}<input id="edit-${key}" value="${escapeHtml(val||"")}" class="mt-1 w-full border rounded-lg p-2 text-sm font-normal"></label>`;
  const body=`<div class="space-y-2 max-h-[65vh] overflow-y-auto">
  <label class="block text-xs font-bold">Section<select id="edit-section" class="mt-1 w-full border rounded-lg p-2"><option value="Part 1" ${q.section==="Part 1"?"selected":""}>Part 1 — Library Science</option><option value="Part 2" ${q.section==="Part 2"?"selected":""}>Part 2 — GK & Reasoning</option></select></label>
  <label class="block text-xs font-bold">Question<textarea id="edit-question" rows="3" class="mt-1 w-full border rounded-lg p-2 text-sm font-normal">${escapeHtml(q.question||"")}</textarea></label>
  ${inp("Option A","a",o.A)}${inp("Option B","b",o.B)}${inp("Option C","c",o.C)}${inp("Option D","d",o.D)}
- <label class="block text-xs font-bold">Correct Answer<select id="edit-correct" class="mt-1 w-full border rounded-lg p-2"><option ${q.correct==="A"?"selected":""}>A</option><option ${q.correct==="B"?"selected":""}>B</option><option ${q.correct==="C"?"selected":""}>C</option><option ${q.correct==="D"?"selected":""}>D</option></select></label>
+ <label class="block text-xs font-bold">Correct Answer<select id="edit-correct" class="mt-1 w-full border rounded-lg p-2"><option ${currentCorrect==="A"?"selected":""}>A</option><option ${currentCorrect==="B"?"selected":""}>B</option><option ${currentCorrect==="C"?"selected":""}>C</option><option ${currentCorrect==="D"?"selected":""}>D</option></select></label>
  <label class="block text-xs font-bold">Solution / Explanation<textarea id="edit-solution" rows="3" class="mt-1 w-full border rounded-lg p-2 text-sm font-normal">${escapeHtml(q.solution||"")}</textarea></label></div>`;
  showModal("Edit Question",body,[{label:"Cancel",class:"bg-slate-200 text-slate-800 text-xs px-4 py-2 rounded-lg font-bold",onClick:closeModal},{label:"Save Changes",class:"bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold",onClick:()=>saveQuestionEdit(id)}]);
 }
