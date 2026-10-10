@@ -34,6 +34,59 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
 @keyframes pulseRed{from{color:#dc2626;transform:scale(1)}to{color:#991b1b;transform:scale(1.04)}}
 .loader-spinner{border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive result summary and solution readability */
+#resultView, #solutionsPortal { min-width: 0; }
+#resultView .grid > div { min-width: 0; overflow-wrap: anywhere; }
+#resultView .grid > div > span { display: block; line-height: 1.35; overflow-wrap: anywhere; }
+#resMarksObtained, #resRightCount, #resWrongCount, #resSkippedCount,
+#resAccuracyPercent { line-height: 1.15; overflow-wrap: anywhere; }
+#solutionsPortal { min-width: 0; }
+#solutionsPortal > div:first-child { min-width: 0; }
+#solutionsPortal > div:first-child > div:last-child { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+#solutionsPortal > div:first-child button { white-space:normal; }
+#solutionsListContainer { min-width:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; }
+#solutionsListContainer > div { min-width:0; overflow-wrap:anywhere; }
+#solutionsListContainer .flex.items-center.gap-3 { min-width:0; }
+#solutionsListContainer .flex.items-center.gap-3 > span:not(.shrink-0) { min-width:0; overflow-wrap:anywhere; }
+#solutionsListContainer .ml-auto { margin-left:auto; }
+#solutionsListContainer [class*="bg-amber-50"] { min-width:0; overflow-wrap:anywhere; white-space:pre-wrap; line-height:1.65; }
+#solutionsListContainer [class*="bg-amber-50"] > div:last-child { overflow-wrap:anywhere; word-break:normal; white-space:pre-wrap; }
+#questionBody, #optionsContainer, #questionZoomArea { min-width:0; overflow-wrap:anywhere; }
+#optionsContainer > * { min-width:0; }
+@media (max-width: 640px) {
+  #resultView { padding:1rem !important; border-radius:1.25rem; }
+  #resultView > div:first-child { padding-bottom:1rem; }
+  #resultView h2 { font-size:1.35rem; line-height:1.35; }
+  #resultView .grid.grid-cols-2 { grid-template-columns:minmax(0,1fr); }
+  #resultView .grid > div { padding:.9rem; }
+  #resultView .grid > div > span { font-size:.68rem; letter-spacing:.04em; }
+  #resMarksObtained, #resRightCount, #resWrongCount, #resSkippedCount { font-size:1.8rem; }
+  #resultView .bg-slate-50.border-slate-200.rounded-2xl { padding:.85rem; }
+  #resultView .flex.items-center.justify-between { flex-wrap:wrap; gap:.5rem; }
+  #solutionsPortal { padding:.85rem; border-radius:1.25rem; }
+  #solutionsPortal > div:first-child { align-items:stretch; }
+  #solutionsPortal h2 { font-size:1.05rem; line-height:1.4; }
+  #solutionsPortal > div:first-child > div:last-child { width:100%; }
+  #solutionsPortal > div:first-child button { flex:1 1 auto; padding:.55rem .65rem; }
+  #solutionsListContainer { max-height:none; padding-top:.85rem; padding-bottom:.85rem; }
+  #solutionsListContainer > div { padding:1rem; border-radius:1rem; }
+  #solutionsListContainer .flex.items-center.justify-between { align-items:flex-start; flex-wrap:wrap; }
+  #solutionsListContainer .flex.items-center.justify-between > div { min-width:0; max-width:100%; }
+  #solutionsListContainer .flex.items-center.gap-3 { align-items:flex-start; gap:.6rem; }
+  #solutionsListContainer .ml-auto { margin-left:0; }
+  #solutionsListContainer [class*="bg-amber-50"] { padding:.8rem; font-size:.82rem; }
+  #questionZoomArea { padding:1rem; }
+  #questionBody { font-size:1rem; line-height:1.7; }
+  #optionsContainer > div { align-items:flex-start; padding:.8rem; }
+  #examInterface > section { min-height:0; }
+  body { overflow-wrap:anywhere; }
+}
+@media (max-width: 380px) {
+  #solutionsPortal > div:first-child button { flex-basis:100%; }
+  #resultView h2 { font-size:1.2rem; }
+}
+
 </style>
 </head>
 
@@ -255,7 +308,7 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
     </aside>
   </div>
 
-  <section id="resultView" class="hidden my-auto max-w-4xl mx-auto w-full bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-8">
+  <section id="resultView" class="hidden my-auto max-w-4xl mx-auto w-full bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden p-4 sm:p-8">
     <div class="text-center pb-6 border-b border-slate-200">
       <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner">
         <i class="fa-solid fa-trophy"></i>
@@ -311,7 +364,7 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
     </div>
   </section>
 
-  <section id="solutionsPortal" class="hidden my-4 max-w-5xl mx-auto w-full bg-white border border-slate-200 rounded-3xl shadow-lg p-6">
+  <section id="solutionsPortal" class="hidden my-4 max-w-5xl mx-auto w-full bg-white border border-slate-200 rounded-3xl shadow-lg p-3 sm:p-6">
     <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
       <div>
         <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
@@ -330,7 +383,7 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
       </div>
     </div>
 
-    <div id="solutionsListContainer" class="py-4 space-y-6 max-h-[75vh] overflow-y-auto scrollbar pr-1"></div>
+    <div id="solutionsListContainer" class="py-4 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto scrollbar pr-1"></div>
   </section>
 </main>
 
