@@ -37,6 +37,31 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
 
 
 
+/* Solution walkthrough: mobile-first heading, navigation and card sizing */
+#solutionsPortal { width:100%; max-width:64rem; min-width:0; overflow:hidden; }
+#solutionsPortal * { min-width:0; }
+#solutionsPortal .solutions-nav button { flex:0 1 auto; max-width:100%; white-space:normal; line-height:1.35; }
+#solutionsListContainer { width:100%; max-width:100%; overflow-x:hidden; }
+#solutionsListContainer > div { width:100%; max-width:100%; }
+#solutionsListContainer .grid { min-width:0; }
+#solutionsListContainer .flex.items-center.gap-3 > span:not(.shrink-0) { overflow-wrap:anywhere; }
+@media (max-width:640px) {
+  #solutionsPortal { margin-top:.5rem; margin-bottom:.5rem; padding:.85rem; border-radius:1rem; }
+  #solutionsPortal h2 { font-size:1.05rem; line-height:1.45; display:block; overflow-wrap:normal; word-break:normal; }
+  #solutionsPortal .solutions-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
+  #solutionsPortal .solutions-nav button { width:100%; min-width:0; padding:.65rem .45rem; font-size:.75rem; }
+  #solutionsPortal .solutions-nav #btnBackToResult { grid-column:1 / -1; }
+  #solutionsListContainer { max-height:none; padding-right:0; padding-left:0; }
+  #solutionsListContainer > div { padding:.85rem; border-radius:.9rem; }
+  #solutionsListContainer .flex.items-center.justify-between { gap:.6rem; }
+  #solutionsListContainer .flex.items-center.justify-between > div { max-width:100%; }
+  #solutionsListContainer [class*="bg-amber-50"] { white-space:normal; overflow-wrap:anywhere; word-break:normal; }
+}
+@media (max-width:360px) {
+  #solutionsPortal .solutions-nav { grid-template-columns:minmax(0,1fr); }
+  #solutionsPortal .solutions-nav #btnBackToResult { grid-column:auto; }
+}
+
 /* Mobile solution option width fix: prevent text and status badges squeezing each other */
 #solutionsListContainer .flex.items-center.gap-3 {
   width:100%;
@@ -431,20 +456,19 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
     </div>
   </section>
 
-  <section id="solutionsPortal" class="hidden my-4 max-w-5xl mx-auto w-full bg-white border border-slate-200 rounded-3xl shadow-lg p-3 sm:p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
-      <div>
-        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-          <i class="fa-solid fa-square-check text-emerald-600"></i> Question & Solution Walkthrough
+  <section id="solutionsPortal" class="hidden my-4 max-w-5xl mx-auto w-full min-w-0 bg-white border border-slate-200 rounded-3xl shadow-lg p-3 sm:p-6">
+    <div class="flex flex-col items-stretch gap-3 pb-4 border-b border-slate-200 min-w-0">
+      <div class="w-full min-w-0">
+        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug break-words">
+          <i class="fa-solid fa-square-check text-emerald-600"></i> Question &amp; Solution Walkthrough
         </h2>
-        <p class="text-xs text-slate-500 mt-0.5">Green indicates correct answer. Red indicates your incorrect selection.</p>
+        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Green indicates correct answer. Red indicates your incorrect selection.</p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="filterSolPart1" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white">Part 1</button>
-        <button id="filterSolPart2" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Part 2</button>
-        <button id="filterSolAll" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">All Questions</button>
-        <button id="btnBackToResult" class="ml-2 px-3.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100">
+      <div class="solutions-nav flex flex-wrap items-center gap-2 w-full min-w-0">
+        <button id="filterSolPart1" class="px-3 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white">Part 1</button>
+        <button id="filterSolPart2" class="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Part 2</button>
+        <button id="btnBackToResult" class="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100">
           <i class="fa-solid fa-arrow-left"></i> Back to Summary
         </button>
       </div>
