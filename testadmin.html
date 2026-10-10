@@ -1414,27 +1414,27 @@ window.parseBulkQuestionsText = function(rawText, targetSection) {
 ========================================================= */
 
 window.previewParsedQuestions = function() {
+    const text = document.getElementById("bulk-input-text").value;
+    const section = document.getElementById("bulk-input-section").value;
+    const parsed = window.parseBulkQuestionsText(text, section);
+    document.getElementById("parsed-count").innerText = parsed.length;
 
-    const text =
-        document.getElementById("bulk-input-text").value;
-
-    const section =
-        document.getElementById("bulk-input-section").value;
-
-
-    const parsed =
-        window.parseBulkQuestionsText(
-            text,
-            section
-        );
-
-
-    document.getElementById("parsed-count").innerText =
-        parsed.length;
-
-
+    const stats = document.getElementById("bulk-preview-stats");
+    let status = document.getElementById("answer-parse-status");
+    if (stats && !status) {
+        status = document.createElement("span");
+        status.id = "answer-parse-status";
+        status.className = "ml-2 text-xs font-bold";
+        stats.appendChild(status);
+    }
+    const missing = parsed.filter(q => !["A", "B", "C", "D"].includes(String(q.correct || "").trim().toUpperCase())).length;
+    if (status) {
+        status.textContent = parsed.length
+            ? (missing ? "⚠ " + missing + " question(s) missing a valid correct answer" : "✓ All correct answers detected")
+            : "Paste valid questions to preview answers";
+        status.className = "ml-2 text-xs font-bold " + (missing || !parsed.length ? "text-rose-600" : "text-emerald-700");
+    }
     return parsed;
-
 };
 
 
@@ -1494,6 +1494,17 @@ window.handleBulkSubmit = async function(event) {
             section
         );
 
+
+    const missingAnswers = parsed.filter(q => !["A", "B", "C", "D"].includes(String(q.correct || "").trim().toUpperCase()));
+    if (parsed.length > 0 && missingAnswers.length > 0) {
+        window.previewParsedQuestions();
+        showModal(
+            "Correct Answer Missing",
+            "Correct answer detect nahi hua for <b>" + missingAnswers.length + " question(s)</b>. Save rok diya gaya hai taaki CBT me galat default A na lage. Har question ke options ke baad is format me answer line dein: <b>उत्तर / Answer: A) Correct option text</b>.",
+            [{ label: "OK", class: "bg-rose-600 text-white text-xs px-4 py-2 rounded-lg font-bold", onClick: closeModal }]
+        );
+        return;
+    }
 
     if (parsed.length === 0) {
 
