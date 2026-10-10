@@ -1987,7 +1987,7 @@ function getCorrectOption(q) {
     const raw = q?.correct ?? q?.correctAnswer ?? q?.correctOption ?? q?.answer ?? q?.answerKey ?? q?.rightAnswer ?? q?.correct_answer;
     if (raw === undefined || raw === null || String(raw).trim() === "") return "";
     const value = String(raw).trim().toUpperCase();
-    const match = value.match(/^(?:OPTION\\s*)?([A-D])(?:[.)\\s:]|$)/) || value.match(/(?:ANSWER|ANS|CORRECT ANSWER|उत्तर)\\s*[:=-]\\s*([A-D])/);
+    const match = value.match(/^(?:OPTION\s*)?([A-D])(?:[.)\s:]|$)/) || value.match(/(?:ANSWER|ANS|CORRECT ANSWER|उत्तर)\s*[:=-]\s*([A-D])/);
     if (match) return match[1];
     if (/^[0-3]$/.test(value)) return ["A", "B", "C", "D"][Number(value)];
     if (/^[1-4]$/.test(value)) return ["A", "B", "C", "D"][Number(value) - 1];
