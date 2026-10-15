@@ -1432,6 +1432,46 @@ async function initPortal() {
 
   try {
 
+    // Authentication and free-test access gate: only the first published test is free.
+    const authSingleton = await loadFirebaseSingleton();
+    if (!authSingleton) throw new Error("Firebase authentication could not be initialized.");
+    const authServices = await authSingleton.getFirebaseServices();
+    const authModule = await authSingleton.loadFirebaseModule("firebase-auth.js");
+    const signedInUser = await new Promise(resolve => {
+      const unsub = authModule.onAuthStateChanged(authServices.auth, user => {
+        unsub();
+        resolve(user && !user.isAnonymous ? user : null);
+      });
+    });
+    if (!signedInUser) {
+      const next = "cbtlet.html" + (requestedTestId ? "?testId=" + encodeURIComponent(requestedTestId) : "");
+      window.location.replace("./login.html?next=" + encodeURIComponent(next));
+      return;
+    }
+
+    if (requestedTestId) {
+      const fs = await authSingleton.loadFirebaseModule("firebase-firestore.js");
+      const testsSnap = await fs.getDocs(fs.collection(authServices.db, "artifacts", APP_ID, "public", "data", TEST_COLLECTION));
+      const published = testsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(t => t.status !== "draft")
+        .sort((a,b) => String(a.testNo || "").localeCompare(String(b.testNo || ""), undefined, {numeric:true}));
+      const chosenIndex = published.findIndex(t => t.id === requestedTestId);
+      if (chosenIndex < 0) throw new Error("Selected test was not found.");
+      if (chosenIndex > 0) {
+        document.body.innerHTML = `
+          <main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+            <section style="max-width:480px;width:100%;background:white;border:1px solid #e2e8f0;border-radius:24px;padding:30px;text-align:center;box-shadow:0 20px 50px #0f172a1a">
+              <div style="font-size:48px;color:#d97706">🔒</div>
+              <h1 style="font-size:26px;font-weight:800;color:#0f172a;margin:14px 0">Mock Test Locked</h1>
+              <p style="color:#475569;line-height:1.7">Only the first mock test is free. To unlock more mock tests, contact Admin on WhatsApp.</p>
+              <a href="https://wa.me/9775412626?text=${encodeURIComponent("Hello Admin, please unlock more Bihar LET mock tests for my BooterSpace account.")}" style="display:inline-block;margin-top:22px;background:#16a34a;color:white;text-decoration:none;font-weight:800;padding:13px 20px;border-radius:12px">WhatsApp Admin · 9775412626</a>
+              <p style="margin-top:16px"><a href="./tests.html" style="color:#2563eb;font-weight:700">← Back to Tests</a></p>
+            </section>
+          </main>`;
+        return;
+      }
+    }
+
     console.log(
       "[CBT] Starting Bihar LET CBT portal..."
     );
