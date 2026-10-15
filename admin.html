@@ -427,49 +427,59 @@ function initStats() {
    Tabs & Views
 ============================ */
 function showUsersTab() {
-    const content = document.getElementById("content");
-    content.innerHTML = '<div class="space-y-5"><div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"><div><h2 class="text-xl font-black">User Management</h2><p class="text-sm text-slate-500 mt-1">Manage users and grant full mock-test access.</p></div><button id="dlUsers" class="text-xs bg-slate-100 px-3 py-2 rounded-lg font-black">Export Users CSV</button></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="rounded-xl border bg-white p-4"><p class="text-xs font-bold text-slate-500">ALL USERS</p><b id="userCountAll" class="text-2xl">0</b></div><div class="rounded-xl border bg-white p-4"><p class="text-xs font-bold text-slate-500">TESTS.HTML SIGNUPS</p><b id="userCountTests" class="text-2xl">0</b></div><div class="rounded-xl border bg-white p-4"><p class="text-xs font-bold text-slate-500">ACCESS ENABLED</p><b id="userCountEnabled" class="text-2xl text-emerald-600">0</b></div></div><div class="flex flex-wrap gap-2"><button id="usersTabAll" class="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm font-bold">All Users</button><button id="usersTabTests" class="rounded-xl border bg-white px-4 py-2 text-sm font-bold">Signed up via tests.html</button></div><div class="flex flex-col sm:flex-row gap-3"><input id="userSearchInput" type="search" placeholder="Search name, email, phone…" class="flex-1 rounded-xl border bg-white px-4 py-3 text-sm"><input type="date" id="userOnboardDate" class="rounded-xl border bg-white px-4 py-3 text-sm"><button id="clearUserFilters" class="rounded-xl border bg-white px-4 py-3 text-sm font-bold">Clear</button></div><p id="userFilterSummary" class="text-xs font-bold text-slate-500">Loading users…</p><div id="uList" class="grid grid-cols-1 xl:grid-cols-2 gap-4">Loading users…</div><p class="text-xs text-slate-500">Access ON unlocks all mock tests for that user. OFF restricts access to the first free test.</p></div>';
-    let allUsers = [], activeList = "all";
-    const list = document.getElementById("uList");
-    const escUser = v => String(v ?? "").replace(/[&<>"\']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c]));
-    const dateKey = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-    const renderUsers = () => {
-      const term = document.getElementById("userSearchInput").value.trim().toLowerCase();
-      const date = document.getElementById("userOnboardDate").value;
-      let filtered = allUsers.filter(({data:u}) => activeList !== "tests" || u.signupSource === "tests.html" || u.signupSourcePage === "tests.html");
-      if (term) filtered = filtered.filter(({id,data:u}) => [u.name,u.fullName,u.email,u.phone,id].some(v => String(v||"").toLowerCase().includes(term)));
-      if (date) filtered = filtered.filter(({data:u}) => u.createdAt?.toDate && dateKey(u.createdAt.toDate()) === date);
-      document.getElementById("userCountAll").textContent = allUsers.length;
-      document.getElementById("userCountTests").textContent = allUsers.filter(({data:u}) => u.signupSource === "tests.html" || u.signupSourcePage === "tests.html").length;
-      document.getElementById("userCountEnabled").textContent = allUsers.filter(({data:u}) => u.fullTestAccess === true).length;
-      document.getElementById("userFilterSummary").textContent = "Showing " + filtered.length + (activeList === "tests" ? " tests.html signups" : " users");
-      list.innerHTML = "";
-      if (!filtered.length) { list.innerHTML = '<div class="col-span-full rounded-xl border bg-white p-6 text-sm text-slate-500">No users found.</div>'; return; }
-      filtered.forEach(({id,data:u}) => {
-        const name = u.name || u.fullName || "Unnamed User", viaTests = u.signupSource === "tests.html" || u.signupSourcePage === "tests.html", access = u.fullTestAccess === true;
-        const card = document.createElement("article");
-        card.className = "rounded-2xl border bg-white p-4 shadow-sm " + (access ? "border-emerald-200" : "border-slate-200");
-        card.innerHTML = '<div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="font-black text-slate-900 break-words">' + escUser(name) + '</h3><p class="text-sm text-slate-500 break-all">' + escUser(u.email || "No email") + '</p><p class="text-xs text-slate-500 mt-1">' + escUser(u.phone || "No phone") + '</p></div><span class="shrink-0 rounded-full px-2 py-1 text-[10px] font-black ' + (viaTests ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600") + '">' + (viaTests ? "TESTS.HTML SIGNUP" : "GENERAL SIGNUP") + '</span></div><div class="mt-4 border-t pt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"><p class="text-xs text-slate-500 break-all">UID: ' + escUser(id) + '<br><b class="inline-block mt-1 ' + (access ? "text-emerald-700" : "text-amber-700") + '">' + (access ? "All tests unlocked" : "First test only") + '</b></p><label class="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer"><span class="text-xs font-black">Full Test Access</span><input type="checkbox" data-access-uid="' + escUser(id) + '" class="h-5 w-5 accent-emerald-600" ' + (access ? "checked" : "") + '><b class="text-xs">' + (access ? "ON" : "OFF") + '</b></label></div>';
-        list.appendChild(card);
-      });
-      list.querySelectorAll("[data-access-uid]").forEach(toggle => toggle.addEventListener("change", async () => {
-        const uid = toggle.dataset.accessUid, enabled = toggle.checked; toggle.disabled = true;
-        try { await updateDoc(doc(db,"users",uid), {fullTestAccess:enabled, fullTestAccessUpdatedAt:serverTimestamp(), fullTestAccessUpdatedBy:auth.currentUser?.uid || ADMIN_UID}); }
-        catch (error) { toggle.checked = !enabled; alert("Could not update test access. Firestore rules must allow admin updates to fullTestAccess.\\n" + error.message); }
-        finally { toggle.disabled = false; }
-      }));
-    };
-    document.getElementById("usersTabAll").onclick = () => { activeList="all"; renderUsers(); };
-    document.getElementById("usersTabTests").onclick = () => { activeList="tests"; renderUsers(); };
-    document.getElementById("userSearchInput").oninput = renderUsers;
-    document.getElementById("userOnboardDate").onchange = renderUsers;
-    document.getElementById("clearUserFilters").onclick = () => { document.getElementById("userSearchInput").value=""; document.getElementById("userOnboardDate").value=""; renderUsers(); };
-    if (currentUnsub) currentUnsub();
-    currentUnsub = onSnapshot(query(collection(db,"users"),orderBy("createdAt","desc")), snap => {
-      allUsers = snap.docs.map(d => ({id:d.id,data:d.data()}));
-      document.getElementById("dlUsers").onclick = () => downloadCSV(allUsers.map(({id,data}) => ({id,...data})),"community_members.csv");
-      renderUsers();
-    }, error => { document.getElementById("userFilterSummary").textContent = "Unable to load users: " + error.message; });
+ const content=document.getElementById("content");
+ content.innerHTML='<section class="space-y-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-xl font-black">User Management</h2><p class="text-sm text-slate-500">Load users, search by name/email/phone, then select a user to manage access.</p></div><button id="loadAllUsersBtn" class="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white">Load All Users</button></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="rounded-xl border bg-white p-4">All users: <b id="userCountAll">—</b></div><div class="rounded-xl border bg-white p-4">tests.html signups: <b id="userCountTests">—</b></div><div class="rounded-xl border bg-white p-4">Full access ON: <b id="userCountEnabled">—</b></div></div><div class="rounded-xl border bg-white p-4 space-y-3"><input id="userSearchInput" type="search" placeholder="Search by name, email, or phone number…" class="w-full rounded-xl border px-4 py-3 text-sm"><div class="flex flex-wrap gap-2"><button id="usersTabAll" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">All Users</button><button id="usersTabTests" class="rounded-lg border px-4 py-2 text-sm font-bold">tests.html Signups</button><button id="clearUserSearch" class="rounded-lg border px-4 py-2 text-sm font-bold">Clear</button><button id="dlUsers" class="rounded-lg border px-4 py-2 text-sm font-bold">Export CSV</button></div><p id="userFilterSummary" class="text-xs text-slate-500">Click Load All Users to fetch users.</p></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start"><div id="uList" class="space-y-3"><div class="rounded-xl border bg-white p-5 text-sm text-slate-500">No users loaded yet.</div></div><aside id="selectedUserDetails" class="rounded-xl border bg-white p-5"><h3 class="font-black">User Details</h3><p class="mt-2 text-sm text-slate-500">Click a user to view details and manage test access.</p></aside></div></section>';
+ let allUsers=[], activeList="all", selectedUid=null;
+ const list=document.getElementById("uList");
+ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const testsSignup=u=>["tests.html","tests"].includes(u.signupSource)||["tests.html","tests"].includes(u.signupSourcePage);
+ const name=u=>u.name||u.fullName||u.displayName||u.username||"Unnamed User";
+ const dateText=v=>{try{const d=v?.toDate?v.toDate():new Date(v);return v&&!isNaN(d.getTime())?d.toLocaleString():"Not recorded"}catch(_){return "Not recorded"}};
+ function renderDetails(){
+  const panel=document.getElementById("selectedUserDetails"), item=allUsers.find(x=>x.id===selectedUid);
+  if(!item){panel.innerHTML='<h3 class="font-black">User Details</h3><p class="mt-2 text-sm text-slate-500">Click a user to view details and manage test access.</p>';return}
+  const u=item.data, access=u.fullTestAccess===true;
+  panel.innerHTML='<p class="text-xs font-black uppercase text-indigo-600">Selected User</p><h3 class="mt-1 text-lg font-black break-words">'+esc(name(u))+'</h3><div class="mt-4 space-y-3 text-sm"><div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Email</p><p class="font-semibold break-all">'+esc(u.email||"Not recorded")+'</p></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Phone</p><p class="font-semibold">'+esc(u.phone||u.phoneNumber||"Not recorded")+'</p></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Firebase UID</p><p class="break-all font-mono text-xs">'+esc(item.id)+'</p></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Signup source</p><p class="font-semibold">'+(testsSignup(u)?"tests.html":"General signup")+'</p></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Registered</p><p class="font-semibold">'+esc(dateText(u.createdAt||u.signupAt))+'</p></div></div><div class="mt-5 border-t pt-4 flex items-center justify-between gap-3"><div><h4 class="font-black">Full Test Access</h4><p id="accessStatus" class="mt-1 text-xs text-slate-500">'+(access?"All tests unlocked":"First free test only")+'</p></div><label class="flex items-center gap-2 rounded-xl border px-3 py-2"><b id="accessLabel" class="text-xs">'+(access?"ON":"OFF")+'</b><input id="selectedAccessToggle" type="checkbox" class="h-6 w-6 accent-emerald-600" '+(access?"checked":"")+'></label></div>';
+  document.getElementById("selectedAccessToggle").onchange=async e=>{
+   const toggle=e.target, enabled=toggle.checked, status=document.getElementById("accessStatus");toggle.disabled=true;status.textContent="Saving…";
+   try{await updateDoc(doc(db,"users",item.id),{fullTestAccess:enabled,fullTestAccessUpdatedAt:serverTimestamp(),fullTestAccessUpdatedBy:auth.currentUser?.uid||ADMIN_UID});item.data.fullTestAccess=enabled;document.getElementById("accessLabel").textContent=enabled?"ON":"OFF";status.textContent=enabled?"All tests unlocked for this user.":"Full access disabled; first free test only.";renderUsers()}
+   catch(err){toggle.checked=!enabled;status.textContent="Save failed: "+err.message+" (check published Firestore rules)."}
+   finally{toggle.disabled=false}
+  };
+ }
+ function renderUsers(){
+  const term=document.getElementById("userSearchInput").value.trim().toLowerCase();
+  let filtered=allUsers.filter(x=>activeList!=="tests"||testsSignup(x.data));
+  if(term)filtered=filtered.filter(x=>[name(x.data),x.data.email,x.data.phone,x.data.phoneNumber,x.id].some(v=>String(v||"").toLowerCase().includes(term)));
+  document.getElementById("userCountAll").textContent=allUsers.length;
+  document.getElementById("userCountTests").textContent=allUsers.filter(x=>testsSignup(x.data)).length;
+  document.getElementById("userCountEnabled").textContent=allUsers.filter(x=>x.data.fullTestAccess===true).length;
+  document.getElementById("userFilterSummary").textContent="Showing "+filtered.length+" of "+allUsers.length+" users";
+  list.innerHTML="";
+  if(!filtered.length){list.innerHTML='<div class="rounded-xl border bg-white p-5 text-sm text-slate-500">'+(allUsers.length?"No matching users.":"No profiles found in Firestore users collection.")+'</div>';renderDetails();return}
+  filtered.forEach(x=>{
+   const card=document.createElement("button");card.type="button";card.className="w-full rounded-xl border bg-white p-4 text-left hover:border-indigo-400 "+(selectedUid===x.id?"border-indigo-500 bg-indigo-50":"border-slate-200");
+   card.innerHTML='<div class="flex items-start justify-between gap-2"><div class="min-w-0"><b class="block break-words">'+esc(name(x.data))+'</b><span class="block break-all text-sm text-slate-500">'+esc(x.data.email||"No email")+'</span><span class="block text-xs text-slate-500">'+esc(x.data.phone||x.data.phoneNumber||"No phone")+'</span></div><span class="shrink-0 rounded-full px-2 py-1 text-[10px] font-black '+(x.data.fullTestAccess===true?"bg-emerald-100 text-emerald-800":"bg-amber-100 text-amber-800")+'">'+(x.data.fullTestAccess===true?"ACCESS ON":"ACCESS OFF")+'</span></div><p class="mt-3 text-xs font-bold">'+(testsSignup(x.data)?"tests.html signup":"General signup")+'</p>';
+   card.onclick=()=>{selectedUid=x.id;renderUsers()};list.appendChild(card)
+  });
+  renderDetails();
+ }
+ document.getElementById("loadAllUsersBtn").onclick=async()=>{
+  const btn=document.getElementById("loadAllUsersBtn");btn.disabled=true;btn.textContent="Loading…";
+  try{
+   if(currentUnsub){currentUnsub();currentUnsub=null}
+   const snap=await getDocs(collection(db,"users"));
+   allUsers=snap.docs.map(d=>({id:d.id,data:d.data()})).sort((a,b)=>{const t=x=>{const v=x.createdAt||x.signupAt;try{return v?.toDate?v.toDate().getTime():new Date(v||0).getTime()}catch(_){return 0}};return t(b.data)-t(a.data)});
+   selectedUid=null;document.getElementById("dlUsers").onclick=()=>downloadCSV(allUsers.map(x=>({id:x.id,...x.data})),"community_members.csv");renderUsers();
+   document.getElementById("userFilterSummary").textContent="Successfully loaded "+allUsers.length+" user profile(s).";
+  }catch(err){document.getElementById("userFilterSummary").textContent="Could not load users: "+err.message+". Check admin login and Firestore read rules."}
+  finally{btn.disabled=false;btn.textContent="Load All Users"}
+ };
+ document.getElementById("usersTabAll").onclick=()=>{activeList="all";renderUsers()};
+ document.getElementById("usersTabTests").onclick=()=>{activeList="tests";renderUsers()};
+ document.getElementById("userSearchInput").oninput=renderUsers;
+ document.getElementById("clearUserSearch").onclick=()=>{document.getElementById("userSearchInput").value="";renderUsers()};
+ document.getElementById("dlUsers").onclick=()=>downloadCSV(allUsers.map(x=>({id:x.id,...x.data})),"community_members.csv");
 }
 
 function showJobsTab(status = 'approved') {
