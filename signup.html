@@ -223,6 +223,9 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+const signupParams = new URLSearchParams(window.location.search);
+// Only accept the known attribution marker from the Tests page.
+const signupSource = signupParams.get("signupSource") === "tests.html" ? "tests.html" : "signup.html";
 let selectedRole = "";
 
 function selectRole(role) {
@@ -303,6 +306,10 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
       gstNumber: selectedRole === "jobProvider" ? gstVal : "",
       companyPAN: selectedRole === "jobProvider" ? panVal : "",
       photoURL: cred.user.photoURL || "",
+      // Identifies registrations initiated through tests.html.
+      signupSource: signupSource,
+      signupSourcePage: signupSource,
+      signupSourceAt: signupSource === "tests.html" ? firebase.firestore.FieldValue.serverTimestamp() : null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
