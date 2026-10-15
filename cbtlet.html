@@ -1457,7 +1457,10 @@ async function initPortal() {
         .sort((a,b) => String(a.testNo || "").localeCompare(String(b.testNo || ""), undefined, {numeric:true}));
       const chosenIndex = published.findIndex(t => t.id === requestedTestId);
       if (chosenIndex < 0) throw new Error("Selected test was not found.");
-      if (chosenIndex > 0) {
+      const profileRef = fs.doc(authServices.db, "users", signedInUser.uid);
+      const profileSnap = await fs.getDoc(profileRef);
+      const hasFullTestAccess = profileSnap.exists() && profileSnap.data()?.fullTestAccess === true;
+      if (chosenIndex > 0 && !hasFullTestAccess) {
         document.body.innerHTML = `
           <main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
             <section style="max-width:480px;width:100%;background:white;border:1px solid #e2e8f0;border-radius:24px;padding:30px;text-align:center;box-shadow:0 20px 50px #0f172a1a">
