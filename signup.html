@@ -313,7 +313,12 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    window.location.href = "index.html";
+    const requestedTestId = signupParams.get("testId");
+    if (signupSource === "tests.html" && requestedTestId) {
+      window.location.href = "./cbtlet.html?testId=" + encodeURIComponent(requestedTestId);
+    } else {
+      window.location.href = "index.html";
+    }
 
   } catch (err) {
     alert(err.message);
