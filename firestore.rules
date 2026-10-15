@@ -58,10 +58,12 @@ service cloud.firestore {
       allow create: if isSelf(userId)
         && request.resource.data.email is string;
 
-      allow update: if isSelf(userId)
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
-          "name", "fullName", "username", "photoURL", "avatar"
-        ]);
+      // Admin may grant/revoke full mock-test access. Users can only edit profile fields.
+      allow update: if isAdmin()
+        || (isSelf(userId)
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            "name", "fullName", "username", "photoURL", "avatar"
+          ]));
 
       allow delete: if false;
 
