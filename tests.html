@@ -1,15 +1,59 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Available Tests | BooterSpace</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head><body class="min-h-screen bg-slate-100 text-slate-800"><header class="bg-slate-950 text-white p-5"><div class="max-w-5xl mx-auto font-black">BooterSpace <span class="text-blue-300">| Bihar LET CBT</span></div></header><main class="max-w-5xl mx-auto p-4 sm:p-8"><section class="rounded-3xl bg-gradient-to-r from-indigo-950 to-blue-800 text-white p-8 mb-8"><h1 class="text-3xl font-black">Choose your test</h1><p class="text-sm text-blue-100 mt-3">Select a test to open the CBT portal with its own questions.</p></section><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-extrabold">Available Tests</h2><button id="refresh" class="rounded-xl border bg-white px-4 py-2 text-sm font-bold">Refresh</button></div><p id="status" class="rounded-xl bg-white border p-5 text-sm text-slate-500">Loading tests from Firebase…</p><div id="list" class="hidden grid md:grid-cols-2 gap-4"></div></main>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Available Tests | BooterSpace</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head><body class="min-h-screen bg-slate-100 text-slate-800"><!-- Same shared responsive navbar used by index.html -->
+<div id="navbar"></div>
+<script src="public/js/navbar-loader.js"></script>
+<script>window.loadBooterNavbar && window.loadBooterNavbar();</script><main class="max-w-5xl mx-auto p-4 sm:p-8"><section class="rounded-3xl bg-gradient-to-r from-indigo-950 to-blue-800 text-white p-8 mb-8"><h1 class="text-3xl font-black">Choose your test</h1><p class="text-sm text-blue-100 mt-3">Test 1 is free after login/signup. Mock tests 2 onward are locked. Sign in to continue.</p></section><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-extrabold">Available Tests</h2><button id="refresh" class="rounded-xl border bg-white px-4 py-2 text-sm font-bold">Refresh</button></div><p id="status" class="rounded-xl bg-white border p-5 text-sm text-slate-500">Loading tests from Firebase…</p><div id="list" class="hidden grid md:grid-cols-2 gap-4"></div></main>
 <div id="signupPrompt" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-labelledby="signupPromptTitle">
   <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
     <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-700"><i class="fa-solid fa-user-plus text-2xl"></i></div>
     <h2 id="signupPromptTitle" class="text-center text-2xl font-black text-slate-900">Sign up to start the test</h2>
-    <p class="mt-3 text-center text-sm leading-6 text-slate-600">Please create your BooterSpace account before starting a Bihar LET mock test. Your account will be marked as registered through the Tests page.</p>
+    <p class="mt-3 text-center text-sm leading-6 text-slate-600">Create an account or sign in to start the free first mock test. Your registration through this page is recorded in your account.</p>
     <a id="goSignup" href="./signup.html?signupSource=tests.html" class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-700"><i class="fa-solid fa-user-plus"></i> Sign Up &amp; Continue</a>
-    <button id="closeSignupPrompt" type="button" class="mt-3 w-full rounded-xl border border-slate-200 px-5 py-3 font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+    <a id="goLogin" href="./login.html" class="mt-3 flex w-full items-center justify-center rounded-xl border border-slate-200 px-5 py-3 font-bold text-slate-700 hover:bg-slate-50">Already registered? Login</a><button id="closeSignupPrompt" type="button" class="mt-3 w-full rounded-xl border border-slate-200 px-5 py-3 font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
   </div>
 </div>
-<script type="module">const APP_ID="bihar-let-2026-app";const $=id=>document.getElementById(id);const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));async function load(){ $("status").classList.remove("hidden");$("status").textContent="Loading tests from Firebase…";$("list").classList.add("hidden");try{let m=null;for(const p of ["./public/js/firebase-singleton.js","/booterspace/public/js/firebase-singleton.js","../public/js/firebase-singleton.js"]){try{const x=await import(new URL(p,document.baseURI).href);if(x.getFirebaseServices&&x.loadFirebaseModule){m=x;break}}catch(e){}}if(!m)throw Error("Firebase singleton not found.");const s=await m.getFirebaseServices();const fs=await m.loadFirebaseModule("firebase-firestore.js");const snap=await fs.getDocs(fs.collection(s.db,"artifacts",APP_ID,"public","data","tests"));const ts=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.status!=="draft").sort((a,b)=>String(a.testNo||"").localeCompare(String(b.testNo||""),undefined,{numeric:true}));if(!ts.length){$("status").textContent="No tests published yet.";return}$("list").innerHTML=ts.map(t=>'<article class="rounded-2xl bg-white border p-5 shadow-sm"><div class="text-xs font-bold text-indigo-700">TEST NO. '+esc(t.testNo||"—")+'</div><h3 class="text-xl font-extrabold mt-2">'+esc(t.testName||"Untitled Test")+'</h3><p class="text-sm text-slate-500 mt-2">'+Number(t.questionCount||0)+' questions</p><button type="button" class="start-test inline-flex mt-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-sm font-bold" data-test-id="'+esc(t.id)+'">Start Test →</button></article>').join("");
-$("list").querySelectorAll(".start-test").forEach(btn=>btn.addEventListener("click",()=>{const prompt=$("signupPrompt");$("goSignup").href="./signup.html?signupSource=tests.html&testId="+encodeURIComponent(btn.dataset.testId);prompt.classList.remove("hidden");prompt.classList.add("flex");}));
-$("status").classList.add("hidden");$("list").classList.remove("hidden")}catch(e){console.error(e);$("status").textContent="Could not load tests: "+(e.message||e)}}$("closeSignupPrompt").addEventListener("click",()=>{$("signupPrompt").classList.add("hidden");$("signupPrompt").classList.remove("flex");});
+<script type="module">
+const APP_ID="bihar-let-2026-app";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let firebaseServices=null, firestore=null, currentUser=null, tests=[];
+const waUrl="https://wa.me/9775412626?text="+encodeURIComponent("Hello Admin, please unlock more Bihar LET mock tests for my BooterSpace account.");
+function testUrl(id){return "./cbtlet.html?testId="+encodeURIComponent(id);}
+function showSignupPrompt(testId){
+  $("goSignup").href="./signup.html?signupSource=tests.html&testId="+encodeURIComponent(testId);
+  $("goLogin").href="./login.html?next="+encodeURIComponent("cbtlet.html?testId="+testId);
+  const prompt=$("signupPrompt");prompt.classList.remove("hidden");prompt.classList.add("flex");
+}
+async function load(){
+ $("status").classList.remove("hidden");$("status").textContent="Loading tests from Firebase…";$("list").classList.add("hidden");
+ try{
+  let singleton=null;
+  for(const p of ["./public/js/firebase-singleton.js","/booterspace/public/js/firebase-singleton.js","../public/js/firebase-singleton.js"]){try{const x=await import(new URL(p,document.baseURI).href);if(x.getFirebaseServices&&x.loadFirebaseModule){singleton=x;break}}catch(e){}}
+  if(!singleton)throw Error("Firebase singleton not found.");
+  firebaseServices=await singleton.getFirebaseServices();
+  const authModule=await singleton.loadFirebaseModule("firebase-auth.js");
+  firestore=await singleton.loadFirebaseModule("firebase-firestore.js");
+  await new Promise(resolve=>{const unsub=authModule.onAuthStateChanged(firebaseServices.auth,user=>{currentUser=user&&!user.isAnonymous?user:null;unsub();resolve();});});
+  const snap=await firestore.getDocs(firestore.collection(firebaseServices.db,"artifacts",APP_ID,"public","data","tests"));
+  tests=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status!=="draft").sort((a,b)=>String(a.testNo||"").localeCompare(String(b.testNo||""),undefined,{numeric:true}));
+  if(!tests.length){$("status").textContent="No tests published yet.";return;}
+  $("list").innerHTML=tests.map((x,i)=>{
+   const locked=i>0;
+   return '<article class="relative overflow-hidden rounded-2xl bg-white border '+(locked?'border-amber-300':'border-slate-200')+' p-5 shadow-sm">'+
+    (locked?'<div class="absolute right-3 top-3 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800"><i class="fa-solid fa-lock mr-1"></i> LOCKED</div>':'<div class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800"><i class="fa-solid fa-unlock mr-1"></i> FREE MOCK TEST</div>')+
+    '<div class="text-xs font-bold text-indigo-700 mt-3">TEST NO. '+esc(x.testNo||"—")+'</div><h3 class="text-xl font-extrabold mt-2">'+esc(x.testName||"Untitled Test")+'</h3><p class="text-sm text-slate-500 mt-2">'+Number(x.questionCount||0)+' questions</p>'+
+    (locked?'<p class="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold leading-6 text-amber-900">Contact to ADMIN on WhatsApp to unlock more mock tests.</p><a href="'+waUrl+'" target="_blank" rel="noopener" class="inline-flex mt-3 items-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 text-white px-4 py-3 text-sm font-bold"><i class="fa-brands fa-whatsapp text-lg"></i> Contact Admin · 9775412626</a>':
+    '<button type="button" class="start-test inline-flex mt-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-sm font-bold" data-test-id="'+esc(x.id)+'">Start Free Test →</button>')+
+   '</article>';
+  }).join("");
+  $("list").querySelectorAll(".start-test").forEach(btn=>btn.addEventListener("click",()=>{
+    const id=btn.dataset.testId;
+    if(!currentUser){showSignupPrompt(id);return;}
+    window.location.href=testUrl(id);
+  }));
+  $("status").classList.add("hidden");$("list").classList.remove("hidden");
+ }catch(e){console.error(e);$("status").textContent="Could not load tests: "+(e.message||e);}
+}
+$("closeSignupPrompt").addEventListener("click",()=>{$("signupPrompt").classList.add("hidden");$("signupPrompt").classList.remove("flex");});
 $("signupPrompt").addEventListener("click",e=>{if(e.target.id==="signupPrompt"){$("signupPrompt").classList.add("hidden");$("signupPrompt").classList.remove("flex");}});
-$("refresh").addEventListener("click",load);load();</script></body></html>
+$("refresh").addEventListener("click",load);load();
+</script></body></html>
