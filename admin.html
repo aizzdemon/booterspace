@@ -548,7 +548,7 @@ function applyJobFilters(status) {
     filtered.forEach(j => {
         const dateStr = j.timestamp ? j.timestamp.toDate().toLocaleDateString() : 'N/A';
         const officialRaw = j.officialJobUrl || j.sourceUrl || j.jobLink || '';
-        const officialUrl = /^https?:\\/\\//i.test(officialRaw) ? officialRaw.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '';
+        const officialUrl = /^https?:\/\//i.test(officialRaw) ? officialRaw.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '';
         const sourceName = String(j.source || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const div = document.createElement('div');
         div.className = `p-4 border rounded-2xl flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${status === 'pending' ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'} hover:border-indigo-300 transition-colors`;
