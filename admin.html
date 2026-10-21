@@ -505,7 +505,7 @@ function showJobsTab(status = 'approved') {
                 </div>
             </div>
 
-            <div id="pendingBulkActions" class="hidden items-center justify-between gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-3"><label class="flex items-center gap-2 text-sm font-bold text-slate-700"><input id="selectAllPendingJobs" type="checkbox" class="w-4 h-4 accent-indigo-600"> Select all visible</label><div class="flex items-center gap-3"><span id="selectedPendingCount" class="text-xs font-bold text-slate-500">0 selected</span><button id="deleteSelectedPendingJobs" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase shadow-sm">Delete Selected</button></div></div><div id="jList" class="space-y-3">Loading jobs...</div>
+            <div id="pendingBulkActions" class="hidden items-center justify-between gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-3"><label class="flex items-center gap-2 text-sm font-bold text-slate-700"><input id="selectAllPendingJobs" type="checkbox" class="w-4 h-4 accent-indigo-600"> Select all visible</label><div class="flex items-center gap-3"><span id="selectedPendingCount" class="text-xs font-bold text-slate-500">0 selected</span><button id="deleteSelectedPendingJobs" type="button" style="display:none;background-color:#dc2626;color:#ffffff;border:2px solid #b91c1c;opacity:1;visibility:visible;" class="hidden px-4 py-2 rounded-lg text-xs font-black uppercase shadow-md">Delete Selected</button></div></div><div id="jList" class="space-y-3">Loading jobs...</div>
         </div>
     `;
 
@@ -596,7 +596,14 @@ function updatePendingSelectionUI() {
     const selectAll = document.getElementById("selectAllPendingJobs");
     if (count) count.textContent = selected.length + " selected";
     if (deleteBtn) {
-        deleteBtn.classList.toggle("hidden", selected.length === 0);
+        const shouldShowDelete = selected.length > 0;
+        deleteBtn.classList.toggle("hidden", !shouldShowDelete);
+        deleteBtn.style.display = shouldShowDelete ? "inline-flex" : "none";
+        deleteBtn.style.backgroundColor = "#dc2626";
+        deleteBtn.style.color = "#ffffff";
+        deleteBtn.style.border = "2px solid #b91c1c";
+        deleteBtn.style.opacity = "1";
+        deleteBtn.style.visibility = "visible";
         deleteBtn.textContent = selected.length > 0 ? "Delete Selected (" + selected.length + ")" : "Delete Selected";
     }
     if (selectAll) {
