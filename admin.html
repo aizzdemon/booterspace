@@ -781,7 +781,22 @@ document.querySelectorAll('.nav-btn-tab').forEach(btn => {
 });
 
 window.closeModal = (id) => document.getElementById(id).classList.remove("active");
-window.deleteJob = async (id) => { if(confirm("Delete permanently?")) await deleteDoc(doc(db, "jobs", id)); };
+window.deleteJob = async (id) => {
+    if (!confirm("Delete this job from the admin queue? Automated jobs will be suppressed from future imports.")) return;
+    const ref = doc(db, "jobs", id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data() || {};
+    if (data.automated === true) {
+        await updateDoc(ref, {
+            status: "rejected",
+            rejectedAt: serverTimestamp(),
+            rejectedBy: auth.currentUser?.uid || ADMIN_UID
+        });
+    } else {
+        await deleteDoc(ref);
+    }
+};
 window.duplicateJob = async (id) => {
     if (!auth.currentUser) {
         alert("Admin login is required.");
