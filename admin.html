@@ -505,7 +505,7 @@ function showJobsTab(status = 'approved') {
                 </div>
             </div>
 
-            <div id="pendingBulkActions" class="hidden items-center justify-between gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-3"><label class="flex items-center gap-2 text-sm font-bold text-slate-700"><input id="selectAllPendingJobs" type="checkbox" class="w-4 h-4 accent-indigo-600"> Select all visible</label><div class="flex items-center gap-3"><span id="selectedPendingCount" class="text-xs font-bold text-slate-500">0 selected</span><button id="deleteSelectedPendingJobs" type="button" disabled class="bg-red-600 disabled:opacity-70 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-xs font-black uppercase">Delete Selected</button></div></div><div id="jList" class="space-y-3">Loading jobs...</div>
+            <div id="pendingBulkActions" class="hidden items-center justify-between gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-3"><label class="flex items-center gap-2 text-sm font-bold text-slate-700"><input id="selectAllPendingJobs" type="checkbox" class="w-4 h-4 accent-indigo-600"> Select all visible</label><div class="flex items-center gap-3"><span id="selectedPendingCount" class="text-xs font-bold text-slate-500">0 selected</span><button id="deleteSelectedPendingJobs" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase shadow-sm">Delete Selected</button></div></div><div id="jList" class="space-y-3">Loading jobs...</div>
         </div>
     `;
 
@@ -595,7 +595,10 @@ function updatePendingSelectionUI() {
     const deleteBtn = document.getElementById("deleteSelectedPendingJobs");
     const selectAll = document.getElementById("selectAllPendingJobs");
     if (count) count.textContent = selected.length + " selected";
-    if (deleteBtn) deleteBtn.disabled = selected.length === 0;
+    if (deleteBtn) {
+        deleteBtn.classList.toggle("hidden", selected.length === 0);
+        deleteBtn.textContent = selected.length > 0 ? "Delete Selected (" + selected.length + ")" : "Delete Selected";
+    }
     if (selectAll) {
         selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
         selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
