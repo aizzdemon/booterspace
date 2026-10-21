@@ -5,162 +5,66 @@
       "company": "Postman"
     },
     {
-      "slug": "browserstack",
-      "company": "BrowserStack"
-    },
-    {
-      "slug": "freshworks",
-      "company": "Freshworks"
-    },
-    {
-      "slug": "razorpay",
+      "slug": "razorpaysoftwareprivatelimited",
       "company": "Razorpay"
     },
     {
-      "slug": "meesho",
-      "company": "Meesho"
+      "slug": "doordashindia",
+      "company": "DoorDash India"
     },
     {
-      "slug": "swiggy",
-      "company": "Swiggy"
+      "slug": "appian",
+      "company": "Appian"
     },
     {
-      "slug": "phonepe",
-      "company": "PhonePe"
+      "slug": "amtechsoftware",
+      "company": "Amtech Software"
     },
     {
-      "slug": "groww",
-      "company": "Groww"
+      "slug": "cleoindia",
+      "company": "Cleo India"
     },
     {
-      "slug": "chargebee",
-      "company": "Chargebee"
+      "slug": "clearwater",
+      "company": "Clearwater"
     },
     {
-      "slug": "clevertap",
-      "company": "CleverTap"
+      "slug": "getwellnetwork",
+      "company": "Get Well Network"
     },
     {
-      "slug": "moengage",
-      "company": "MoEngage"
+      "slug": "alphasenseindia",
+      "company": "AlphaSense India"
     },
     {
-      "slug": "whatfix",
-      "company": "Whatfix"
+      "slug": "blenheimchalcotindia",
+      "company": "Blenheim Chalcot India"
     },
     {
-      "slug": "hiver",
-      "company": "Hiver"
+      "slug": "bluevineindia",
+      "company": "Bluevine India"
     },
     {
-      "slug": "acko",
-      "company": "ACKO"
+      "slug": "enterpret",
+      "company": "Enterpret"
     },
     {
-      "slug": "druva",
-      "company": "Druva"
+      "slug": "prodigal",
+      "company": "Prodigal"
     },
     {
-      "slug": "gitlab",
-      "company": "GitLab"
+      "slug": "skildai-careers",
+      "company": "Skild AI"
     },
     {
-      "slug": "cloudflare",
-      "company": "Cloudflare"
-    },
-    {
-      "slug": "datadog",
-      "company": "Datadog"
-    },
-    {
-      "slug": "stripe",
-      "company": "Stripe"
-    },
-    {
-      "slug": "coinbase",
-      "company": "Coinbase"
-    },
-    {
-      "slug": "notion",
-      "company": "Notion"
-    },
-    {
-      "slug": "figma",
-      "company": "Figma"
-    },
-    {
-      "slug": "airbnb",
-      "company": "Airbnb"
-    },
-    {
-      "slug": "openai",
-      "company": "OpenAI"
+      "slug": "kraftonindia",
+      "company": "KRAFTON India"
     }
   ],
   "lever": [
-    {
-      "slug": "postman",
-      "company": "Postman"
-    },
-    {
-      "slug": "browserstack",
-      "company": "BrowserStack"
-    },
-    {
-      "slug": "freshworks",
-      "company": "Freshworks"
-    },
-    {
-      "slug": "razorpay",
-      "company": "Razorpay"
-    },
-    {
-      "slug": "meesho",
-      "company": "Meesho"
-    },
-    {
-      "slug": "swiggy",
-      "company": "Swiggy"
-    },
-    {
-      "slug": "phonepe",
-      "company": "PhonePe"
-    },
-    {
-      "slug": "groww",
-      "company": "Groww"
-    },
-    {
-      "slug": "chargebee",
-      "company": "Chargebee"
-    },
-    {
-      "slug": "clevertap",
-      "company": "CleverTap"
-    },
-    {
-      "slug": "moengage",
-      "company": "MoEngage"
-    },
-    {
-      "slug": "whatfix",
-      "company": "Whatfix"
-    },
-    {
-      "slug": "hiver",
-      "company": "Hiver"
-    },
-    {
-      "slug": "acko",
-      "company": "ACKO"
-    },
-    {
-      "slug": "druva",
-      "company": "Druva"
-    },
     {
       "slug": "welocalize",
       "company": "Welocalize"
     }
   ]
-}\n
+}
