@@ -20,6 +20,7 @@ def fetch_json(url: str) -> Any:
 
 def clean_html(value: Any) -> str:
     if not isinstance(value, str): return ""
+    value = html.unescape(value)
     value = re.sub(r"(?is)<(script|style)\b[^>]*>.*?</\1>", " ", value)
     value = re.sub(r"(?s)<[^>]+>", " ", value)
     return re.sub(r"\s+", " ", html.unescape(value)).strip()
