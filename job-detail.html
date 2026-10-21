@@ -256,11 +256,24 @@ async function renderRecommendedJobs(){
   }
 }
 
+function escapeJobHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
 function renderJob(job){
+  const description = job.description || job.jobDetails || job.about || job.responsibilities || "";
+  const safeDescription = escapeJobHtml(description || "The employer has not provided a detailed description. Please open the official job posting for responsibilities and requirements.");
+  const title = escapeJobHtml(job.title || job.jobTitle || "Untitled Job");
+  const company = escapeJobHtml(job.company || job.companyName || "Company not specified");
+  const location = escapeJobHtml(job.location || job.jobPlace || "Remote / Global");
+  const salary = escapeJobHtml(job.salary || "Undisclosed");
+  const applyLink = String(job.applyLink || job.jobLink || job.officialJobUrl || job.sourceUrl || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
   document.getElementById("jobDetailsContent").innerHTML=`
-    <h1 class="text-3xl font-black mb-1 leading-tight text-slate-900">${job.title}</h1>
+    <h1 class="text-3xl font-black mb-1 leading-tight text-slate-900">${title}</h1>
     <p class="text-blue-600 font-bold text-lg mb-6 flex items-center gap-2">
-      <i class="fa-solid fa-building text-sm opacity-50"></i> ${job.company}
+      <i class="fa-solid fa-building text-sm opacity-50"></i> ${company}
     </p>
 
     <!-- REDESIGNED INFO BOXES -->
@@ -271,7 +284,7 @@ function renderJob(job){
         </div>
         <div>
           <p class="text-[10px] uppercase tracking-wider text-blue-500 font-black leading-none mb-1">Location</p>
-          <p class="text-sm font-bold text-slate-700 leading-none">${job.location || "Remote / Global"}</p>
+          <p class="text-sm font-bold text-slate-700 leading-none">${location}</p>
         </div>
       </div>
 
@@ -281,17 +294,17 @@ function renderJob(job){
         </div>
         <div>
           <p class="text-[10px] uppercase tracking-wider text-emerald-600 font-black leading-none mb-1">Salary</p>
-          <p class="text-sm font-bold text-slate-700 leading-none flex items-center gap-1"><i class="fa-solid fa-indian-rupee-sign text-xs"></i>${job.salary || "Undisclosed"}</p>
+          <p class="text-sm font-bold text-slate-700 leading-none flex items-center gap-1"><i class="fa-solid fa-indian-rupee-sign text-xs"></i>${salary}</p>
         </div>
       </div>
     </div>
 
     <div class="prose max-w-none text-gray-600 whitespace-pre-line mb-10 leading-relaxed text-base">
-      ${job.about||""}
+      ${safeDescription}
     </div>
 
     <div class="flex flex-wrap items-center gap-3 border-t pt-8">
-      <button onclick="applyJob('${job.applyLink||""}')"
+      <button onclick="applyJob('${applyLink}')"
         class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-blue-200 flex items-center gap-2">
         Apply Now <i class="fa-solid fa-arrow-right text-xs"></i>
       </button>
@@ -301,7 +314,7 @@ function renderJob(job){
         <i class="fa-regular fa-bookmark"></i> Save
       </button>
 
-      <button onclick="shareJob('${job.title}')"
+      <button onclick="shareJob('${title}')"
         class="border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 p-4 rounded-2xl font-bold transition-all text-gray-700" title="Share Job">
         <i class="fa-solid fa-share-nodes"></i>
       </button>
