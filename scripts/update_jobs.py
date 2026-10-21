@@ -19,11 +19,23 @@ def fetch_json(url: str) -> Any:
         return json.loads(response.read().decode("utf-8"))
 
 def clean_html(value: Any) -> str:
+    """Convert ATS HTML to readable text while preserving headings and list items."""
     if not isinstance(value, str): return ""
     value = html.unescape(value)
     value = re.sub(r"(?is)<(script|style)\b[^>]*>.*?</\1>", " ", value)
+    value = re.sub(r"(?i)<\s*br\s*/?>", "\\n", value)
+    value = re.sub(r"(?i)</\s*(p|div|section|article|h[1-6]|tr)\s*>", "\\n\\n", value)
+    value = re.sub(r"(?i)<\s*li\b[^>]*>", "\\n• ", value)
+    value = re.sub(r"(?i)</\s*li\s*>", "\\n", value)
     value = re.sub(r"(?s)<[^>]+>", " ", value)
-    return re.sub(r"\s+", " ", html.unescape(value)).strip()
+    lines = [re.sub(r"[ \\t]+", " ", line).strip() for line in value.splitlines()]
+    cleaned = []
+    for line in lines:
+        if line:
+            cleaned.append(line)
+        elif cleaned and cleaned[-1] != "":
+            cleaned.append("")
+    return html.unescape("\\n".join(cleaned)).strip()
 
 def to_iso(value: Any) -> str:
     """Accept ISO strings, Unix seconds, and Unix milliseconds."""
