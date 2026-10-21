@@ -547,16 +547,20 @@ function applyJobFilters(status) {
 
     filtered.forEach(j => {
         const dateStr = j.timestamp ? j.timestamp.toDate().toLocaleDateString() : 'N/A';
+        const officialRaw = j.officialJobUrl || j.sourceUrl || j.jobLink || '';
+        const officialUrl = /^https?:\\/\\//i.test(officialRaw) ? officialRaw.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '';
+        const sourceName = String(j.source || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const div = document.createElement('div');
-        div.className = `p-4 border rounded-2xl flex justify-between items-center ${status === 'pending' ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'} hover:border-indigo-300 transition-colors`;
+        div.className = `p-4 border rounded-2xl flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${status === 'pending' ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-200'} hover:border-indigo-300 transition-colors`;
         div.innerHTML = `
-            <div>
+            <div class="min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                    <h4 class="font-black text-sm text-slate-800">${j.title}</h4>
+                    <h4 class="font-black text-sm text-slate-800">${String(j.title || 'Untitled job').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}</h4>
                     <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">${dateStr}</span>
                 </div>
-                <p class="text-[11px] text-slate-500 font-bold">${j.company} • ${j.jobPlace || 'Remote'}</p>
-                <p class="text-[9px] text-indigo-500 font-black mt-1 uppercase">Posted By: ${j.userName || 'Admin'}</p>
+                <p class="text-[11px] text-slate-500 font-bold">${String(j.company || 'Unknown company').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))} • ${String(j.jobPlace || j.location || 'Remote').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}</p>
+                <p class="text-[9px] text-indigo-500 font-black mt-1 uppercase">Posted By: ${String(j.userName || 'Admin').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}${sourceName ? ' • Source: ' + sourceName : ''}</p>
+                ${officialUrl ? `<a class="inline-block mt-2 text-xs font-bold text-blue-700 underline" href="${officialUrl}" target="_blank" rel="noopener noreferrer">Open official job details ↗</a>` : ''}
             </div>
             <div class="flex gap-2">
                 ${status === 'pending' ? `<button onclick="updateJobStatus('${j.id}', 'approved')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Approve</button>` : ''}
