@@ -505,11 +505,20 @@ function showJobsTab(status = 'approved') {
                 </div>
             </div>
 
-            <div id="jList" class="space-y-3">Loading jobs...</div>
+            <div id="pendingBulkActions" class="hidden items-center justify-between gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-3"><label class="flex items-center gap-2 text-sm font-bold text-slate-700"><input id="selectAllPendingJobs" type="checkbox" class="w-4 h-4 accent-indigo-600"> Select all visible</label><div class="flex items-center gap-3"><span id="selectedPendingCount" class="text-xs font-bold text-slate-500">0 selected</span><button id="deleteSelectedPendingJobs" type="button" disabled class="bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-xs font-black uppercase">Delete Selected</button></div></div><div id="jList" class="space-y-3">Loading jobs...</div>
         </div>
     `;
 
     currentJobData = [];
+    const bulkBar = document.getElementById("pendingBulkActions");
+    if (bulkBar) { bulkBar.classList.toggle("hidden", status !== "pending"); bulkBar.classList.toggle("flex", status === "pending"); }
+    if (status === "pending") {
+        document.getElementById("selectAllPendingJobs").onchange = (event) => {
+            document.querySelectorAll("#jList input.pending-job-checkbox").forEach(cb => { cb.checked = event.target.checked; });
+            updatePendingSelectionUI();
+        };
+        document.getElementById("deleteSelectedPendingJobs").onclick = deleteSelectedPendingJobs;
+    }
     if (currentUnsub) currentUnsub();
     const q = query(collection(db, "jobs"), where("status", "==", status), orderBy("timestamp", "desc"));
     
@@ -555,6 +564,7 @@ function applyJobFilters(status) {
         div.innerHTML = `
             <div class="min-w-0">
                 <div class="flex items-center gap-2 mb-1">
+                    \${status === "pending" ? '<input type="checkbox" aria-label="Select pending job" class="pending-job-checkbox w-4 h-4 accent-indigo-600 shrink-0" data-job-id="' + j.id + '">' : ''}
                     <h4 class="font-black text-sm text-slate-800">${String(j.title || 'Untitled job').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}</h4>
                     <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">${dateStr}</span>
                 </div>
@@ -571,6 +581,59 @@ function applyJobFilters(status) {
         `;
         list.appendChild(div);
     });
+
+    if (status === "pending") {
+        list.querySelectorAll("input.pending-job-checkbox").forEach(cb => cb.addEventListener("change", updatePendingSelectionUI));
+        updatePendingSelectionUI();
+    }
+}
+
+function updatePendingSelectionUI() {
+    const checkboxes = [...document.querySelectorAll("#jList input.pending-job-checkbox")];
+    const selected = checkboxes.filter(cb => cb.checked);
+    const count = document.getElementById("selectedPendingCount");
+    const deleteBtn = document.getElementById("deleteSelectedPendingJobs");
+    const selectAll = document.getElementById("selectAllPendingJobs");
+    if (count) count.textContent = selected.length + " selected";
+    if (deleteBtn) deleteBtn.disabled = selected.length === 0;
+    if (selectAll) {
+        selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+        selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+    }
+}
+
+async function deleteSelectedPendingJobs() {
+    const selectedIds = [...document.querySelectorAll("#jList input.pending-job-checkbox:checked")].map(cb => cb.dataset.jobId);
+    if (!selectedIds.length) return;
+    if (!confirm("Delete " + selectedIds.length + " selected pending job(s)? Automated jobs will be marked rejected so they are not re-imported. This cannot be undone for manually added jobs.")) return;
+    const button = document.getElementById("deleteSelectedPendingJobs");
+    button.disabled = true;
+    button.textContent = "Deleting...";
+    let deleted = 0, failed = 0;
+    try {
+        for (const id of selectedIds) {
+            try {
+                const ref = doc(db, "jobs", id);
+                const snap = await getDoc(ref);
+                if (!snap.exists()) { deleted++; continue; }
+                const data = snap.data() || {};
+                if (data.status !== "pending") { failed++; continue; }
+                if (data.automated === true) {
+                    await updateDoc(ref, { status: "rejected", rejectedAt: serverTimestamp(), rejectedBy: auth.currentUser?.uid || ADMIN_UID });
+                } else {
+                    await deleteDoc(ref);
+                }
+                deleted++;
+            } catch (error) {
+                console.error("Could not delete pending job", id, error);
+                failed++;
+            }
+        }
+        alert("Finished: " + deleted + " job(s) removed from pending list" + (failed ? "; " + failed + " failed or changed status." : "."));
+    } finally {
+        button.textContent = "Delete Selected";
+        updatePendingSelectionUI();
+    }
 }
 
 /* ============================
