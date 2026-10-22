@@ -23,11 +23,5 @@
         "limit": 25
       }
     ]
-  },
-  "lever": [
-    {
-      "slug": "welocalize",
-      "company": "Welocalize"
-    }
-  ]
+  }
 }
