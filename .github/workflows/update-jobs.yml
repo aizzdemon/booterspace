@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Prevent scheduled and manual runs from racing to update jobs.json.
+concurrency:
+  group: daily-job-data-update
+  cancel-in-progress: false
+
 jobs:
   refresh-jobs:
     runs-on: ubuntu-latest
