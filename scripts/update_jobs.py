@@ -106,8 +106,45 @@ def mcp_request(endpoint: str, request_id: int, method: str, params: dict[str, A
                 except json.JSONDecodeError: pass
     raise ValueError("HiringCafe MCP returned an unrecognized response")
 
+def _safe_shape(value: Any, depth: int = 0) -> Any:
+    """Return response structure only; never print actual job text, URLs, credentials, or IDs."""
+    if depth >= 4:
+        return f"<{type(value).__name__}>"
+    if isinstance(value, dict):
+        summary: dict[str, Any] = {}
+        for key, child in list(value.items())[:40]:
+            if key in ("inputSchema", "outputSchema") and isinstance(child, dict):
+                props = child.get("properties", {})
+                summary[key] = {
+                    "type": child.get("type"),
+                    "required": child.get("required", []),
+                    "property_names": list(props.keys())[:60] if isinstance(props, dict) else [],
+                    "property_types": {k: v.get("type") for k, v in list(props.items())[:60] if isinstance(v, dict)} if isinstance(props, dict) else {},
+                }
+            elif isinstance(child, str):
+                summary[key] = f"<string length={len(child)}>"
+            elif isinstance(child, list):
+                summary[key] = {"type": "list", "length": len(child), "sample_item_shape": _safe_shape(child[0], depth + 1) if child else None}
+            elif isinstance(child, dict):
+                summary[key] = _safe_shape(child, depth + 1)
+            elif child is None or isinstance(child, (bool, int, float)):
+                summary[key] = child
+            else:
+                summary[key] = f"<{type(child).__name__}>"
+        if len(value) > 40:
+            summary["<additional_keys>"] = len(value) - 40
+        return summary
+    if isinstance(value, list):
+        return {"type": "list", "length": len(value), "sample_item_shape": _safe_shape(value[0], depth + 1) if value else None}
+    return f"<{type(value).__name__}>"
+
 def mcp_result_text(response: dict[str, Any]) -> Any:
-    if response.get("error"): raise RuntimeError(str(response["error"]))
+    if response.get("error"):
+        # MCP error messages can include request details; log only safe error metadata.
+        error = response["error"]
+        if isinstance(error, dict):
+            raise RuntimeError(f"MCP error code={error.get('code', 'unknown')}; message_type={type(error.get('message')).__name__}")
+        raise RuntimeError(f"MCP error type={type(error).__name__}")
     result = response.get("result", {})
     if result.get("structuredContent") is not None: return result["structuredContent"]
     for block in result.get("content", []):
@@ -176,14 +213,22 @@ def parse_hiringcafe(config: dict[str, Any]) -> list[dict[str, Any]]:
     if initialized.get("error"):
         raise RuntimeError(f"HiringCafe initialize failed: {initialized['error']}")
     mcp_request(endpoint, 2, "notifications/initialized")
-    tools_data = mcp_result_text(mcp_request(endpoint, 3, "tools/list", {}))
+    print(f"HiringCafe initialize response shape: {json.dumps(_safe_shape(initialized), ensure_ascii=True)[:3000]}")
+    mcp_request(endpoint, 2, "notifications/initialized")
+    tools_response = mcp_request(endpoint, 3, "tools/list", {})
+    print(f"HiringCafe tools/list envelope shape: {json.dumps(_safe_shape(tools_response), ensure_ascii=True)[:5000]}")
+    tools_data = mcp_result_text(tools_response)
     available = tools_data.get("tools", []) if isinstance(tools_data, dict) else []
+    print(f"HiringCafe advertised tool names: {[tool.get('name') for tool in available if isinstance(tool, dict)][:50]}")
     search_tool = next((tool for tool in available if tool.get("name") == "search_jobs"), None)
     detail_tool = next((tool for tool in available if tool.get("name") == "get_job_details"), None)
     if not search_tool:
-        raise RuntimeError("HiringCafe MCP did not advertise search_jobs")
+        raise RuntimeError(f"HiringCafe MCP did not advertise search_jobs; tools_data_shape={json.dumps(_safe_shape(tools_data), ensure_ascii=True)[:3000]}")
     schema = search_tool.get("inputSchema", {}).get("properties", {}) or {}
     detail_schema = detail_tool.get("inputSchema", {}).get("properties", {}) or {} if detail_tool else {}
+    print(f"HiringCafe search_jobs schema: {json.dumps(_safe_shape(search_tool.get('inputSchema', {})), ensure_ascii=True)[:5000]}")
+    if detail_tool:
+        print(f"HiringCafe get_job_details schema: {json.dumps(_safe_shape(detail_tool.get('inputSchema', {})), ensure_ascii=True)[:3000]}")
     searches = config.get("searches") or [
         {"search": "customer support", "location": "India", "limit": 25},
         {"search": "software", "location": "India", "limit": 25},
@@ -202,10 +247,13 @@ def parse_hiringcafe(config: dict[str, Any]) -> list[dict[str, Any]]:
                 args["location"] = search_args.get("location", "India")
             if "limit" in schema:
                 args["limit"] = search_args.get("limit", 25)
-        data = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name": "search_jobs", "arguments": args}))
+        print(f"HiringCafe search request parameter names: {sorted(args.keys())}; values omitted for privacy")
+        raw_search_response = mcp_request(endpoint, request_id, "tools/call", {"name": "search_jobs", "arguments": args})
         request_id += 1
+        print(f"HiringCafe search response envelope shape: {json.dumps(_safe_shape(raw_search_response), ensure_ascii=True)[:5000]}")
+        data = mcp_result_text(raw_search_response)
         items = _job_items(data)
-        print(f"HiringCafe search '{search_args.get('search', search_args.get('query', 'all'))}': {len(items)} raw result(s); response type={type(data).__name__}")
+        print(f"HiringCafe search '{search_args.get('search', search_args.get('query', 'all'))}': {len(items)} raw result(s); parsed response shape={json.dumps(_safe_shape(data), ensure_ascii=True)[:3000]}")
         for item in items:
             details = _flatten_job(item)
             job_id = _first_value(details, "id", "job_id", "jobId", "jobID", "uuid")
