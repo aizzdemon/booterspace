@@ -15,9 +15,9 @@ The workflow uses project ID `kar-kardan`. No third-party job API key is needed.
 
 ## Sources and coverage
 
-The collector currently uses public employer posting APIs for Greenhouse and Lever. The response contains the official employer/ATS job page, description, location, and (where provided) the direct apply URL. It keeps India and explicitly India-eligible remote roles, deduplicates by source + board + job ID, and never invents fallback jobs.
+The collector searches HiringCafe's public read-only MCP endpoint (`https://hiringcafe.com/api/mcp`) and retains the existing Lever source. HiringCafe searches run for India-based customer support, software, data, and remote roles; results are normalized and filtered through the existing India-relevance rules. Direct employer application links are preferred where supplied. The collector deduplicates by source + source job ID and never invents fallback jobs.
 
-The board identifiers are listed in `job_sources.json`. To add a company, first open its official careers page and verify that its published jobs are hosted on Greenhouse (`job-boards.greenhouse.io/<slug>` or `boards.greenhouse.io/<slug>`) or Lever (`jobs.lever.co/<slug>`). Add the verified slug and display name to the matching array. Unsupported or unavailable boards are skipped and logged.
+The HiringCafe endpoint and search terms are configured in `scripts/job_sources.json`. You can add or change search terms there without changing the review, approval, Firebase, or public jobs-page workflow. HiringCafe rate-limits requests, so keep the configured searches reasonable. Lever board identifiers remain listed in the same file.
 
 This is a curated starting list, not coverage of every private company in India. Job boards such as LinkedIn and Naukri are not scraped or bypassed; use their authorized integrations or employer-provided feeds if available.
 
