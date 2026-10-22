@@ -1,66 +1,29 @@
 {
-  "greenhouse": [
-    {
-      "slug": "postman",
-      "company": "Postman"
-    },
-    {
-      "slug": "razorpaysoftwareprivatelimited",
-      "company": "Razorpay"
-    },
-    {
-      "slug": "doordashindia",
-      "company": "DoorDash India"
-    },
-    {
-      "slug": "appian",
-      "company": "Appian"
-    },
-    {
-      "slug": "amtechsoftware",
-      "company": "Amtech Software"
-    },
-    {
-      "slug": "cleoindia",
-      "company": "Cleo India"
-    },
-    {
-      "slug": "clearwater",
-      "company": "Clearwater"
-    },
-    {
-      "slug": "getwellnetwork",
-      "company": "Get Well Network"
-    },
-    {
-      "slug": "alphasenseindia",
-      "company": "AlphaSense India"
-    },
-    {
-      "slug": "blenheimchalcotindia",
-      "company": "Blenheim Chalcot India"
-    },
-    {
-      "slug": "bluevineindia",
-      "company": "Bluevine India"
-    },
-    {
-      "slug": "enterpret",
-      "company": "Enterpret"
-    },
-    {
-      "slug": "prodigal",
-      "company": "Prodigal"
-    },
-    {
-      "slug": "skildai-careers",
-      "company": "Skild AI"
-    },
-    {
-      "slug": "kraftonindia",
-      "company": "KRAFTON India"
-    }
-  ],
+  "hiringcafe": {
+    "endpoint": "https://hiringcafe.com/api/mcp",
+    "searches": [
+      {
+        "search": "customer support",
+        "location": "India",
+        "limit": 25
+      },
+      {
+        "search": "software",
+        "location": "India",
+        "limit": 25
+      },
+      {
+        "search": "data",
+        "location": "India",
+        "limit": 25
+      },
+      {
+        "search": "remote",
+        "location": "India",
+        "limit": 25
+      }
+    ]
+  },
   "lever": [
     {
       "slug": "welocalize",
