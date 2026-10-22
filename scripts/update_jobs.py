@@ -246,9 +246,21 @@ def save_to_firestore(jobs: list[dict[str, Any]]) -> tuple[int, int, int]:
 
 def main():
     jobs = collect_jobs()
-    # Never generate fake fallback jobs.
-    OUT_FILE.write_text(json.dumps(jobs, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {len(jobs)} real job record(s) to jobs.json.")
+    # Never replace a populated export with an empty list when a source is temporarily unavailable.
+    if jobs:
+        OUT_FILE.write_text(json.dumps(jobs, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"Wrote {len(jobs)} real job record(s) to jobs.json.")
+    else:
+        existing = []
+        try:
+            existing = json.loads(OUT_FILE.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+        if existing:
+            print(f"No new jobs collected; keeping the existing {len(existing)} job record(s) in jobs.json.")
+        else:
+            OUT_FILE.write_text("[]\n", encoding="utf-8")
+            print("No real jobs collected; jobs.json remains empty rather than adding fake jobs.")
     created, updated, rejected = save_to_firestore(jobs)
     print(f"Firestore sync: {created} new pending, {updated} refreshed, {rejected} rejected jobs kept hidden.")
 
