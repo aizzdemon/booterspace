@@ -93,21 +93,75 @@ def make_job(source: str, board: str, source_id: Any, title: Any, company: str, 
         "status": "pending", "userId": ADMIN_UID, "userName": "BooterSpace Job Automation"
     }
 
-def parse_greenhouse(board: dict[str, str]) -> list[dict[str, Any]]:
-    slug = board["slug"]
-    url = f"https://boards-api.greenhouse.io/v1/boards/{urllib.parse.quote(slug, safe='')}/jobs?content=true"
-    data = fetch_json(url)
-    out = []
-    for item in data.get("jobs", []):
-        location = (item.get("location") or {}).get("name", "")
-        if not location and item.get("offices"):
-            location = ", ".join(str(o.get("location") or o.get("name") or "") for o in item["offices"])
-        official = item.get("absolute_url", "")
-        job = make_job("Greenhouse", slug, item.get("id"), item.get("title"), board.get("company", slug.title()),
-                       location, item.get("content", ""), item.get("updated_at"), official, official,
-                       kind=" ".join(str(d.get("name", "")) for d in item.get("departments", [])))
-        if job: out.append(job)
-    return out
+def mcp_request(endpoint: str, request_id: int, method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = {"jsonrpc": "2.0", "id": request_id, "method": method}
+    if params is not None: payload["params"] = params
+    req = urllib.request.Request(endpoint, data=json.dumps(payload).encode("utf-8"), headers={"User-Agent": USER_AGENT, "Content-Type": "application/json", "Accept": "application/json, text/event-stream"}, method="POST")
+    with urllib.request.urlopen(req, timeout=45) as response: raw = response.read().decode("utf-8")
+    try: return json.loads(raw)
+    except json.JSONDecodeError:
+        for line in raw.splitlines():
+            if line.startswith("data:"):
+                try: return json.loads(line[5:].strip())
+                except json.JSONDecodeError: pass
+    raise ValueError("HiringCafe MCP returned an unrecognized response")
+
+def mcp_result_text(response: dict[str, Any]) -> Any:
+    if response.get("error"): raise RuntimeError(str(response["error"]))
+    result = response.get("result", {})
+    if result.get("structuredContent") is not None: return result["structuredContent"]
+    for block in result.get("content", []):
+        if block.get("type") == "text" and isinstance(block.get("text"), str):
+            try: return json.loads(block["text"])
+            except json.JSONDecodeError: pass
+    return result
+
+def parse_hiringcafe(config: dict[str, Any]) -> list[dict[str, Any]]:
+    endpoint = config.get("endpoint", "https://hiringcafe.com/api/mcp")
+    initialized = mcp_request(endpoint, 1, "initialize", {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "BooterSpace Job Collector", "version": "1.0.0"}})
+    if initialized.get("error"): raise RuntimeError(f"HiringCafe initialize failed: {initialized['error']}")
+    mcp_request(endpoint, 2, "notifications/initialized")
+    tools_data = mcp_result_text(mcp_request(endpoint, 3, "tools/list", {}))
+    available = tools_data.get("tools", []) if isinstance(tools_data, dict) else []
+    search_tool = next((tool for tool in available if tool.get("name") == "search_jobs"), None)
+    detail_tool = next((tool for tool in available if tool.get("name") == "get_job_details"), None)
+    if not search_tool: raise RuntimeError("HiringCafe MCP did not advertise search_jobs")
+    searches = config.get("searches") or [{"search":"customer support","location":"India","limit":25},{"search":"software","location":"India","limit":25},{"search":"data","location":"India","limit":25},{"search":"remote","location":"India","limit":25}]
+    found: dict[str, dict[str, Any]] = {}
+    request_id = 10
+    for search_args in searches:
+        schema = search_tool.get("inputSchema", {}).get("properties", {}) or {}
+        args = {key:value for key,value in search_args.items() if key in schema}
+        data = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name":"search_jobs","arguments":args}))
+        request_id += 1
+        items = data if isinstance(data, list) else (data.get("jobs") or data.get("results") or data.get("items") or data.get("postings") or []) if isinstance(data, dict) else []
+        for item in items:
+            if not isinstance(item, dict): continue
+            job_id = item.get("id") or item.get("job_id") or item.get("jobId")
+            details = dict(item)
+            if detail_tool and job_id:
+                props = detail_tool.get("inputSchema", {}).get("properties", {}) or {}
+                detail_args = {key:job_id for key in ("job_id","jobId","id") if key in props}
+                if detail_args:
+                    try:
+                        extra = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name":"get_job_details","arguments":detail_args}))
+                        request_id += 1
+                        if isinstance(extra, dict): details.update(extra)
+                    except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError) as err: print(f"HiringCafe detail lookup skipped: {err}")
+            title = details.get("title") or details.get("job_title") or details.get("jobTitle")
+            company = details.get("company") or details.get("company_name") or details.get("companyName") or details.get("employer")
+            location = details.get("location") or details.get("job_location") or details.get("jobLocation")
+            description = details.get("description") or details.get("job_description") or details.get("summary") or details.get("text")
+            posted = details.get("posted_at") or details.get("postedDate") or details.get("date_posted") or details.get("published_at")
+            official = details.get("apply_url") or details.get("applyUrl") or details.get("application_url") or details.get("applicationUrl") or details.get("employer_apply_url") or details.get("job_url") or details.get("jobUrl")
+            if not official and details.get("url") and "hiringcafe.com" not in str(details["url"]).lower(): official = details["url"]
+            salary = details.get("salary") or details.get("compensation") or ""
+            kind = details.get("employment_type") or details.get("employmentType") or details.get("commitment") or ""
+            if not all((title,company,location,description,official)): continue
+            job = make_job("HiringCafe", "hiringcafe", job_id or official, title, str(company), location, description, posted, official, official, salary, kind)
+            if job: found[job["id"]] = job
+        time.sleep(0.5)
+    return list(found.values())
 
 def parse_lever(board: dict[str, str]) -> list[dict[str, Any]]:
     slug = board["slug"]
@@ -132,16 +186,17 @@ def parse_lever(board: dict[str, str]) -> list[dict[str, Any]]:
 def collect_jobs() -> list[dict[str, Any]]:
     config = json.loads(SOURCES_FILE.read_text(encoding="utf-8"))
     found, scanned, failed = {}, 0, 0
-    for provider, parser in (("greenhouse", parse_greenhouse), ("lever", parse_lever)):
-        for board in config.get(provider, []):
+    for provider, parser in (("hiringcafe", parse_hiringcafe), ("lever", parse_lever)):
+        boards = [config.get(provider)] if provider == "hiringcafe" and config.get(provider) else config.get(provider, [])
+        for board in boards:
             scanned += 1
             try:
                 jobs = parser(board)
-                print(f"{provider}:{board['slug']} -> {len(jobs)} India-relevant jobs")
+                print(f"{provider}:{board.get('slug', 'hiringcafe')} -> {len(jobs)} India-relevant jobs")
                 for job in jobs: found[job["id"]] = job
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, TypeError, ValueError) as err:
                 failed += 1
-                print(f"Skipping {provider}:{board.get('slug','?')}: {err}")
+                print(f"Skipping {provider}:{board.get('slug', 'hiringcafe')}: {err}")
             time.sleep(0.35)
     result = sorted(found.values(), key=lambda x: x["postedDate"], reverse=True)
     print(f"Scanned {scanned} public employer boards; {failed} unavailable/failed; {len(result)} relevant jobs found.")
