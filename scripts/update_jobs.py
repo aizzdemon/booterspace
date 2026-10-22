@@ -116,50 +116,140 @@ def mcp_result_text(response: dict[str, Any]) -> Any:
             except json.JSONDecodeError: pass
     return result
 
+def _first_value(obj: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = obj.get(key)
+        if value not in (None, "", [], {}):
+            return value
+    return ""
+
+def _job_items(data: Any) -> list[dict[str, Any]]:
+    """Find job records across common MCP content/result envelopes."""
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if not isinstance(data, dict):
+        return []
+    for key in ("jobs", "results", "items", "postings", "job_results", "jobResults"):
+        value = data.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+        if isinstance(value, dict):
+            nested = _job_items(value)
+            if nested:
+                return nested
+    for key in ("data", "result", "structuredContent", "output"):
+        value = data.get(key)
+        nested = _job_items(value)
+        if nested:
+            return nested
+    # Some MCP servers wrap each result as content blocks containing JSON text.
+    for block in data.get("content", []) if isinstance(data.get("content"), list) else []:
+        if isinstance(block, dict) and isinstance(block.get("text"), str):
+            try:
+                nested = _job_items(json.loads(block["text"]))
+                if nested:
+                    return nested
+            except json.JSONDecodeError:
+                continue
+    return []
+
+def _flatten_job(item: dict[str, Any]) -> dict[str, Any]:
+    """Merge common nested job/company/location/metadata objects without losing top-level values."""
+    merged: dict[str, Any] = {}
+    for key in ("metadata", "job", "posting", "company", "employer", "location_data"):
+        value = item.get(key)
+        if isinstance(value, dict):
+            for subkey, subvalue in value.items():
+                merged.setdefault(subkey, subvalue)
+    merged.update(item)
+    company_obj = item.get("company") or item.get("employer")
+    if isinstance(company_obj, dict):
+        merged["company"] = _first_value(company_obj, "name", "company_name", "companyName", "title")
+    location_obj = item.get("location") or item.get("job_location")
+    if isinstance(location_obj, dict):
+        merged["location"] = _first_value(location_obj, "name", "display_name", "city", "label", "formatted")
+    return merged
+
 def parse_hiringcafe(config: dict[str, Any]) -> list[dict[str, Any]]:
     endpoint = config.get("endpoint", "https://hiringcafe.com/api/mcp")
-    initialized = mcp_request(endpoint, 1, "initialize", {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "BooterSpace Job Collector", "version": "1.0.0"}})
-    if initialized.get("error"): raise RuntimeError(f"HiringCafe initialize failed: {initialized['error']}")
+    initialized = mcp_request(endpoint, 1, "initialize", {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "BooterSpace Job Collector", "version": "1.1.0"}})
+    if initialized.get("error"):
+        raise RuntimeError(f"HiringCafe initialize failed: {initialized['error']}")
     mcp_request(endpoint, 2, "notifications/initialized")
     tools_data = mcp_result_text(mcp_request(endpoint, 3, "tools/list", {}))
     available = tools_data.get("tools", []) if isinstance(tools_data, dict) else []
     search_tool = next((tool for tool in available if tool.get("name") == "search_jobs"), None)
     detail_tool = next((tool for tool in available if tool.get("name") == "get_job_details"), None)
-    if not search_tool: raise RuntimeError("HiringCafe MCP did not advertise search_jobs")
-    searches = config.get("searches") or [{"search":"customer support","location":"India","limit":25},{"search":"software","location":"India","limit":25},{"search":"data","location":"India","limit":25},{"search":"remote","location":"India","limit":25}]
+    if not search_tool:
+        raise RuntimeError("HiringCafe MCP did not advertise search_jobs")
+    schema = search_tool.get("inputSchema", {}).get("properties", {}) or {}
+    detail_schema = detail_tool.get("inputSchema", {}).get("properties", {}) or {} if detail_tool else {}
+    searches = config.get("searches") or [
+        {"search": "customer support", "location": "India", "limit": 25},
+        {"search": "software", "location": "India", "limit": 25},
+        {"search": "data", "location": "India", "limit": 25},
+        {"search": "remote", "location": "India", "limit": 25}
+    ]
     found: dict[str, dict[str, Any]] = {}
     request_id = 10
     for search_args in searches:
-        schema = search_tool.get("inputSchema", {}).get("properties", {}) or {}
-        args = {key:value for key,value in search_args.items() if key in schema}
-        data = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name":"search_jobs","arguments":args}))
+        # Only pass parameters advertised by the live MCP tool schema.
+        args = {key: value for key, value in search_args.items() if key in schema}
+        # Accommodate servers that call the keyword parameter query instead of search.
+        if not args and "query" in schema:
+            args = {"query": search_args.get("search", "")}
+            if "location" in schema:
+                args["location"] = search_args.get("location", "India")
+            if "limit" in schema:
+                args["limit"] = search_args.get("limit", 25)
+        data = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name": "search_jobs", "arguments": args}))
         request_id += 1
-        items = data if isinstance(data, list) else (data.get("jobs") or data.get("results") or data.get("items") or data.get("postings") or []) if isinstance(data, dict) else []
+        items = _job_items(data)
+        print(f"HiringCafe search '{search_args.get('search', search_args.get('query', 'all'))}': {len(items)} raw result(s); response type={type(data).__name__}")
         for item in items:
-            if not isinstance(item, dict): continue
-            job_id = item.get("id") or item.get("job_id") or item.get("jobId")
-            details = dict(item)
+            details = _flatten_job(item)
+            job_id = _first_value(details, "id", "job_id", "jobId", "jobID", "uuid")
             if detail_tool and job_id:
-                props = detail_tool.get("inputSchema", {}).get("properties", {}) or {}
-                detail_args = {key:job_id for key in ("job_id","jobId","id") if key in props}
-                if detail_args:
+                detail_key = next((key for key in ("job_id", "jobId", "id", "jobID") if key in detail_schema), None)
+                if detail_key:
                     try:
-                        extra = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name":"get_job_details","arguments":detail_args}))
+                        extra = mcp_result_text(mcp_request(endpoint, request_id, "tools/call", {"name": "get_job_details", "arguments": {detail_key: job_id}}))
                         request_id += 1
-                        if isinstance(extra, dict): details.update(extra)
-                    except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError) as err: print(f"HiringCafe detail lookup skipped: {err}")
-            title = details.get("title") or details.get("job_title") or details.get("jobTitle")
-            company = details.get("company") or details.get("company_name") or details.get("companyName") or details.get("employer")
-            location = details.get("location") or details.get("job_location") or details.get("jobLocation")
-            description = details.get("description") or details.get("job_description") or details.get("summary") or details.get("text")
-            posted = details.get("posted_at") or details.get("postedDate") or details.get("date_posted") or details.get("published_at")
-            official = details.get("apply_url") or details.get("applyUrl") or details.get("application_url") or details.get("applicationUrl") or details.get("employer_apply_url") or details.get("job_url") or details.get("jobUrl")
-            if not official and details.get("url") and "hiringcafe.com" not in str(details["url"]).lower(): official = details["url"]
-            salary = details.get("salary") or details.get("compensation") or ""
-            kind = details.get("employment_type") or details.get("employmentType") or details.get("commitment") or ""
-            if not all((title,company,location,description,official)): continue
-            job = make_job("HiringCafe", "hiringcafe", job_id or official, title, str(company), location, description, posted, official, official, salary, kind)
-            if job: found[job["id"]] = job
+                        if isinstance(extra, dict):
+                            details.update(_flatten_job(extra))
+                    except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError, KeyError, TypeError) as err:
+                        print(f"HiringCafe detail lookup skipped for {job_id}: {err}")
+            title = _first_value(details, "title", "job_title", "jobTitle", "name", "position")
+            company = _first_value(details, "company_name", "companyName", "employer_name", "employerName", "organization_name", "organizationName")
+            if not company and isinstance(details.get("company"), str):
+                company = details["company"]
+            location = _first_value(details, "location", "job_location", "jobLocation", "locations", "location_name", "locationName", "workplace_location")
+            if isinstance(location, list):
+                location = ", ".join(str(x.get("name") or x.get("label") or x) if isinstance(x, dict) else str(x) for x in location)
+            description = _first_value(details, "description", "job_description", "jobDescription", "summary", "text", "description_text", "descriptionText", "requirements_summary")
+            posted = _first_value(details, "posted_at", "postedDate", "date_posted", "datePosted", "published_at", "publishedAt", "created_at", "createdAt")
+            official = _first_value(details, "employer_apply_url", "employerApplyUrl", "apply_url", "applyUrl", "application_url", "applicationUrl", "job_url", "jobUrl", "url", "link")
+            if isinstance(official, dict):
+                official = _first_value(official, "url", "href")
+            # Prefer an employer application URL, but keep a valid public job detail URL as a fallback.
+            apply = _first_value(details, "employer_apply_url", "employerApplyUrl", "apply_url", "applyUrl", "application_url", "applicationUrl", "application_link", "applicationLink")
+            if isinstance(apply, dict):
+                apply = _first_value(apply, "url", "href")
+            if not apply:
+                apply = official
+            if isinstance(official, str) and official.startswith("/"):
+                official = urllib.parse.urljoin("https://hiringcafe.com", official)
+            if isinstance(apply, str) and apply.startswith("/"):
+                apply = urllib.parse.urljoin("https://hiringcafe.com", apply)
+            salary = _first_value(details, "salary", "compensation", "salary_range", "salaryRange", "pay")
+            kind = _first_value(details, "employment_type", "employmentType", "commitment", "workplace_type", "workplaceType", "job_type", "jobType")
+            if not all((title, company, location, description, official)):
+                missing = [key for key, value in (("title", title), ("company", company), ("location", location), ("description", description), ("url", official)) if not value]
+                print(f"HiringCafe skipped incomplete record; missing={','.join(missing)}; keys={','.join(sorted(details.keys())[:30])}")
+                continue
+            job = make_job("HiringCafe", "hiringcafe", job_id or official, title, str(company), location, description, posted, official, apply, salary, kind)
+            if job:
+                found[job["id"]] = job
         time.sleep(0.5)
     return list(found.values())
 
