@@ -284,7 +284,7 @@ def collect_jobs() -> list[dict[str, Any]]:
                 jobs = parser(board)
                 print(f"{provider}:{board.get('slug', 'hiringcafe')} -> {len(jobs)} India-relevant jobs")
                 for job in jobs: found[job["id"]] = job
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, TypeError, ValueError) as err:
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, TypeError, ValueError, RuntimeError) as err:
                 failed += 1
                 print(f"Skipping {provider}:{board.get('slug', 'hiringcafe')}: {err}")
             time.sleep(0.35)
