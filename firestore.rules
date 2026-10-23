@@ -164,6 +164,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /* ================= COMPANY JOB SCRAPER ================= */
+
+    match /companyWebsites/{companyId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /jobScrapeRequests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == "queued";
+      allow update, delete: if isAdmin();
+    }
+
+    match /scrapedJobHistory/{historyId} {
+      allow read, write: if isAdmin();
+    }
+
     /* ================= JOBS ================= */
 
     match /jobs/{jobId} {
