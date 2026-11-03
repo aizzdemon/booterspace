@@ -237,7 +237,7 @@ def career_links(base, links):
             continue
         if url not in found:
             found.append(url)
-    return found[:MAX_PAGES - 1]
+    return found[:7]
 
 def firestore():
     raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
