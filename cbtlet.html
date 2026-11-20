@@ -356,6 +356,53 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
   }
 }
 
+
+/* Mobile CBT header: keep the countdown visible and pinned at the top. */
+@media screen and (max-width: 640px) {
+  body > header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 60 !important;
+    width: 100%;
+  }
+  body > header > div {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: .5rem !important;
+    padding: .45rem .55rem !important;
+    min-height: 58px;
+  }
+  body > header > div > div:first-child {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    gap: .45rem !important;
+  }
+  body > header > div > div:first-child > div:last-child { min-width: 0; }
+  #headerExamTitle {
+    display: block;
+    max-width: 44vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .72rem !important;
+  }
+  body > header > div > div:last-child {
+    flex: 0 0 auto !important;
+    margin-left: auto;
+  }
+  #timerDisplay {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+  }
+  body > header #timerDisplay { color: #34d399 !important; }
+  body > section.sticky { top: 58px !important; }
+}
+
 </style>
 </head>
 
@@ -419,15 +466,7 @@ body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#eef2f6;-w
       </button>
     </div>
 
-    <div class="flex items-center gap-3 shrink-0 ml-auto bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
-      <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 border border-blue-300 flex items-center justify-center font-bold text-xs">
-        <i class="fa-solid fa-user"></i>
-      </div>
-      <div class="text-right">
-        <div class="font-bold text-slate-800 text-[11px] leading-tight" id="candidateName">Candidate: BL-2026 Aspirant</div>
-        <div class="text-[10px] text-slate-500 leading-tight">Roll No: <span id="candidateRoll" class="font-mono font-semibold text-slate-700">BL2026-9042</span></div>
-      </div>
-    </div>
+
   </div>
 </section>
 
